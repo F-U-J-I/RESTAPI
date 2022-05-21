@@ -66,7 +66,7 @@ class Course(models.Model):
 
 
 def create_course(sender, **kwargs):
-    """When a user is created, a profile is also created"""
+    """When a course is created, autofill fields"""
     if kwargs['created']:
         course = kwargs['instance']
         course.course_path = course.pk
@@ -76,3 +76,9 @@ def create_course(sender, **kwargs):
 
 
 post_save.connect(create_course, sender=Course)
+
+
+class CourseInfo(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    title_image = models.ImageField(blank=True)
+    goal_description = models.TextField()
