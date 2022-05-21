@@ -39,6 +39,7 @@ class Subscription(models.Model):
 
 
 class CourseStatus(models.Model):
+    """Status Course: Dev, Release"""
     name = models.CharField(max_length=128)
 
     def __str__(self):
@@ -46,25 +47,31 @@ class CourseStatus(models.Model):
 
 
 class Course(models.Model):
+    """Course"""
     title = models.CharField(max_length=64)
     description = models.TextField(max_length=175, blank=True)
-    price = models.IntegerField(blank=True)
+    price = models.IntegerField(default=0)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     avatar_url = models.ImageField(default="course-default.svg")
     duration_in_minutes = models.IntegerField(default=0)
     rating = models.FloatField(default=0.)
     members_amount = models.IntegerField(default=0)
     max_progress_points = models.IntegerField(default=0)
-    status = models.ForeignKey(CourseStatus, null=True, on_delete=models.SET_NULL)
+    status = models.ForeignKey(CourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
     date_create = models.DateField(default=datetime.date.today)
-    course_path = models.CharField(max_length=32)
+    course_path = models.CharField(max_length=32, blank=True)
+
+    def __str__(self):
+        return f'{self.profile.user.username}: {self.title}'
 
 
 def create_course(sender, **kwargs):
     """When a user is created, a profile is also created"""
     if kwargs['created']:
-        course = Course.objects.create(user=kwargs['instance'])
+        course = kwargs['instance']
         course.course_path = course.pk
+        course_status = CourseStatus.objects.filter(name="В разработке")[0]
+        course.status = course_status
         course.save()
 
 
