@@ -2,7 +2,8 @@ from django.contrib import admin
 from .models import Profile, Subscription, \
     CourseStatus, Course, \
     CourseInfo, CourseFit, CourseStars, CourseSkill, \
-    Theme, Lesson, Step
+    Theme, Lesson, Step, \
+    ProfileCourseStatus, ProfileCourse, ProfileTheme
 
 
 # Register your models here.
@@ -25,3 +26,8 @@ admin.site.register(CourseSkill)
 admin.site.register(Theme)
 admin.site.register(Lesson)
 admin.site.register(Step)
+
+# Profile to Course START
+admin.site.register(ProfileCourseStatus)
+admin.site.register(ProfileCourse)
+admin.site.register(ProfileTheme)

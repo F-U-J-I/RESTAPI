@@ -157,4 +157,46 @@ class Step(models.Model):
     def __str__(self):
         return f"{self.lesson.theme.course.profile.user.username}: {self.lesson.theme.course.title}: {self.lesson.theme.title}: {self.lesson.title}: {self.title} [Step]"
 
+
 # ------------ Content Course END ----------------
+
+# ------------ Profile to Course START --------------
+class ProfileCourseStatus(models.Model):
+    """Status Profile to Course: Dev, Release"""
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return f"{self.name}"
+
+
+class ProfileCourse(models.Model):
+    """ProfileCourse"""
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    status = models.ForeignKey(ProfileCourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
+    progress = models.IntegerField(default=0)
+    date_added = models.DateField(default=datetime.date.today)
+
+    def __str__(self):
+        return f"\"{self.profile.user.username}\" to \"{self.course.title}\""
+
+
+def create_profile_to_course(sender, **kwargs):
+    """When a ProfileCourse is created, autofill fields"""
+    if kwargs['created']:
+        profile_course = kwargs['instance']
+        profile_course_status = ProfileCourseStatus.objects.filter(name="Изучается")[0]
+        profile_course.status = profile_course_status
+        profile_course.save()
+
+
+post_save.connect(create_profile_to_course, sender=ProfileCourse)
+
+
+class ProfileTheme(models.Model):
+    """ProfileCourse"""
+    theme = models.ForeignKey(Theme, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"\"{self.profile.user.username}\" to \"{self.theme.course.title}: {self.theme.title}\""
