@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='profilecourse',
             name='point',
-            field=models.IntegerField(blank=True, default=datetime.datetime(2022, 5, 21, 17, 3, 29, 854797, tzinfo=utc)),
+            field=models.IntegerField(blank=True, default=1),
             preserve_default=False,
         ),
         migrations.AlterField(
