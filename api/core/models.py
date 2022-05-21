@@ -57,7 +57,7 @@ class Course(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     avatar_url = models.ImageField(default="course-default.svg")
     duration_in_minutes = models.IntegerField(default=0)
-    rating = models.FloatField(default=0.)
+    rating = models.FloatField(blank=True)
     members_amount = models.IntegerField(default=0)
     max_progress_points = models.IntegerField(default=0)
     status = models.ForeignKey(CourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
@@ -175,6 +175,7 @@ class ProfileCourse(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     status = models.ForeignKey(ProfileCourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
     progress = models.IntegerField(default=0)
+    point = models.IntegerField(blank=True, default=0)
     date_added = models.DateField(default=datetime.date.today)
 
     def __str__(self):
@@ -253,7 +254,7 @@ class Collection(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     image_url = models.ImageField(default="collection-default.svg")
     wallpaper = models.ImageField(blank=True)
-    rating = models.FloatField(default=0.)
+    rating = models.FloatField(blank=True)
     members_amount = models.IntegerField(default=0)
     date_create = models.DateField(default=datetime.date.today)
     path = models.CharField(max_length=64, blank=True)
