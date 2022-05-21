@@ -112,7 +112,7 @@ class CourseStars(models.Model):
     five_stars_count = models.IntegerField(default=0)
 
     def __str__(self):
-        return f"{self.course_info.course.profile.user.username}: {self.course_info.course.title} [Stars]"
+        return f"{self.course_info.course.profile.user.username}: {self.course_info.course.title} [Course Stars]"
 
 
 class CourseSkill(models.Model):
@@ -245,8 +245,8 @@ post_save.connect(create_profile_to_course, sender=ProfileStep)
 # -------- Profile to Course END ------------
 # ############## COURSE END #################
 
+
 # ########### COLLECTION START ##############
-# ----------- Collection START --------------
 class Collection(models.Model):
     """Collection"""
     title = models.CharField(max_length=64)
@@ -284,3 +284,17 @@ class ProfileCollection(models.Model):
     def __str__(self):
         return f"\"{self.profile.user.username}\" to \"{self.collection.title}\" [Profile to Collection]"
 
+
+class CollectionStars(models.Model):
+    """CollectionStars"""
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
+    one_stars_count = models.IntegerField(default=0)
+    two_stars_count = models.IntegerField(default=0)
+    three_stars_count = models.IntegerField(default=0)
+    four_stars_count = models.IntegerField(default=0)
+    five_stars_count = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.collection.profile.user.username}: {self.collection.title} [CollectionStars]"
+
+# ############ COLLECTION END ###############
