@@ -93,3 +93,14 @@ class CourseFit(models.Model):
     course_info = models.ForeignKey(CourseInfo, on_delete=models.CASCADE)
     title = models.CharField(max_length=32)
     description = models.TextField(max_length=256)
+
+
+class CourseStars(models.Model):
+    """CourseStars"""
+    course_info = models.ForeignKey(CourseInfo, on_delete=models.CASCADE)
+    one_stars_count = models.IntegerField(default=0)
+    two_stars_count = models.IntegerField(default=0)
+    three_stars_count = models.IntegerField(default=0)
+    four_stars_count = models.IntegerField(default=0)
+    five_stars_count = models.IntegerField(default=0)
+
