@@ -200,3 +200,12 @@ class ProfileTheme(models.Model):
 
     def __str__(self):
         return f"\"{self.profile.user.username}\" to \"{self.theme.course.title}: {self.theme.title}\""
+
+
+class ProfileLesson(models.Model):
+    """ProfileCourse"""
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"\"{self.profile.user.username}\" to \"{self.lesson.theme.course.title}: {self.lesson.theme.title}: {self.lesson.title}\""
