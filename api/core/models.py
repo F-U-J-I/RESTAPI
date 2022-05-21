@@ -162,11 +162,11 @@ class Step(models.Model):
 
 # ------------ Profile to Course START --------------
 class ProfileCourseStatus(models.Model):
-    """Status Profile to Course: Dev, Release"""
+    """Status Profile to Course: Being studied, Completed"""
     name = models.CharField(max_length=64)
 
     def __str__(self):
-        return f"{self.name}"
+        return f"{self.name} [Status Profile to Course]"
 
 
 class ProfileCourse(models.Model):
@@ -194,7 +194,7 @@ post_save.connect(create_profile_to_course, sender=ProfileCourse)
 
 
 class ProfileTheme(models.Model):
-    """ProfileCourse"""
+    """ProfileTheme"""
     theme = models.ForeignKey(Theme, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
 
@@ -203,9 +203,39 @@ class ProfileTheme(models.Model):
 
 
 class ProfileLesson(models.Model):
-    """ProfileCourse"""
+    """ProfileLesson"""
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"\"{self.profile.user.username}\" to \"{self.lesson.theme.course.title}: {self.lesson.theme.title}: {self.lesson.title}\""
+
+
+class ProfileStepStatus(models.Model):
+    """Status Profile to Step course: Being studied, Completed"""
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return f"{self.name} [Status Profile to Step course]"
+
+
+class ProfileStep(models.Model):
+    """ProfileStep"""
+    step = models.ForeignKey(Step, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    status = models.ForeignKey(ProfileStepStatus, blank=True, null=True, on_delete=models.SET_NULL)
+
+    def __str__(self):
+        return f"\"{self.profile.user.username}\" to \"{self.step.lesson.theme.course.title}: {self.step.lesson.theme.title}: {self.step.lesson.title}: {self.step.title}\""
+
+
+def create_profile_to_course(sender, **kwargs):
+    """When a ProfileStep is created, autofill fields"""
+    if kwargs['created']:
+        profile_step = kwargs['instance']
+        profile_step_status = ProfileStepStatus.objects.filter(name="Изучается")[0]
+        profile_step.status = profile_step_status
+        profile_step.save()
+
+
+post_save.connect(create_profile_to_course, sender=ProfileStep)

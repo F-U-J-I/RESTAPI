@@ -3,7 +3,7 @@ from .models import Profile, Subscription, \
     CourseStatus, Course, \
     CourseInfo, CourseFit, CourseStars, CourseSkill, \
     Theme, Lesson, Step, \
-    ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson
+    ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson, ProfileStepStatus, ProfileStep
 
 
 # Register your models here.
@@ -32,3 +32,5 @@ admin.site.register(ProfileCourseStatus)
 admin.site.register(ProfileCourse)
 admin.site.register(ProfileTheme)
 admin.site.register(ProfileLesson)
+admin.site.register(ProfileStepStatus)
+admin.site.register(ProfileStep)
