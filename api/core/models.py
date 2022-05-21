@@ -1,5 +1,6 @@
 import datetime
 
+from ckeditor_uploader.fields import RichTextUploadingField
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
@@ -64,7 +65,7 @@ class Course(models.Model):
     course_path = models.CharField(max_length=32, blank=True)
 
     def __str__(self):
-        return f'{self.profile.user.username}: {self.title}'
+        return f'{self.profile.user.username}: {self.title}  [Course]'
 
 
 def create_course(sender, **kwargs):
@@ -84,8 +85,11 @@ post_save.connect(create_course, sender=Course)
 class CourseInfo(models.Model):
     """CourseInfo"""
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    title_image = models.ImageField(blank=True)
+    title_image_url = models.ImageField(blank=True)
     goal_description = models.TextField()
+
+    def __str__(self):
+        return f"{self.course.profile.user.username}: {self.course.title} [Info]"
 
 
 class CourseFit(models.Model):
@@ -93,6 +97,9 @@ class CourseFit(models.Model):
     course_info = models.ForeignKey(CourseInfo, on_delete=models.CASCADE)
     title = models.CharField(max_length=32)
     description = models.TextField(max_length=256)
+
+    def __str__(self):
+        return f"{self.course_info.course.profile.user.username}: {self.course_info.course.title}: {self.title} [Fit]"
 
 
 class CourseStars(models.Model):
@@ -104,9 +111,42 @@ class CourseStars(models.Model):
     four_stars_count = models.IntegerField(default=0)
     five_stars_count = models.IntegerField(default=0)
 
+    def __str__(self):
+        return f"{self.course_info.course.profile.user.username}: {self.course_info.course.title} [Stars]"
+
 
 class CourseSkill(models.Model):
     """CourseSkill"""
     course_info = models.ForeignKey(CourseInfo, on_delete=models.CASCADE)
     name = models.CharField(max_length=64)
 
+    def __str__(self):
+        return f"{self.course_info.course.profile.user.username}: {self.course_info.course.title}: {self.name} [Skill]"
+
+
+# -------------- Page Course END -----------------
+
+
+# ------------ Content Course START --------------
+class Theme(models.Model):
+    """The Course consists of Theme"""
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    title = models.CharField(max_length=64)
+    image_url = models.ImageField(blank=True)
+
+
+class Lesson(models.Model):
+    """The Theme consists of Lesson"""
+    theme = models.ForeignKey(Theme, on_delete=models.CASCADE)
+    title = models.CharField(max_length=64)
+    image_url = models.ImageField(blank=True)
+
+
+class Step(models.Model):
+    """The Lesson consists of Step"""
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    title = models.CharField(max_length=64)
+    content = RichTextUploadingField(blank=True)
+
+
+# ------------ Content Course END ----------------
