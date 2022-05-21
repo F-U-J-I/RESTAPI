@@ -43,7 +43,7 @@ class Subscription(models.Model):
 # ############## COURSE START ###############
 class CourseStatus(models.Model):
     """Status Course: Dev, Release"""
-    name = models.CharField(max_length=128)
+    name = models.CharField(max_length=64)
 
     def __str__(self):
         return f'{self.name}'
@@ -271,3 +271,15 @@ def create_collection(sender, **kwargs):
 
 
 post_save.connect(create_collection, sender=Collection)
+
+
+class ProfileCollection(models.Model):
+    """ProfileCollection"""
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    point = models.IntegerField(blank=True)
+    date_added = models.DateField(default=datetime.date.today)
+
+    def __str__(self):
+        return f"\"{self.profile.user.username}\" to \"{self.collection.title}\" [Profile to Collection]"
+
