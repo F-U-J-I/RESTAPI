@@ -9,7 +9,7 @@ from django.db.models.signals import post_save
 class Profile(models.Model):
     """Advanced User"""
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    user_path = models.CharField(max_length=32)
+    path = models.CharField(max_length=64)
     avatar_url = models.ImageField(default="profile-default.jpg")
     wrapper_url = models.ImageField(blank=True)
 
@@ -21,7 +21,7 @@ def create_profile(sender, **kwargs):
     """When a user is created, a profile is also created"""
     if kwargs['created']:
         profile = Profile.objects.create(user=kwargs['instance'])
-        profile.user_path = profile.pk
+        profile.path = profile.pk
         profile.save()
 
 
@@ -62,7 +62,7 @@ class Course(models.Model):
     max_progress_points = models.IntegerField(default=0)
     status = models.ForeignKey(CourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
     date_create = models.DateField(default=datetime.date.today)
-    course_path = models.CharField(max_length=32, blank=True)
+    path = models.CharField(max_length=64, blank=True)
 
     def __str__(self):
         return f'{self.profile.user.username}: {self.title}  [Course]'
@@ -72,7 +72,7 @@ def create_course(sender, **kwargs):
     """When a course is created, autofill fields"""
     if kwargs['created']:
         course = kwargs['instance']
-        course.course_path = course.pk
+        course.path = course.pk
         course_status = CourseStatus.objects.filter(name="В разработке")[0]
         course.status = course_status
         course.save()
@@ -239,3 +239,35 @@ def create_profile_to_course(sender, **kwargs):
 
 
 post_save.connect(create_profile_to_course, sender=ProfileStep)
+
+
+# -------- Profile to Course END ------------
+# ############## COURSE END #################
+
+# ########### COLLECTION START ##############
+# ----------- Collection START --------------
+class Collection(models.Model):
+    """Collection"""
+    title = models.CharField(max_length=64)
+    description = models.TextField(max_length=512, blank=True)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    image_url = models.ImageField(default="collection-default.svg")
+    wallpaper = models.ImageField(blank=True)
+    rating = models.FloatField(default=0.)
+    members_amount = models.IntegerField(default=0)
+    date_create = models.DateField(default=datetime.date.today)
+    path = models.CharField(max_length=64, blank=True)
+
+    def __str__(self):
+        return f'{self.profile.user.username}: {self.title}  [Collection]'
+
+
+def create_collection(sender, **kwargs):
+    """When a Collection is created, autofill fields"""
+    if kwargs['created']:
+        collection = kwargs['instance']
+        collection.path = collection.pk
+        collection.save()
+
+
+post_save.connect(create_collection, sender=Collection)
