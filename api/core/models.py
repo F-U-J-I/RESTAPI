@@ -1,7 +1,8 @@
-from django.db import models
-from django.contrib.auth.models import User
-from django.db.models.signals import post_save
 import datetime
+
+from django.contrib.auth.models import User
+from django.db import models
+from django.db.models.signals import post_save
 
 
 class Profile(models.Model):
@@ -38,6 +39,7 @@ class Subscription(models.Model):
         return f'{self.subscriber.user.username} => {self.goal.user.username}'
 
 
+# ############## COURSE START ###############
 class CourseStatus(models.Model):
     """Status Course: Dev, Release"""
     name = models.CharField(max_length=128)
@@ -78,7 +80,16 @@ def create_course(sender, **kwargs):
 post_save.connect(create_course, sender=Course)
 
 
+# -------------- Page Course START ---------------
 class CourseInfo(models.Model):
+    """CourseInfo"""
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     title_image = models.ImageField(blank=True)
     goal_description = models.TextField()
+
+
+class CourseFit(models.Model):
+    """CourseFit"""
+    course_info = models.ForeignKey(CourseInfo, on_delete=models.CASCADE)
+    title = models.CharField(max_length=32)
+    description = models.TextField(max_length=256)
