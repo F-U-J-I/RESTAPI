@@ -134,12 +134,18 @@ class Theme(models.Model):
     title = models.CharField(max_length=64)
     image_url = models.ImageField(blank=True)
 
+    def __str__(self):
+        return f"{self.course.profile.user.username}: {self.course.title}: {self.title} [Theme]"
+
 
 class Lesson(models.Model):
     """The Theme consists of Lesson"""
     theme = models.ForeignKey(Theme, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
     image_url = models.ImageField(blank=True)
+
+    def __str__(self):
+        return f"{self.theme.course.profile.user.username}: {self.theme.course.title}: {self.theme.title}: {self.title} [Lesson]"
 
 
 class Step(models.Model):
@@ -148,5 +154,7 @@ class Step(models.Model):
     title = models.CharField(max_length=64)
     content = RichTextUploadingField(blank=True)
 
+    def __str__(self):
+        return f"{self.lesson.theme.course.profile.user.username}: {self.lesson.theme.course.title}: {self.lesson.theme.title}: {self.lesson.title}: {self.title} [Step]"
 
 # ------------ Content Course END ----------------
