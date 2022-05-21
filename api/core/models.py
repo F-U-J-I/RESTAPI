@@ -23,3 +23,11 @@ def create_profile(sender, **kwargs):
 
 
 post_save.connect(create_profile, sender=User)
+
+
+class Subscription(models.Model):
+    goal = models.ForeignKey(Profile, related_name="goal", on_delete=models.CASCADE)
+    subscriber = models.ForeignKey(Profile, related_name="subscriber", on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.subscriber.user.username} => {self.goal.user.username}'
