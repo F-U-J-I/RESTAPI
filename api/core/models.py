@@ -104,3 +104,9 @@ class CourseStars(models.Model):
     four_stars_count = models.IntegerField(default=0)
     five_stars_count = models.IntegerField(default=0)
 
+
+class CourseSkill(models.Model):
+    """CourseSkill"""
+    course_info = models.ForeignKey(CourseInfo, on_delete=models.CASCADE)
+    name = models.CharField(max_length=64)
+
