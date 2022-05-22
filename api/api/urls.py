@@ -5,6 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+    path('api/', include('core.urls')),
     path('admin/', admin.site.urls),
     path('api/token/', TokenObtainPairView.as_view(), name="token"),
     path('api/refresh_token/', TokenRefreshView.as_view(), name="refresh_token"),

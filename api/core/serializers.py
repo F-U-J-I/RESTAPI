@@ -27,24 +27,16 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
 
-        profile = Profile(user=user)
-        profile.save()
-
-        return profile
+        return user
 
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = '__all__'
+        fields = ('id', 'path', 'avatar_url', 'wrapper_url')
 
 
 class UserSerializer(serializers.ModelSerializer):
-    profile = serializers.SerializerMethodField()
-
     class Meta:
         model = User
-        fields = '__all__'
-
-    def get_profile(self, user):
-        return ProfileSerializer(user.profile).data
+        fields = ('id', 'username', 'email', 'password')
