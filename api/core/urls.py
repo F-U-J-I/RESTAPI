@@ -14,5 +14,6 @@ urlpatterns = [
     path('password-reset/<uidb64>/<token>/', PasswordTokenCheckAPI.as_view(), name="password-reset-confirm"),
     path('password-reset-complete/', SetNewPasswordAPIView.as_view(), name="password-reset-complete"),
     path('catalog/', CollectionView.as_view({'get': 'list'})),
+    path('collection/<slug:path>/', CollectionView.as_view({'get': 'retrieve'})),
     path('profile/<slug:path>/', ProfileView.as_view()),
 ]

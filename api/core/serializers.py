@@ -122,7 +122,7 @@ class MiniPreviewCourse(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ('title', 'description', 'author', 'avatar_url', 'rating', 'members_amount')
+        fields = ('title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount')
 
     def get_author(self, collection):
         return collection.profile.user.username
@@ -151,9 +151,31 @@ class ItemCollectionSerializer(serializers.ModelSerializer):
         for item in courses_to_collection:
             if item.course.status.name == 'Опубликован':
                 courses.append(MiniPreviewCourse(item.course).data)
+        courses = sorted(courses, key=lambda x: x['rating'])[:5]
         return courses
 
     # def get_is_added(self, collection):
     #     profiles_to_collection = CourseCollection.objects.filter(collection=collection, profile)
-    #     if profile_to_collection.date_
+        # if profile_to_collection.date_
 
+
+class DetailCollectionSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
+    courses = serializers.SerializerMethodField()
+    is_added = serializers.BooleanField(default=False)
+
+    class Meta:
+        model = Collection
+        fields = ('title', 'author', 'wallpaper', 'image_url', 'members_amount', 'rating', 'courses', 'is_added')
+
+    def get_author(self, collection):
+        return ProfileAsAuthor(collection.profile).data
+
+    def get_courses(self, collection):
+        courses_to_collection = CourseCollection.objects.filter(collection=collection)
+        courses = list()
+        for item in courses_to_collection:
+            if item.course.status.name == 'Опубликован':
+                courses.append(MiniPreviewCourse(item.course).data)
+        courses = sorted(courses, key=lambda x: x['rating'])[:5]
+        return courses

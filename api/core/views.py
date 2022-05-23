@@ -188,15 +188,17 @@ class CollectionView(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return serializers.ItemCollectionSerializer
-        # elif self.action == 'retrieve':
-        #     return CourseInfoSerializer
+        elif self.action == 'retrieve':
+            return serializers.DetailCollectionSerializer
 
-    def get(self, request, path):
-        profile = Profile.objects.get(path=path)
-        return Response({
-            'profile': serializers.ProfileSerializer(profile, context=self.get_serializer_context()).data,
-            'user': serializers.UserSerializer(profile.user, context=self.get_serializer_context()).data,
-        })
+    def retrieve(self, request, path=None, *args, **kwargs):
+        collection = Collection.objects.get(path=path)
+        # serializer = serializers.DetailCollectionSerializer(collection)
+        # course_info = serializer.get_info(course.pk)
+        # modules = Module.objects.filter(course_id=course.pk)
+        # module_serializer = ModuleWholeSerializer(modules, many=True)
+        # return Response(serializers.DetailCollectionSerializer(collection, context=self.get_serializer_context())).data
+        return Response(serializers.DetailCollectionSerializer(collection, context=self.get_serializer_context()).data)
 
 
 class ProfileView(generics.GenericAPIView):
