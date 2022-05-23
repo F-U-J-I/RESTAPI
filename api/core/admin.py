@@ -1,10 +1,42 @@
 from django.contrib import admin
-from .models import Profile, Subscription, CourseStatus, Course
+
+from .models import Profile, Subscription, \
+    CourseStatus, Course, \
+    CourseInfo, CourseFit, CourseStars, CourseSkill, \
+    Theme, Lesson, Step, \
+    ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson, ProfileStepStatus, ProfileStep, \
+    Collection, ProfileCollection, CollectionStars
 
 # Register your models here.
 
+# PROFILE
 admin.site.register(Profile)
 admin.site.register(Subscription)
 
+# COURSE
 admin.site.register(CourseStatus)
 admin.site.register(Course)
+
+# Page COURSE
+admin.site.register(CourseInfo)
+admin.site.register(CourseFit)
+admin.site.register(CourseStars)
+admin.site.register(CourseSkill)
+
+# Content COURSE
+admin.site.register(Theme)
+admin.site.register(Lesson)
+admin.site.register(Step)
+
+# Profile to Course START
+admin.site.register(ProfileCourseStatus)
+admin.site.register(ProfileCourse)
+admin.site.register(ProfileTheme)
+admin.site.register(ProfileLesson)
+admin.site.register(ProfileStepStatus)
+admin.site.register(ProfileStep)
+
+# Collection
+admin.site.register(Collection)
+admin.site.register(ProfileCollection)
+admin.site.register(CollectionStars)
