@@ -58,7 +58,7 @@ class Course(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     avatar_url = models.ImageField(default="course-default.svg")
     duration_in_minutes = models.IntegerField(default=0)
-    rating = models.FloatField(blank=True)
+    rating = models.FloatField(default=0)
     members_amount = models.IntegerField(default=0)
     max_progress_points = models.IntegerField(default=0)
     status = models.ForeignKey(CourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
@@ -255,7 +255,7 @@ class Collection(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     image_url = models.ImageField(default="collection-default.svg")
     wallpaper = models.ImageField(blank=True)
-    rating = models.FloatField(blank=True)
+    rating = models.FloatField(default=0)
     members_amount = models.IntegerField(default=0)
     date_create = models.DateField(default=datetime.date.today)
     path = models.CharField(max_length=64, blank=True)
@@ -280,6 +280,9 @@ class CourseCollection(models.Model):
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     date_added = models.DateField(default=datetime.date.today)
+
+    def __str__(self):
+        return f"\"{self.course.title}\" to \"{self.collection.title}\" [Course to Collection]"
 
 
 class ProfileCollection(models.Model):

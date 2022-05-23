@@ -5,7 +5,7 @@ from .models import Profile, Subscription, \
     CourseInfo, CourseFit, CourseStars, CourseSkill, \
     Theme, Lesson, Step, \
     ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson, ProfileStepStatus, ProfileStep, \
-    Collection, ProfileCollection, CollectionStars
+    Collection, CourseCollection, ProfileCollection, CollectionStars
 
 # Register your models here.
 
@@ -38,5 +38,6 @@ admin.site.register(ProfileStep)
 
 # Collection
 admin.site.register(Collection)
+admin.site.register(CourseCollection)
 admin.site.register(ProfileCollection)
 admin.site.register(CollectionStars)

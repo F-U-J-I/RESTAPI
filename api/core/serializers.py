@@ -5,7 +5,7 @@ from django.utils.encoding import smart_str, force_str, smart_bytes, DjangoUnico
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 from django.contrib.auth.models import User
-from .models import Profile
+from .models import Profile, Collection, Course, ProfileCollection, CourseCollection
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -36,6 +36,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     """Profile"""
+
     class Meta:
         model = Profile
         fields = ('id', 'path', 'avatar_url', 'wrapper_url')
@@ -43,13 +44,26 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     """User"""
+
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'password')
 
 
+class ProfileAsAuthor(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Profile
+        fields = ('username', 'avatar_url')
+
+    def get_username(self, profile):
+        return profile.user.username
+
+
 class RequestPasswordResetEmailSerializer(serializers.ModelSerializer):
     """Восстановление пароля по Email."""
+
     class Meta:
         model = User
         fields = 'email'
@@ -88,3 +102,53 @@ class SetNewPasswordSerializer(serializers.ModelSerializer):
         except Exception:
             raise Exception("AuthenticationFailed", "The reset link is invalid", 401)
         return super().validate(attrs)
+
+
+class HeaderCollectionSerializer(serializers.ModelSerializer):
+    """Header Collection"""
+    author = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Collection
+        fields = ('title', 'author', 'image_url', 'rating')
+
+    def get_author(self, collection):
+        return ProfileAsAuthor(collection.profile).data
+
+
+class MiniPreviewCourse(serializers.ModelSerializer):
+    """Мини курс"""
+    author = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Course
+        fields = ('title', 'description', 'author', 'avatar_url', 'rating', 'members_amount')
+
+    def get_author(self, collection):
+        return collection.profile.user.username
+
+
+class ItemCollectionSerializer(serializers.ModelSerializer):
+    """
+    Item Collection.
+    Есть на странице каталога.
+    Содержит: Подборки; Курсы в этой подборке; Добавил ли себе пользователь эту подборку
+    """
+    author = serializers.SerializerMethodField()
+    courses = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Collection
+        fields = ('title', 'author', 'image_url', 'rating', 'courses')
+
+    def get_author(self, collection):
+        return ProfileAsAuthor(collection.profile).data
+
+    def get_courses(self, collection):
+        courses_to_collection = CourseCollection.objects.filter(collection=collection)
+        courses = list()
+        for item in courses_to_collection:
+            if item.course.status.name == 'Опубликован':
+                courses.append(MiniPreviewCourse(item.course).data)
+        return courses
+

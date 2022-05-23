@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from rest_framework import permissions, generics, status
+from rest_framework import permissions, generics, status, viewsets, pagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.urls import reverse
@@ -10,7 +10,7 @@ from django.utils.encoding import smart_str, force_str, smart_bytes, DjangoUnico
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 from . import serializers
-from .models import Profile
+from .models import Profile, Collection
 from .utils import Util
 
 
@@ -83,19 +83,6 @@ class VerifyEmailView(generics.GenericAPIView):
             },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-
-class ProfileView(generics.GenericAPIView):
-    lookup_field = 'slug'
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = serializers.ProfileSerializer
-
-    def get(self, request, path):
-        profile = Profile.objects.get(path=path)
-        return Response({
-            'profile': serializers.ProfileSerializer(profile, context=self.get_serializer_context()).data,
-            'user': serializers.UserSerializer(profile.user, context=self.get_serializer_context()).data,
-        })
 
 
 class RequestPasswordResetEmailView(generics.GenericAPIView):
@@ -189,6 +176,42 @@ class SetNewPasswordAPIView(generics.GenericAPIView):
         },
             status=status.HTTP_200_OK,
         )
+
+
+class CollectionView(viewsets.ModelViewSet):
+    """Коллекция"""
+    lookup_field = 'slug'
+    queryset = Collection.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = serializers.ProfileSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return serializers.ItemCollectionSerializer
+        # elif self.action == 'retrieve':
+        #     return CourseInfoSerializer
+
+    def get(self, request, path):
+        profile = Profile.objects.get(path=path)
+        return Response({
+            'profile': serializers.ProfileSerializer(profile, context=self.get_serializer_context()).data,
+            'user': serializers.UserSerializer(profile.user, context=self.get_serializer_context()).data,
+        })
+
+
+class ProfileView(generics.GenericAPIView):
+    """Profile"""
+    lookup_field = 'slug'
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = serializers.ProfileSerializer
+
+    def get(self, request, path):
+        profile = Profile.objects.get(path=path)
+        return Response({
+            'profile': serializers.ProfileSerializer(profile, context=self.get_serializer_context()).data,
+            'user': serializers.UserSerializer(profile.user, context=self.get_serializer_context()).data,
+        })
+
 
 # class CourseViewSet(viewsets.ModelViewSet):
 #     lookup_field = 'slug'
