@@ -275,6 +275,13 @@ def create_collection(sender, **kwargs):
 post_save.connect(create_collection, sender=Collection)
 
 
+class CourseCollection(models.Model):
+    """CourseCollection"""
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    date_added = models.DateField(default=datetime.date.today)
+
+
 class ProfileCollection(models.Model):
     """ProfileCollection"""
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
