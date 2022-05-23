@@ -177,3 +177,14 @@ CKEDITOR_CONFIGS = {
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+#####################################
+#   ##  EMAIL CONFIGURATION ##
+#####################################
+
+EMAIL_HOST = 'smtp.yandex.ru'
+EMAIL_PORT = 465
+EMAIL_HOST_USER = "teamfuji@yandex.ru"
+EMAIL_HOST_PASSWORD = "okfcfamylceyvxth"
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = True
