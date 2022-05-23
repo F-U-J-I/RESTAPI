@@ -290,7 +290,7 @@ class ProfileCollection(models.Model):
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     point = models.IntegerField(blank=True, null=True)
-    date_added = models.DateField(default=datetime.date.today)
+    date_added = models.DateField(default=datetime.date.today, blank=True, null=True)
 
     def __str__(self):
         return f"\"{self.profile.user.username}\" to \"{self.collection.title}\" [Profile to Collection]"

@@ -136,10 +136,11 @@ class ItemCollectionSerializer(serializers.ModelSerializer):
     """
     author = serializers.SerializerMethodField()
     courses = serializers.SerializerMethodField()
+    is_added = serializers.BooleanField(default=False)
 
     class Meta:
         model = Collection
-        fields = ('title', 'author', 'image_url', 'rating', 'courses')
+        fields = ('title', 'author', 'image_url', 'rating', 'courses', 'is_added')
 
     def get_author(self, collection):
         return ProfileAsAuthor(collection.profile).data
@@ -151,4 +152,8 @@ class ItemCollectionSerializer(serializers.ModelSerializer):
             if item.course.status.name == 'Опубликован':
                 courses.append(MiniPreviewCourse(item.course).data)
         return courses
+
+    # def get_is_added(self, collection):
+    #     profiles_to_collection = CourseCollection.objects.filter(collection=collection, profile)
+    #     if profile_to_collection.date_
 
