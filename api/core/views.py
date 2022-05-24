@@ -58,8 +58,6 @@ class VerifyEmailView(generics.GenericAPIView):
         token = request.GET.get('token')
         try:
             payload = jwt.decode(token, settings.SECRET_KEY)
-            print(payload)
-            print(payload['user_id'])
             profile = Profile.objects.get(user=payload['user_id'])
             if not profile.is_verified:
                 profile.is_verified = True
@@ -191,14 +189,22 @@ class CollectionView(viewsets.ModelViewSet):
         elif self.action == 'retrieve':
             return serializers.DetailCollectionSerializer
 
+    def list(self, request, *args, **kwargs):
+        collections = Collection.objects.all()
+        serializer_collections = list()
+        profile = Profile.objects.get(user=self.request.user)
+        for collection in collections:
+            serializer_collection = serializers.ItemCollectionSerializer(collection).data
+            serializer_collection['is_added'] = serializers.ItemCollectionSerializer.get_is_added(collection, profile)
+            serializer_collections.append(serializer_collection)
+        return Response(serializer_collections)
+
     def retrieve(self, request, path=None, *args, **kwargs):
         collection = Collection.objects.get(path=path)
-        # serializer = serializers.DetailCollectionSerializer(collection)
-        # course_info = serializer.get_info(course.pk)
-        # modules = Module.objects.filter(course_id=course.pk)
-        # module_serializer = ModuleWholeSerializer(modules, many=True)
-        # return Response(serializers.DetailCollectionSerializer(collection, context=self.get_serializer_context())).data
-        return Response(serializers.DetailCollectionSerializer(collection, context=self.get_serializer_context()).data)
+        serializer_collection = serializers.DetailCollectionSerializer(collection).data
+        profile = Profile.objects.get(user=self.request.user)
+        serializer_collection['is_added'] = serializers.DetailCollectionSerializer.get_is_added(collection, profile)
+        return Response(serializer_collection)
 
 
 class ProfileView(generics.GenericAPIView):
@@ -213,7 +219,6 @@ class ProfileView(generics.GenericAPIView):
             'profile': serializers.ProfileSerializer(profile, context=self.get_serializer_context()).data,
             'user': serializers.UserSerializer(profile.user, context=self.get_serializer_context()).data,
         })
-
 
 # class CourseViewSet(viewsets.ModelViewSet):
 #     lookup_field = 'slug'

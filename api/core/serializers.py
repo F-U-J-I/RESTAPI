@@ -142,10 +142,12 @@ class ItemCollectionSerializer(serializers.ModelSerializer):
         model = Collection
         fields = ('title', 'author', 'image_url', 'rating', 'courses', 'is_added')
 
-    def get_author(self, collection):
+    @staticmethod
+    def get_author(collection):
         return ProfileAsAuthor(collection.profile).data
 
-    def get_courses(self, collection):
+    @staticmethod
+    def get_courses(collection):
         courses_to_collection = CourseCollection.objects.filter(collection=collection)
         courses = list()
         for item in courses_to_collection:
@@ -154,9 +156,12 @@ class ItemCollectionSerializer(serializers.ModelSerializer):
         courses = sorted(courses, key=lambda x: x['rating'])[:5]
         return courses
 
-    # def get_is_added(self, collection):
-    #     profiles_to_collection = CourseCollection.objects.filter(collection=collection, profile)
-        # if profile_to_collection.date_
+    @staticmethod
+    def get_is_added(collection, auth_profile):
+        profile_to_collection = ProfileCollection.objects.filter(collection=collection, profile=auth_profile)
+        if profile_to_collection:
+            return True
+        return False
 
 
 class DetailCollectionSerializer(serializers.ModelSerializer):
@@ -168,14 +173,23 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
         model = Collection
         fields = ('title', 'author', 'wallpaper', 'image_url', 'members_amount', 'rating', 'courses', 'is_added')
 
-    def get_author(self, collection):
+    @staticmethod
+    def get_author(collection):
         return ProfileAsAuthor(collection.profile).data
 
-    def get_courses(self, collection):
+    @staticmethod
+    def get_courses(collection):
         courses_to_collection = CourseCollection.objects.filter(collection=collection)
         courses = list()
         for item in courses_to_collection:
             if item.course.status.name == 'Опубликован':
                 courses.append(MiniPreviewCourse(item.course).data)
-        courses = sorted(courses, key=lambda x: x['rating'])[:5]
+        # courses = sorted(courses, key=lambda x: x['rating'])[:5]
         return courses
+
+    @staticmethod
+    def get_is_added(collection, auth_profile):
+        profile_to_collection = ProfileCollection.objects.filter(collection=collection, profile=auth_profile)
+        if profile_to_collection:
+            return True
+        return False
