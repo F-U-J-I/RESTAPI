@@ -195,7 +195,8 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = ('title', 'author', 'wallpaper', 'image_url', 'members_amount', 'rating', 'courses', 'is_added')
+        fields = ('title', 'author', 'description', 'wallpaper', 'image_url', 'members_amount', 'rating', 'courses',
+                  'is_added')
 
     @staticmethod
     def get_author(collection):
@@ -217,3 +218,42 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
         if profile_to_collection:
             return True
         return False
+
+
+class EditDetailCollectionSerializer(serializers.ModelSerializer):
+    # image_url = serializers.ImageField(_DjangoImageField=SVG)
+    collection_pk = serializers.IntegerField(write_only=True, required=False)
+
+    class Meta:
+        model = Collection
+        fields = ('title', 'description', 'wallpaper', 'image_url', 'path', 'collection_pk')
+
+    # def update_path(self, path):
+    #
+
+    def validate(self, attrs):
+        collection = Collection.objects.get(pk=attrs.get('collection_pk'))
+
+        title = attrs.get('title')
+        if title != 0 and title != collection.title:
+            collection.title = title
+
+        description = attrs.get('description', 0)
+        if description != 0 and description != collection.description:
+            collection.description = description
+
+        wallpaper = attrs.get('wallpaper', 0)
+        if wallpaper != 0 and wallpaper != collection.wallpaper:
+            collection.wallpaper = wallpaper
+
+        image_url = attrs.get('image_url', 0)
+        if image_url != 0 and image_url != collection.image_url:
+            collection.image_url = image_url
+
+        image_url = attrs.get('image_url', 0)
+        if image_url != 0 and image_url != collection.image_url:
+            collection.image_url = image_url
+
+        collection.save()
+
+        return super().validate(attrs)

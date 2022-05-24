@@ -2,6 +2,7 @@ import datetime
 
 from ckeditor_uploader.fields import RichTextUploadingField
 from django.contrib.auth.models import User
+from django.core.validators import validate_image_file_extension
 from django.db import models
 from django.db.models.signals import post_save
 
@@ -9,8 +10,8 @@ from django.db.models.signals import post_save
 class Profile(models.Model):
     """Advanced User"""
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    path = models.CharField(max_length=64)
-    avatar_url = models.ImageField(default="profile-default.jpg")
+    path = models.CharField(max_length=64, unique=True)
+    avatar_url = models.ImageField(blank=True, null=True)
     wrapper_url = models.ImageField(blank=True)
     is_verified = models.BooleanField(default=False)
 
@@ -56,14 +57,14 @@ class Course(models.Model):
     description = models.TextField(max_length=175, blank=True)
     price = models.IntegerField(default=0)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    avatar_url = models.ImageField(default="course-default.svg")
+    avatar_url = models.ImageField(blank=True, null=True)
     duration_in_minutes = models.IntegerField(default=0)
     rating = models.FloatField(default=0)
     members_amount = models.IntegerField(default=0)
     max_progress_points = models.IntegerField(default=0)
     status = models.ForeignKey(CourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
     date_create = models.DateField(default=datetime.date.today)
-    path = models.CharField(max_length=64, blank=True)
+    path = models.CharField(max_length=64, blank=True, unique=True)
 
     def __str__(self):
         return f'{self.profile.user.username}: {self.title}  [Course]'
@@ -86,7 +87,7 @@ post_save.connect(create_course, sender=Course)
 class CourseInfo(models.Model):
     """CourseInfo"""
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    title_image_url = models.ImageField(blank=True)
+    title_image_url = models.ImageField(blank=True, null=True)
     goal_description = models.TextField()
 
     def __str__(self):
@@ -133,7 +134,7 @@ class Theme(models.Model):
     """The Course consists of Theme"""
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
-    image_url = models.ImageField(blank=True)
+    image_url = models.ImageField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.course.profile.user.username}: {self.course.title}: {self.title} [Theme]"
@@ -143,7 +144,7 @@ class Lesson(models.Model):
     """The Theme consists of Lesson"""
     theme = models.ForeignKey(Theme, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
-    image_url = models.ImageField(blank=True)
+    image_url = models.ImageField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.theme.course.profile.user.username}: {self.theme.course.title}: {self.theme.title}: {self.title} [Lesson]"
@@ -253,12 +254,12 @@ class Collection(models.Model):
     title = models.CharField(max_length=64)
     description = models.TextField(max_length=512, blank=True)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    image_url = models.ImageField(default="collection-default.svg")
-    wallpaper = models.ImageField(blank=True)
+    image_url = models.ImageField(validators=[validate_image_file_extension], blank=True, null=True)
+    wallpaper = models.ImageField(blank=True, null=True)
     rating = models.FloatField(default=0)
     members_amount = models.IntegerField(default=0)
     date_create = models.DateField(default=datetime.date.today)
-    path = models.CharField(max_length=64, blank=True)
+    path = models.CharField(max_length=64, blank=True, unique=True)
 
     def __str__(self):
         return f'{self.profile.user.username}: {self.title}  [Collection]'

@@ -1,14 +1,13 @@
-from django.contrib.auth.models import User
-from rest_framework import permissions, generics, status, viewsets, pagination
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.urls import reverse
 import jwt
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.encoding import smart_str, force_str, smart_bytes, DjangoUnicodeDecodeError
+from django.urls import reverse
+from django.utils.encoding import smart_str, smart_bytes, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from rest_framework import permissions, generics, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from . import serializers
 from .models import Profile, Collection
@@ -25,9 +24,7 @@ class RegisterView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        token = RefreshToken.for_user(user).access_token
-        relative_link = reverse('email-verify')
-        absolute_url = f"{Util.get_absolute_url(request)}{relative_link}?token={token}"
+        absolute_url = Util.get_absolute_url_token(request, to='email-verify', user=user)
 
         email_body = f"Здравствуйте, {user.username}!\n" \
                      f"Спасибо, что зарегистрировались на нашей платформе!\n" \
@@ -63,25 +60,13 @@ class VerifyEmailView(generics.GenericAPIView):
             if not profile.is_verified:
                 profile.is_verified = True
                 profile.save()
-
-            return Response({
-                'email': "Успешно активирован",
-            },
-                status=status.HTTP_200_OK,
-            )
+                return Response({'email': "Аккаунт успешно активирован"}, status=status.HTTP_200_OK)
+            return Response({'email': "Ваш аккаунт уже активирован"}, status=status.HTTP_200_OK)
 
         except jwt.ExpiredSignatureError as ex:
-            return Response({
-                'error': "Не удалось активировать аккаунт",
-            },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({'error': "Не удалось активировать аккаунт"}, status=status.HTTP_400_BAD_REQUEST)
         except jwt.exceptions.DecodeError as ex:
-            return Response({
-                'error': "Invalid token",
-            },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({'error': "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class RequestPasswordResetEmailView(generics.GenericAPIView):
@@ -187,10 +172,12 @@ class CollectionView(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return serializers.CollectionSerializer
-        elif self.action == 'retrieve':
-            return serializers.DetailCollectionSerializer
         elif self.action == 'list_mini_collection':
             return serializers.MiniCollectionSerializer
+        elif self.action == 'retrieve':
+            return serializers.DetailCollectionSerializer
+        elif self.action == 'update_info':
+            return serializers.EditDetailCollectionSerializer
 
     def list(self, request, *args, **kwargs):
         serializer_collection_list = list()
@@ -218,10 +205,32 @@ class CollectionView(viewsets.ModelViewSet):
         serializer_collection['is_added'] = serializers.DetailCollectionSerializer.get_is_added(collection, profile)
         return Response(serializer_collection)
 
-    @action(detail=False, methods=['update'])
-    def update(self, request, path=None, *args, **kwargs):
+    @action(detail=False, methods=['get'])
+    def get_update_info(self, request, path=None, *args, **kwargs):
         collection = self.queryset.get(path=path)
+        profile = Profile.objects.get(user=request.user)
+        if collection.profile != profile:
+            return Response({"error": "У вас нет доступа для изменения коллекции"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializers.EditDetailCollectionSerializer(collection).data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['patch'])
+    def update_info(self, request, path=None, *args, **kwargs):
+        data = request.data
+        path = data['path']
+        collection = self.queryset.get(path=path)
+        profile = Profile.objects.get(user=request.user)
+        if collection.profile != profile:
+            return Response({"error": "У вас нет доступа для изменения страницы"}, status=status.HTTP_400_BAD_REQUEST)
+
+        data['collection_pk'] = collection.pk
+        data.pop('path')
+        serializer = serializers.EditDetailCollectionSerializer(data=data)
+        result = serializer.is_valid(raise_exception=True)
+        if result:
+            if (path != collection.path) and (len(Collection.objects.filter(path=path)) == 0):
+                collection.path = path
+                collection.save()
+        return Response({"message": "Вы успешно обновили подборку!"}, status=status.HTTP_200_OK)
 
     # class CourseViewSet(viewsets.ModelViewSet):
     #     lookup_field = 'slug'
