@@ -232,6 +232,16 @@ class CollectionView(viewsets.ModelViewSet):
                 collection.save()
         return Response({"message": "Вы успешно обновили подборку!"}, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['post'])
+    def create(self, request):
+        data = request.data
+        path = data['path']
+        collection = self.queryset.get(path=path)
+        profile = Profile.objects.get(user=request.user)
+        if collection.profile != profile:
+            return Response({"error": "У вас нет доступа для изменения страницы"}, status=status.HTTP_400_BAD_REQUEST)
+
+
     # class CourseViewSet(viewsets.ModelViewSet):
     #     lookup_field = 'slug'
     #     queryset = Course.objects.all()

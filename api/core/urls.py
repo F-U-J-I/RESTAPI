@@ -20,6 +20,7 @@ urlpatterns = [
     path('collection/<slug:path>/', CollectionView.as_view({'get': 'retrieve'})),
     path('collection/<slug:path>/get-update/', CollectionView.as_view({'get': 'get_update_info'})),
     path('collection/<slug:path>/update/', CollectionView.as_view({'patch': 'update_info'})),
+    path('collection/create/', CollectionView.as_view({'post': 'create'})),
 
     path('profile/<slug:path>/', ProfileView.as_view()),
 ]
