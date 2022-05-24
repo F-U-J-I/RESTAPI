@@ -104,7 +104,19 @@ class SetNewPasswordSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
 
-class MiniPreviewCourse(serializers.ModelSerializer):
+class CourseSerializer(serializers.ModelSerializer):
+    """Мини курс"""
+    author = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Course
+        fields = ('title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount')
+
+    def get_author(self, collection):
+        return collection.profile.user.username
+
+
+class MiniCourseSerializer(serializers.ModelSerializer):
     """Мини курс"""
     author = serializers.SerializerMethodField()
 
@@ -140,7 +152,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         courses = list()
         for item in courses_to_collection:
             if item.course.status.name == 'Опубликован':
-                courses.append(MiniPreviewCourse(item.course).data)
+                courses.append(MiniCourseSerializer(item.course).data)
         courses = sorted(courses, key=lambda x: x['rating'])[:5]
         return courses
 
@@ -195,7 +207,7 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
         courses = list()
         for item in courses_to_collection:
             if item.course.status.name == 'Опубликован':
-                courses.append(MiniPreviewCourse(item.course).data)
+                courses.append(MiniCourseSerializer(item.course).data)
         # courses = sorted(courses, key=lambda x: x['rating'])[:5]
         return courses
 

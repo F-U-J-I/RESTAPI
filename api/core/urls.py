@@ -18,5 +18,7 @@ urlpatterns = [
     path('collections/', CollectionView.as_view({'get': 'list'})),
     path('mini-collections/', CollectionView.as_view({'get': 'list_mini_collection'}), name="mini-collections"),
     path('collection/<slug:path>/', CollectionView.as_view({'get': 'retrieve'})),
+    path('collection/<slug:path>/update/', CollectionView.as_view({'get': 'update'})),
+
     path('profile/<slug:path>/', ProfileView.as_view()),
 ]

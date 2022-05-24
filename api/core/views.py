@@ -193,10 +193,9 @@ class CollectionView(viewsets.ModelViewSet):
             return serializers.MiniCollectionSerializer
 
     def list(self, request, *args, **kwargs):
-        collections = Collection.objects.all()
         serializer_collection_list = list()
         profile = Profile.objects.get(user=self.request.user)
-        for collection in collections:
+        for collection in self.queryset:
             serializer_collection = serializers.CollectionSerializer(collection).data
             serializer_collection['is_added'] = serializers.CollectionSerializer.get_is_added(collection, profile)
             serializer_collection_list.append(serializer_collection)
@@ -204,21 +203,50 @@ class CollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def list_mini_collection(self, request, *args, **kwargs):
-        collections = Collection.objects.all()
         serializer_collection_list = list()
         profile = Profile.objects.get(user=self.request.user)
-        for collection in collections:
+        for collection in self.queryset:
             serializer_collection = serializers.MiniCollectionSerializer(collection).data
             serializer_collection['is_added'] = serializers.MiniCollectionSerializer.get_is_added(collection, profile)
             serializer_collection_list.append(serializer_collection)
         return Response(serializer_collection_list)
 
     def retrieve(self, request, path=None, *args, **kwargs):
-        collection = Collection.objects.get(path=path)
+        collection = self.queryset.get(path=path)
         serializer_collection = serializers.DetailCollectionSerializer(collection).data
         profile = Profile.objects.get(user=self.request.user)
         serializer_collection['is_added'] = serializers.DetailCollectionSerializer.get_is_added(collection, profile)
         return Response(serializer_collection)
+
+    @action(detail=False, methods=['update'])
+    def update(self, request, path=None, *args, **kwargs):
+        collection = self.queryset.get(path=path)
+
+
+    # class CourseViewSet(viewsets.ModelViewSet):
+    #     lookup_field = 'slug'
+    #     queryset = Course.objects.all()
+    #     serializer_class = CourseSerializer
+    #     permission_classes = [permissions.AllowAny]
+    #     pagination_class = PageNumberSetPagination
+    #
+    #     def get_serializer_class(self):
+    #         if self.action == 'list':
+    #             return CourseSerializer
+    #         elif self.action == 'retrieve':
+    #             return CourseInfoSerializer
+    #
+    #     def retrieve(self, request, pk=None, *args, **kwargs):
+    #         course = Course.objects.get(pk=pk)
+    #         serializer = CourseSerializer(course)
+    #         course_info = serializer.get_info(course.pk)
+    #         modules = Module.objects.filter(course_id=course.pk)
+    #         module_serializer = ModuleWholeSerializer(modules, many=True)
+    #         return Response({
+    #             "course": serializer.data,
+    #             "info": course_info,
+    #             "module": module_serializer.data,
+    #         })
 
 
 class ProfileView(generics.GenericAPIView):
