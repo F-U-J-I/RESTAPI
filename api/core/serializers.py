@@ -104,18 +104,6 @@ class SetNewPasswordSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
 
-class HeaderCollectionSerializer(serializers.ModelSerializer):
-    """Header Collection"""
-    author = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Collection
-        fields = ('title', 'author', 'image_url', 'rating')
-
-    def get_author(self, collection):
-        return ProfileAsAuthor(collection.profile).data
-
-
 class MiniPreviewCourse(serializers.ModelSerializer):
     """Мини курс"""
     author = serializers.SerializerMethodField()
@@ -128,7 +116,7 @@ class MiniPreviewCourse(serializers.ModelSerializer):
         return collection.profile.user.username
 
 
-class ItemCollectionSerializer(serializers.ModelSerializer):
+class CollectionSerializer(serializers.ModelSerializer):
     """
     Item Collection.
     Есть на странице каталога.
@@ -155,6 +143,30 @@ class ItemCollectionSerializer(serializers.ModelSerializer):
                 courses.append(MiniPreviewCourse(item.course).data)
         courses = sorted(courses, key=lambda x: x['rating'])[:5]
         return courses
+
+    @staticmethod
+    def get_is_added(collection, auth_profile):
+        profile_to_collection = ProfileCollection.objects.filter(collection=collection, profile=auth_profile)
+        if profile_to_collection:
+            return True
+        return False
+
+
+class MiniCollectionSerializer(serializers.ModelSerializer):
+    """
+    Item Mini Collection.
+    Подборка в малой форме с малым количеством информации.
+    """
+    author = serializers.SerializerMethodField()
+    is_added = serializers.BooleanField(default=False)
+
+    class Meta:
+        model = Collection
+        fields = ('title', 'author', 'image_url', 'is_added')
+
+    @staticmethod
+    def get_author(collection):
+        return collection.profile.user.username
 
     @staticmethod
     def get_is_added(collection, auth_profile):

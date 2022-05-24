@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import permissions, generics, status, viewsets, pagination
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.urls import reverse
@@ -185,19 +186,32 @@ class CollectionView(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return serializers.ItemCollectionSerializer
+            return serializers.CollectionSerializer
         elif self.action == 'retrieve':
             return serializers.DetailCollectionSerializer
+        elif self.action == 'list_mini_collection':
+            return serializers.MiniCollectionSerializer
 
     def list(self, request, *args, **kwargs):
         collections = Collection.objects.all()
-        serializer_collections = list()
+        serializer_collection_list = list()
         profile = Profile.objects.get(user=self.request.user)
         for collection in collections:
-            serializer_collection = serializers.ItemCollectionSerializer(collection).data
-            serializer_collection['is_added'] = serializers.ItemCollectionSerializer.get_is_added(collection, profile)
-            serializer_collections.append(serializer_collection)
-        return Response(serializer_collections)
+            serializer_collection = serializers.CollectionSerializer(collection).data
+            serializer_collection['is_added'] = serializers.CollectionSerializer.get_is_added(collection, profile)
+            serializer_collection_list.append(serializer_collection)
+        return Response(serializer_collection_list)
+
+    @action(detail=False, methods=['get'])
+    def list_mini_collection(self, request, *args, **kwargs):
+        collections = Collection.objects.all()
+        serializer_collection_list = list()
+        profile = Profile.objects.get(user=self.request.user)
+        for collection in collections:
+            serializer_collection = serializers.MiniCollectionSerializer(collection).data
+            serializer_collection['is_added'] = serializers.MiniCollectionSerializer.get_is_added(collection, profile)
+            serializer_collection_list.append(serializer_collection)
+        return Response(serializer_collection_list)
 
     def retrieve(self, request, path=None, *args, **kwargs):
         collection = Collection.objects.get(path=path)
@@ -219,28 +233,3 @@ class ProfileView(generics.GenericAPIView):
             'profile': serializers.ProfileSerializer(profile, context=self.get_serializer_context()).data,
             'user': serializers.UserSerializer(profile.user, context=self.get_serializer_context()).data,
         })
-
-# class CourseViewSet(viewsets.ModelViewSet):
-#     lookup_field = 'slug'
-#     queryset = Course.objects.all()
-#     serializer_class = CourseSerializer
-#     permission_classes = [permissions.AllowAny]
-#     pagination_class = PageNumberSetPagination
-#
-#     def get_serializer_class(self):
-#         if self.action == 'list':
-#             return CourseSerializer
-#         elif self.action == 'retrieve':
-#             return CourseInfoSerializer
-#
-#     def retrieve(self, request, pk=None, *args, **kwargs):
-#         course = Course.objects.get(pk=pk)
-#         serializer = CourseSerializer(course)
-#         course_info = serializer.get_info(course.pk)
-#         modules = Module.objects.filter(course_id=course.pk)
-#         module_serializer = ModuleWholeSerializer(modules, many=True)
-#         return Response({
-#             "course": serializer.data,
-#             "info": course_info,
-#             "module": module_serializer.data,
-#         })
