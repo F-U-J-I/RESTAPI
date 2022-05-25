@@ -169,6 +169,10 @@ class CollectionView(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = serializers.ProfileSerializer
 
+    def exists_path(self, path):
+        print(self.queryset.filter(path=path))
+        return len(self.queryset.filter(path=path)) != 0
+
     def get_serializer_class(self):
         if self.action == 'list':
             return serializers.CollectionSerializer
@@ -201,12 +205,12 @@ class CollectionView(viewsets.ModelViewSet):
         return Response(serializer_collection_list)
 
     def get(self, request, path=None, *args, **kwargs):
-        filter_collections = self.queryset.filter(path=path)
-        if len(filter_collections) == 0:
+        if not self.exists_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
-        collection = filter_collections[0]
+
+        collection = self.queryset.get(path=path)
         serializer_collection = serializers.DetailCollectionSerializer(collection).data
-        profile = Profile.objects.get(user=self.request.user)
+        profile = Profile.objects.get(user=request.user)
         serializer_collection['is_added'] = serializers.DetailCollectionSerializer.get_is_added(collection, profile)
         return Response(serializer_collection)
 
@@ -216,14 +220,16 @@ class CollectionView(viewsets.ModelViewSet):
         number_new_collection = len(ProfileCollection.objects.filter(profile=profile)) + 1
         collection = Collection.objects.create(title=f"Подборка #{number_new_collection}", profile=profile)
         collection.save()
-        return Response({"message": "Подборка создана"})
+        return Response({
+            'collection': collection.title,
+            'path': collection.path
+        }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
     def get_update_info(self, request, path=None, *args, **kwargs):
-        filter_collections = self.queryset.filter(path=path)
-        if len(filter_collections) == 0:
+        if not self.exists_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
-        collection = filter_collections[0]
+        collection = self.queryset.get(path=path)
         profile = Profile.objects.get(user=request.user)
         if collection.profile != profile:
             return Response({"error": "У вас нет доступа для изменения коллекции"}, status=status.HTTP_400_BAD_REQUEST)
@@ -231,11 +237,10 @@ class CollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['patch'])
     def update_info(self, request, path=None, *args, **kwargs):
-        filter_collections = self.queryset.filter(path=path)
-        if len(filter_collections) == 0:
+        if not self.exists_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 
-        collection = filter_collections[0]
+        collection = self.queryset.get(path=path)
         profile = Profile.objects.get(user=request.user)
         if collection.profile != profile:
             return Response({"error": "У вас нет доступа для изменения подборки от имени этого аккаунта"},
@@ -250,6 +255,21 @@ class CollectionView(viewsets.ModelViewSet):
                 collection.path = path
                 collection.save()
         return Response({"message": "Вы успешно обновили подборку!"}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'])
+    def delete_collection(self, request, path):
+        if not self.exists_path(path):
+            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        collection = self.queryset.get(path=path)
+        profile = Profile.objects.get(user=request.user)
+        if collection.profile != profile:
+            return Response({"error": "У вас нет доступа для удаления подборки от имени этого аккаунта"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        collection_title = collection.title
+        collection.delete()
+        return Response({"message": f"Подборка \"{collection_title}\" удалена"}, status=status.HTTP_200_OK)
 
     # class CourseViewSet(viewsets.ModelViewSet):
     #     lookup_field = 'slug'

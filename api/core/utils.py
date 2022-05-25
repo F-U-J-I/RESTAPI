@@ -27,3 +27,4 @@ class Util:
         relative_link = reverse(to)
         return f"{Util.get_absolute_url(request)}{relative_link}?token={token}"
 
+
