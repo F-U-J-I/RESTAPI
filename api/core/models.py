@@ -79,6 +79,9 @@ def create_course(sender, **kwargs):
         course.status = course_status
         course.save()
 
+        profile_course = ProfileCourse.objects.create(course=course, profile=course.profile)
+        profile_course.save()
+
 
 post_save.connect(create_course, sender=Course)
 

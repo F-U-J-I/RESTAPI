@@ -10,7 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from . import serializers
-from .models import Profile, Collection, ProfileCollection
+from .models import Profile, Collection, ProfileCollection, Course
 from .utils import Util
 
 
@@ -162,28 +162,42 @@ class SetNewPasswordAPIView(generics.GenericAPIView):
         )
 
 
+class CourseView(viewsets.ModelViewSet):
+    """Курсы"""
+    lookup_field = 'slug'
+    queryset = Course.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    def exists_path(self, path):
+        return len(self.queryset.filter(path=path)) != 0
+
+    @action(methods=['get'], detail=False)
+    def get_list_course(self, request, *args, **kwargs):
+        serializer_course_list = list()
+        profile = Profile.objects.get(user=self.request.user)
+        for course in self.queryset:
+            serializer_course = serializers.CourseSerializer(course).data
+            serializer_course['is_added'] = serializers.CourseSerializer.get_is_added(course, profile)
+            serializer_course_list.append(serializer_course)
+        return Response(serializer_course_list, status=status.HTTP_200_OK)
+
+    @action(methods=['get'], detail=False)
+    def get_list_mini_course(self, request, *args, **kwargs):
+        serializer_course_list = list()
+        for course in self.queryset:
+            serializer_course = serializers.MiniCourseSerializer(course).data
+            serializer_course_list.append(serializer_course)
+        return Response(serializer_course_list, status=status.HTTP_200_OK)
+
+
 class CollectionView(viewsets.ModelViewSet):
     """Коллекция"""
     lookup_field = 'slug'
     queryset = Collection.objects.all()
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = serializers.ProfileSerializer
 
     def exists_path(self, path):
-        print(self.queryset.filter(path=path))
         return len(self.queryset.filter(path=path)) != 0
-
-    def get_serializer_class(self):
-        if self.action == 'list':
-            return serializers.CollectionSerializer
-        elif self.action == 'list_mini_collection':
-            return serializers.MiniCollectionSerializer
-        elif self.action == 'get':
-            return serializers.DetailCollectionSerializer
-        elif self.action == 'update_info':
-            return serializers.EditDetailCollectionSerializer
-        elif self.action == 'create_collection':
-            return serializers.EditDetailCollectionSerializer
 
     def list(self, request, *args, **kwargs):
         serializer_collection_list = list()
@@ -270,31 +284,6 @@ class CollectionView(viewsets.ModelViewSet):
         collection_title = collection.title
         collection.delete()
         return Response({"message": f"Подборка \"{collection_title}\" удалена"}, status=status.HTTP_200_OK)
-
-    # class CourseViewSet(viewsets.ModelViewSet):
-    #     lookup_field = 'slug'
-    #     queryset = Course.objects.all()
-    #     serializer_class = CourseSerializer
-    #     permission_classes = [permissions.AllowAny]
-    #     pagination_class = PageNumberSetPagination
-    #
-    #     def get_serializer_class(self):
-    #         if self.action == 'list':
-    #             return CourseSerializer
-    #         elif self.action == 'retrieve':
-    #             return CourseInfoSerializer
-    #
-    #     def retrieve(self, request, pk=None, *args, **kwargs):
-    #         course = Course.objects.get(pk=pk)
-    #         serializer = CourseSerializer(course)
-    #         course_info = serializer.get_info(course.pk)
-    #         modules = Module.objects.filter(course_id=course.pk)
-    #         module_serializer = ModuleWholeSerializer(modules, many=True)
-    #         return Response({
-    #             "course": serializer.data,
-    #             "info": course_info,
-    #             "module": module_serializer.data,
-    #         })
 
 
 class ProfileView(generics.GenericAPIView):

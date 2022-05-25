@@ -4,7 +4,7 @@ from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
 
-from .models import Profile, Collection, Course, ProfileCollection, CourseCollection
+from .models import Profile, Collection, Course, ProfileCollection, CourseCollection, ProfileCourse
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -104,15 +104,32 @@ class SetNewPasswordSerializer(serializers.ModelSerializer):
 
 
 class CourseSerializer(serializers.ModelSerializer):
-    """Мини курс"""
+    """курс"""
     author = serializers.SerializerMethodField()
+    quantity_in_collection = serializers.SerializerMethodField()
+    is_added = serializers.BooleanField(default=False)
 
     class Meta:
         model = Course
-        fields = ('title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount')
+        fields = (
+            'title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
+            'quantity_in_collection', 'is_added'
+        )
 
-    def get_author(self, collection):
-        return collection.profile.user.username
+    @staticmethod
+    def get_author(course):
+        return course.profile.user.username
+
+    @staticmethod
+    def get_quantity_in_collection(course):
+        return len(CourseCollection.objects.filter(course=course))
+
+    @staticmethod
+    def get_is_added(course, auth_profile):
+        profile_to_course = ProfileCourse.objects.filter(course=course, profile=auth_profile)
+        if profile_to_course:
+            return True
+        return False
 
 
 class MiniCourseSerializer(serializers.ModelSerializer):

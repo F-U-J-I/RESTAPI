@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from .views import RegisterView, VerifyEmailView, RequestPasswordResetEmailView, PasswordTokenCheckAPI, \
-    SetNewPasswordAPIView, CollectionView, ProfileView
+    SetNewPasswordAPIView, CourseView, CollectionView, ProfileView
 
 router = DefaultRouter()
 
@@ -14,6 +14,9 @@ urlpatterns = [
     path('request-reset-email/', RequestPasswordResetEmailView.as_view(), name="request-reset-email"),
     path('password-reset/<uidb64>/<token>/', PasswordTokenCheckAPI.as_view(), name="password-reset-confirm"),
     path('password-reset-complete/', SetNewPasswordAPIView.as_view(), name="password-reset-complete"),
+
+    path('courses/', CourseView.as_view({'get': 'get_list_course'})),
+    path('mini-courses/', CourseView.as_view({'get': 'get_list_mini_course'})),
 
     path('collections/', CollectionView.as_view({'get': 'list'})),
     path('mini-collections/', CollectionView.as_view({'get': 'list_mini_collection'}), name="mini-collections"),
