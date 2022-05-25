@@ -271,6 +271,8 @@ def create_collection(sender, **kwargs):
         collection = kwargs['instance']
         collection.path = collection.pk
         collection.save()
+        profile_collection = ProfileCollection.objects.create(collection=collection, profile=collection.profile)
+        profile_collection.save()
 
 
 post_save.connect(create_collection, sender=Collection)

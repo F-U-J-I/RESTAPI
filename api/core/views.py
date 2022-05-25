@@ -10,7 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from . import serializers
-from .models import Profile, Collection
+from .models import Profile, Collection, ProfileCollection
 from .utils import Util
 
 
@@ -174,9 +174,11 @@ class CollectionView(viewsets.ModelViewSet):
             return serializers.CollectionSerializer
         elif self.action == 'list_mini_collection':
             return serializers.MiniCollectionSerializer
-        elif self.action == 'retrieve':
+        elif self.action == 'get':
             return serializers.DetailCollectionSerializer
         elif self.action == 'update_info':
+            return serializers.EditDetailCollectionSerializer
+        elif self.action == 'create_collection':
             return serializers.EditDetailCollectionSerializer
 
     def list(self, request, *args, **kwargs):
@@ -198,14 +200,23 @@ class CollectionView(viewsets.ModelViewSet):
             serializer_collection_list.append(serializer_collection)
         return Response(serializer_collection_list)
 
-    def retrieve(self, request, path=None, *args, **kwargs):
+    def get(self, request, path=None, *args, **kwargs):
         collection = self.queryset.get(path=path)
         serializer_collection = serializers.DetailCollectionSerializer(collection).data
         profile = Profile.objects.get(user=self.request.user)
         serializer_collection['is_added'] = serializers.DetailCollectionSerializer.get_is_added(collection, profile)
         return Response(serializer_collection)
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['post'])
+    def create_collection(self, request):
+        profile = Profile.objects.get(user=self.request.user)
+        print(profile)
+        len_collection = len(ProfileCollection.objects.filter(profile=profile))
+        collection = Collection.objects.create(title=f"Подборка #{len_collection}", profile=profile)
+        collection.save()
+        return Response({"message": "Подборка создана"})
+
+    @action(detail=False, methods=['post'])
     def get_update_info(self, request, path=None, *args, **kwargs):
         collection = self.queryset.get(path=path)
         profile = Profile.objects.get(user=request.user)
@@ -220,7 +231,8 @@ class CollectionView(viewsets.ModelViewSet):
         collection = self.queryset.get(path=path)
         profile = Profile.objects.get(user=request.user)
         if collection.profile != profile:
-            return Response({"error": "У вас нет доступа для изменения страницы"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "У вас нет доступа для изменения подборки от имени этого аккаунта"},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         data['collection_pk'] = collection.pk
         data.pop('path')
@@ -231,16 +243,6 @@ class CollectionView(viewsets.ModelViewSet):
                 collection.path = path
                 collection.save()
         return Response({"message": "Вы успешно обновили подборку!"}, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['post'])
-    def create(self, request):
-        data = request.data
-        path = data['path']
-        collection = self.queryset.get(path=path)
-        profile = Profile.objects.get(user=request.user)
-        if collection.profile != profile:
-            return Response({"error": "У вас нет доступа для изменения страницы"}, status=status.HTTP_400_BAD_REQUEST)
-
 
     # class CourseViewSet(viewsets.ModelViewSet):
     #     lookup_field = 'slug'
