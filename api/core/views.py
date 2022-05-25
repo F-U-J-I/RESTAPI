@@ -216,9 +216,8 @@ class CollectionView(viewsets.ModelViewSet):
         serializer_collection_list = list()
         profile = Profile.objects.get(user=self.request.user)
         for collection in self.queryset:
-            serializer_collection = serializers.MiniCollectionSerializer(collection).data
-            serializer_collection['is_added'] = serializers.HelperCollectionSerializer.get_is_added(collection, profile)
-            serializer_collection_list.append(serializer_collection)
+            serializer_collection_list.append(
+                serializers.CollectionSerializer(collection, context={'profile': profile}).data)
         return Response(serializer_collection_list)
 
     def get(self, request, path=None, *args, **kwargs):
@@ -226,20 +225,21 @@ class CollectionView(viewsets.ModelViewSet):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 
         collection = self.queryset.get(path=path)
-        serializer_collection = serializers.DetailCollectionSerializer(collection).data
         profile = Profile.objects.get(user=request.user)
-        serializer_collection['is_added'] = serializers.HelperCollectionSerializer.get_is_added(collection, profile)
+        serializer_collection = serializers.DetailCollectionSerializer(collection, context={'profile': profile}).data
         return Response(serializer_collection)
 
     @action(detail=False, methods=['post'])
     def create_collection(self, request):
         profile = Profile.objects.get(user=self.request.user)
         number_new_collection = len(ProfileCollection.objects.filter(profile=profile)) + 1
-        collection = Collection.objects.create(title=f"Подборка #{number_new_collection}", profile=profile)
-        collection.save()
+        serializer = serializers.WindowDetailCollectionSerializer(data={'title': f"Подборка #{number_new_collection}"},
+                                                                  context={'profile': profile})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response({
-            'collection': collection.title,
-            'path': collection.path
+            'title': serializer.data['title'],
+            'path': serializer.data['path']
         }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
@@ -252,7 +252,7 @@ class CollectionView(viewsets.ModelViewSet):
             return Response({"error": "У вас нет доступа для изменения коллекции"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializers.EditDetailCollectionSerializer(collection).data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['patch'])
+    @action(detail=False, methods=['put'])
     def update_info(self, request, path=None, *args, **kwargs):
         if not self.exists_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
@@ -262,16 +262,11 @@ class CollectionView(viewsets.ModelViewSet):
         if collection.profile != profile:
             return Response({"error": "У вас нет доступа для изменения подборки от имени этого аккаунта"},
                             status=status.HTTP_400_BAD_REQUEST)
-        data = request.data
-        data['collection_pk'] = collection.pk
-        data.pop('path')
-        serializer = serializers.EditDetailCollectionSerializer(data=data)
-        result = serializer.is_valid(raise_exception=True)
-        if result:
-            if (path != collection.path) and (len(Collection.objects.filter(path=path)) == 0):
-                collection.path = path
-                collection.save()
-        return Response({"message": "Вы успешно обновили подборку!"}, status=status.HTTP_200_OK)
+
+        serializer = serializers.WindowDetailCollectionSerializer(data=request.data, instance=collection)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['delete'])
     def delete_collection(self, request, path):
@@ -286,7 +281,10 @@ class CollectionView(viewsets.ModelViewSet):
 
         collection_title = collection.title
         collection.delete()
-        return Response({"message": f"Подборка \"{collection_title}\" удалена"}, status=status.HTTP_200_OK)
+        return Response({
+            "title": collection_title,
+            "path": path
+        }, status=status.HTTP_200_OK)
 
 
 class ProfileView(generics.GenericAPIView):

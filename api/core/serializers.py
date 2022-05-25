@@ -193,6 +193,7 @@ class MiniCourseSerializer(serializers.ModelSerializer):
     def get_progress(self, course):
         return HelperCourseSerializer.get_progress(course=course, profile=self.context.get('profile'))
 
+
 #####################################
 
 
@@ -217,7 +218,7 @@ class CollectionSerializer(serializers.ModelSerializer):
     """
     author = serializers.SerializerMethodField()
     courses = serializers.SerializerMethodField()
-    is_added = serializers.BooleanField(default=False)
+    is_added = serializers.SerializerMethodField(default=False)
 
     class Meta:
         model = Collection
@@ -237,6 +238,9 @@ class CollectionSerializer(serializers.ModelSerializer):
         courses = sorted(courses, key=lambda x: x['rating'])[:5]
         return courses
 
+    def get_is_added(self, collection):
+        return HelperCollectionSerializer.get_is_added(collection=collection, profile=self.context.get('profile'))
+
 
 class MiniCollectionSerializer(serializers.ModelSerializer):
     """
@@ -244,7 +248,7 @@ class MiniCollectionSerializer(serializers.ModelSerializer):
     Подборка в малой форме с малым количеством информации.
     """
     author = serializers.SerializerMethodField()
-    is_added = serializers.BooleanField(default=False)
+    is_added = serializers.SerializerMethodField(default=False)
 
     class Meta:
         model = Collection
@@ -261,7 +265,7 @@ class MiniCollectionSerializer(serializers.ModelSerializer):
 class DetailCollectionSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     courses = serializers.SerializerMethodField()
-    is_added = serializers.BooleanField(default=False)
+    is_added = serializers.SerializerMethodField(default=False)
 
     class Meta:
         model = Collection
@@ -281,39 +285,86 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
                 courses.append(MiniCourseSerializer(item.course).data)
         return courses
 
+    def get_is_added(self, collection):
+        return HelperCollectionSerializer.get_is_added(collection=collection, profile=self.context.get('profile'))
 
-class EditDetailCollectionSerializer(serializers.ModelSerializer):
-    collection_pk = serializers.IntegerField(write_only=True, required=False)
 
+class WindowDetailCollectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Collection
-        fields = ('title', 'description', 'wallpaper', 'image_url', 'path', 'collection_pk')
+        fields = ('title', 'description', 'wallpaper', 'image_url', 'path')
 
-    def validate(self, attrs):
-        collection = Collection.objects.get(pk=attrs.get('collection_pk'))
+    def create(self, validated_data):
+        return Collection.objects.create(**validated_data, profile=self.context.get('profile'))
 
-        title = attrs.get('title')
-        if title != 0 and title != collection.title:
-            collection.title = title
+    def update(self, instance, validated_data):
+        instance.title = validated_data.get('title', instance.title)
+        instance.description = validated_data.get('description', instance.description)
+        instance.wallpaper = validated_data.get('wallpaper', instance.wallpaper)
+        instance.image_url = validated_data.get('image_url', instance.image_url)
+        instance.path = validated_data.get('path', instance.path)
+        instance.save()
+        return instance
 
-        description = attrs.get('description', 0)
-        if description != 0 and description != collection.description:
-            collection.description = description
 
-        wallpaper = attrs.get('wallpaper', 0)
-        if wallpaper != 0 and wallpaper != collection.wallpaper:
-            collection.wallpaper = wallpaper
+class EditDetailCollectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Collection
+        fields = ('title', 'description', 'wallpaper', 'image_url', 'path')
 
-        image_url = attrs.get('image_url', 0)
-        if image_url != 0 and image_url != collection.image_url:
-            collection.image_url = image_url
+    # def update(self, instance, validated_data):
+    #     print(instance)
+    #     print(validated_data)
+    #
+    #     collection = Collection.objects.get(pk=self.context.get('collection_pk'))
+    #
+    #     title = attrs.get('title')
+    #     if title != 0 and title != collection.title:
+    #         collection.title = title
+    #
+    #     description = attrs.get('description', 0)
+    #     if description != 0 and description != collection.description:
+    #         collection.description = description
+    #
+    #     wallpaper = attrs.get('wallpaper', 0)
+    #     if wallpaper != 0 and wallpaper != collection.wallpaper:
+    #         collection.wallpaper = wallpaper
+    #
+    #     image_url = attrs.get('image_url', 0)
+    #     if image_url != 0 and image_url != collection.image_url:
+    #         collection.image_url = image_url
+    #
+    #     image_url = attrs.get('image_url', 0)
+    #     if image_url != 0 and image_url != collection.image_url:
+    #         collection.image_url = image_url
+    #
+    #     collection.save()
 
-        image_url = attrs.get('image_url', 0)
-        if image_url != 0 and image_url != collection.image_url:
-            collection.image_url = image_url
-
-        collection.save()
-
-        return super().validate(attrs)
+    # def validate(self, attrs):
+    #     collection = Collection.objects.get(pk=self.context.get('collection_pk'))
+    #
+    #     title = attrs.get('title')
+    #     if title != 0 and title != collection.title:
+    #         collection.title = title
+    #
+    #     description = attrs.get('description', 0)
+    #     if description != 0 and description != collection.description:
+    #         collection.description = description
+    #
+    #     wallpaper = attrs.get('wallpaper', 0)
+    #     if wallpaper != 0 and wallpaper != collection.wallpaper:
+    #         collection.wallpaper = wallpaper
+    #
+    #     image_url = attrs.get('image_url', 0)
+    #     if image_url != 0 and image_url != collection.image_url:
+    #         collection.image_url = image_url
+    #
+    #     image_url = attrs.get('image_url', 0)
+    #     if image_url != 0 and image_url != collection.image_url:
+    #         collection.image_url = image_url
+    #
+    #     collection.save()
+    #
+    #     return super().validate(attrs)
 
 #####################################
