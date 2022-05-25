@@ -104,6 +104,10 @@ class SetNewPasswordSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
 
+#####################################
+#         ##  COURSE ##
+#####################################
+
 class HelperCourseSerializer:
     @staticmethod
     def get_is_added(course, profile):
@@ -117,9 +121,13 @@ class HelperCourseSerializer:
         profile_to_course = ProfileCourse.objects.filter(course=course, profile=profile)
         if len(profile_to_course) != 0:
             return profile_to_course[0].status.name
+        return None
 
     @staticmethod
     def get_progress(course, profile):
+        if HelperCourseSerializer.get_status_progress(course, profile) is None:
+            return None
+
         max_progress = 0
         progress = 0
         for theme in Theme.objects.filter(course=course):
@@ -138,15 +146,14 @@ class CourseSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     quantity_in_collection = serializers.SerializerMethodField()
 
-    is_added = serializers.BooleanField(default=False)
-    status_progress = serializers.CharField(default=None)
-    progress = serializers.DictField(default=None)
+    status_progress = serializers.SerializerMethodField(default=None)
+    progress = serializers.SerializerMethodField(default=None)
 
     class Meta:
         model = Course
         fields = (
             'title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
-            'quantity_in_collection', 'is_added', 'status_progress', 'progress'
+            'quantity_in_collection', 'status_progress', 'progress'
         )
 
     @staticmethod
@@ -157,23 +164,46 @@ class CourseSerializer(serializers.ModelSerializer):
     def get_quantity_in_collection(course):
         return len(CourseCollection.objects.filter(course=course))
 
+    def get_status_progress(self, course):
+        return HelperCourseSerializer.get_status_progress(course=course, profile=self.context.get('profile'))
+
+    def get_progress(self, course):
+        return HelperCourseSerializer.get_progress(course=course, profile=self.context.get('profile'))
+
 
 class MiniCourseSerializer(serializers.ModelSerializer):
     """Мини курс"""
     author = serializers.SerializerMethodField()
 
+    status_progress = serializers.SerializerMethodField(default=None)
+    progress = serializers.SerializerMethodField(default=None)
+
     class Meta:
         model = Course
-        fields = ('title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount')
+        fields = ('title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
+                  'status_progress', 'progress')
 
-    def get_author(self, collection):
+    @staticmethod
+    def get_author(collection):
         return collection.profile.user.username
 
+    def get_status_progress(self, course):
+        return HelperCourseSerializer.get_status_progress(course=course, profile=self.context.get('profile'))
+
+    def get_progress(self, course):
+        return HelperCourseSerializer.get_progress(course=course, profile=self.context.get('profile'))
+
+#####################################
+
+
+#####################################
+#       ##  COLLECTION ##
+#####################################
 
 class HelperCollectionSerializer:
     @staticmethod
-    def get_is_added(collection, auth_profile):
-        profile_to_collection = ProfileCollection.objects.filter(collection=collection, profile=auth_profile)
+    def get_is_added(collection, profile):
+        profile_to_collection = ProfileCollection.objects.filter(collection=collection, profile=profile)
         if profile_to_collection:
             return True
         return False
@@ -224,12 +254,8 @@ class MiniCollectionSerializer(serializers.ModelSerializer):
     def get_author(collection):
         return collection.profile.user.username
 
-    @staticmethod
-    def get_is_added(collection, auth_profile):
-        profile_to_collection = ProfileCollection.objects.filter(collection=collection, profile=auth_profile)
-        if profile_to_collection:
-            return True
-        return False
+    def get_is_added(self, collection):
+        return HelperCollectionSerializer.get_is_added(collection=collection, profile=self.context.get('profile'))
 
 
 class DetailCollectionSerializer(serializers.ModelSerializer):
@@ -253,20 +279,15 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
         for item in courses_to_collection:
             if item.course.status.name == 'Опубликован':
                 courses.append(MiniCourseSerializer(item.course).data)
-        # courses = sorted(courses, key=lambda x: x['rating'])[:5]
         return courses
 
 
 class EditDetailCollectionSerializer(serializers.ModelSerializer):
-    # image_url = serializers.ImageField(_DjangoImageField=SVG)
     collection_pk = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
         model = Collection
         fields = ('title', 'description', 'wallpaper', 'image_url', 'path', 'collection_pk')
-
-    # def update_path(self, path):
-    #
 
     def validate(self, attrs):
         collection = Collection.objects.get(pk=attrs.get('collection_pk'))
@@ -294,3 +315,5 @@ class EditDetailCollectionSerializer(serializers.ModelSerializer):
         collection.save()
 
         return super().validate(attrs)
+
+#####################################
