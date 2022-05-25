@@ -17,10 +17,10 @@ urlpatterns = [
 
     path('collections/', CollectionView.as_view({'get': 'list'})),
     path('mini-collections/', CollectionView.as_view({'get': 'list_mini_collection'}), name="mini-collections"),
-    path('collection/<slug:path>/', CollectionView.as_view({'get': 'get'})),
-    path('collections/create/', CollectionView.as_view({'post': 'create_collection'})),
-    path('collection/<slug:path>/get-update/', CollectionView.as_view({'get': 'get_update_info'})),
-    path('collection/<slug:path>/update/', CollectionView.as_view({'patch': 'update_info'})),
+    path('collections/<slug:path>/', CollectionView.as_view({'get': 'get'})),
+    path('create/collection/', CollectionView.as_view({'post': 'create_collection'})),
+    path('get-update/collections/<slug:path>/', CollectionView.as_view({'get': 'get_update_info'})),
+    path('update/collections/<slug:path>/', CollectionView.as_view({'patch': 'update_info'})),
 
     path('profile/<slug:path>/', ProfileView.as_view()),
 ]

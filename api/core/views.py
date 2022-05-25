@@ -201,7 +201,10 @@ class CollectionView(viewsets.ModelViewSet):
         return Response(serializer_collection_list)
 
     def get(self, request, path=None, *args, **kwargs):
-        collection = self.queryset.get(path=path)
+        filter_collections = self.queryset.filter(path=path)
+        if len(filter_collections) == 0:
+            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
+        collection = filter_collections[0]
         serializer_collection = serializers.DetailCollectionSerializer(collection).data
         profile = Profile.objects.get(user=self.request.user)
         serializer_collection['is_added'] = serializers.DetailCollectionSerializer.get_is_added(collection, profile)
@@ -210,15 +213,17 @@ class CollectionView(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def create_collection(self, request):
         profile = Profile.objects.get(user=self.request.user)
-        print(profile)
-        len_collection = len(ProfileCollection.objects.filter(profile=profile))
-        collection = Collection.objects.create(title=f"Подборка #{len_collection}", profile=profile)
+        number_new_collection = len(ProfileCollection.objects.filter(profile=profile)) + 1
+        collection = Collection.objects.create(title=f"Подборка #{number_new_collection}", profile=profile)
         collection.save()
         return Response({"message": "Подборка создана"})
 
     @action(detail=False, methods=['post'])
     def get_update_info(self, request, path=None, *args, **kwargs):
-        collection = self.queryset.get(path=path)
+        filter_collections = self.queryset.filter(path=path)
+        if len(filter_collections) == 0:
+            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
+        collection = filter_collections[0]
         profile = Profile.objects.get(user=request.user)
         if collection.profile != profile:
             return Response({"error": "У вас нет доступа для изменения коллекции"}, status=status.HTTP_400_BAD_REQUEST)
@@ -226,14 +231,16 @@ class CollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['patch'])
     def update_info(self, request, path=None, *args, **kwargs):
-        data = request.data
-        path = data['path']
-        collection = self.queryset.get(path=path)
+        filter_collections = self.queryset.filter(path=path)
+        if len(filter_collections) == 0:
+            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        collection = filter_collections[0]
         profile = Profile.objects.get(user=request.user)
         if collection.profile != profile:
             return Response({"error": "У вас нет доступа для изменения подборки от имени этого аккаунта"},
                             status=status.HTTP_400_BAD_REQUEST)
-
+        data = request.data
         data['collection_pk'] = collection.pk
         data.pop('path')
         serializer = serializers.EditDetailCollectionSerializer(data=data)
