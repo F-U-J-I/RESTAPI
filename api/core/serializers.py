@@ -5,7 +5,7 @@ from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
 
 from .models import Profile, Collection, Course, ProfileCollection, CourseCollection, ProfileCourse, Theme, Lesson, \
-    Step, ProfileStep
+    Step, ProfileStep, CourseFit, CourseInfo, CourseSkill, CourseStars
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -151,10 +151,8 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = (
-            'title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
-            'quantity_in_collection', 'status_progress', 'progress'
-        )
+        fields = ('title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
+                  'quantity_in_collection', 'status_progress', 'progress')
 
     @staticmethod
     def get_author(course):
@@ -192,6 +190,65 @@ class MiniCourseSerializer(serializers.ModelSerializer):
 
     def get_progress(self, course):
         return HelperCourseSerializer.get_progress(course=course, profile=self.context.get('profile'))
+
+
+class PageCourseSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
+    status_progress = serializers.SerializerMethodField(default=None)
+
+    class Meta:
+        model = Course
+        fields = ('title', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
+                  'status_progress')
+
+    @staticmethod
+    def get_author(course):
+        return course.profile.user.username
+
+    def get_status_progress(self, course):
+        return HelperCourseSerializer.get_status_progress(course=course, profile=self.context.get('profile'))
+
+
+class PageInfoCourseSerializer(serializers.ModelSerializer):
+    fits = serializers.SerializerMethodField()
+    skills = serializers.SerializerMethodField()
+    stars = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CourseInfo
+        fields = ('title_image_url', 'goal_description', 'fits', 'skills', 'stars')
+
+    @staticmethod
+    def get_fits(course_info):
+        filter_fits = CourseFit.objects.filter(course_info=course_info)
+        fits = list()
+        for fit in filter_fits:
+            fits.append({
+                'title': fit.title,
+                'description': fit.description
+            })
+        return fits
+
+    @staticmethod
+    def get_skills(course_info):
+        filter_skills = CourseSkill.objects.filter(course_info=course_info)
+        skills = list()
+        for skill in filter_skills:
+            skills.append(skill.name)
+        return skills
+
+    @staticmethod
+    def get_stars(course_info):
+        stars = CourseStars.objects.get(course_info=course_info)
+        stars_dict = {
+            'five': stars.five_stars_count,
+            'four': stars.four_stars_count,
+            'three': stars.three_stars_count,
+            'two': stars.two_stars_count,
+            'one': stars.one_stars_count,
+        }
+        stars_dict['total_number'] = sum(stars_dict.values())
+        return stars_dict
 
 
 #####################################

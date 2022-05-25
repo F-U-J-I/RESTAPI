@@ -17,7 +17,7 @@ urlpatterns = [
 
     path('courses/', CourseView.as_view({'get': 'get_list_course'})),
     path('mini-courses/', CourseView.as_view({'get': 'get_list_mini_course'})),
-    path('courses/page/<slug:path>', CourseView.as_view({'get': 'get_page_course'})),
+    path('courses/page/<slug:path>/', CourseView.as_view({'get': 'get_page_course'})),
 
     path('collections/', CollectionView.as_view({'get': 'list'})),
     path('mini-collections/', CollectionView.as_view({'get': 'list_mini_collection'}), name="mini-collections"),

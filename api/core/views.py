@@ -10,7 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from . import serializers
-from .models import Profile, Collection, ProfileCollection, Course
+from .models import Profile, Collection, ProfileCollection, Course, CourseInfo
 from .utils import Util
 
 
@@ -189,9 +189,21 @@ class CourseView(viewsets.ModelViewSet):
                 serializers.CourseSerializer(course, context={'profile': profile}).data)
         return Response(serializer_course_list, status=status.HTTP_200_OK)
 
-    @action(methods=['get'], detail=False)
-    def get_page_course(self, request, *args, **kwargs):
-        pass
+    @action(methods=['get'], detail=True)
+    def get_page_course(self, request, path, *args, **kwargs):
+        if not self.exists_path(path):
+            return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        course = self.queryset.get(path=path)
+        profile = Profile.objects.get(user=request.user)
+        serializer_course = serializers.PageCourseSerializer(course, context={'profile': profile})
+
+        course_info = CourseInfo.objects.get(course=course)
+        serializer_course_info = serializers.PageInfoCourseSerializer(course_info, context={'profile': profile})
+        return Response(data={
+            'course': serializer_course.data,
+            'info': serializer_course_info.data
+        }, status=status.HTTP_200_OK)
 
 
 class CollectionView(viewsets.ModelViewSet):
@@ -226,8 +238,8 @@ class CollectionView(viewsets.ModelViewSet):
 
         collection = self.queryset.get(path=path)
         profile = Profile.objects.get(user=request.user)
-        serializer_collection = serializers.DetailCollectionSerializer(collection, context={'profile': profile}).data
-        return Response(serializer_collection)
+        serializer = serializers.DetailCollectionSerializer(collection, context={'profile': profile})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
     def create_collection(self, request):
