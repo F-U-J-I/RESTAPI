@@ -158,6 +158,7 @@ class Step(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
     content = RichTextUploadingField(blank=True)
+    max_mark = models.IntegerField(default=1)
 
     def __str__(self):
         return f"{self.lesson.theme.course.profile.user.username}: {self.lesson.theme.course.title}: {self.lesson.theme.title}: {self.lesson.title}: {self.title} [Step]"
@@ -230,6 +231,7 @@ class ProfileStep(models.Model):
     step = models.ForeignKey(Step, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     status = models.ForeignKey(ProfileStepStatus, blank=True, null=True, on_delete=models.SET_NULL)
+    mark = models.IntegerField(default=0)
 
     def __str__(self):
         return f"\"{self.profile.user.username}\" to \"{self.step.lesson.theme.course.title}: {self.step.lesson.theme.title}: {self.step.lesson.title}: {self.step.title}\""

@@ -4,7 +4,8 @@ from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
 
-from .models import Profile, Collection, Course, ProfileCollection, CourseCollection, ProfileCourse
+from .models import Profile, Collection, Course, ProfileCollection, CourseCollection, ProfileCourse, Theme, Lesson, \
+    Step, ProfileStep
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -103,17 +104,49 @@ class SetNewPasswordSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
 
+class HelperCourseSerializer:
+    @staticmethod
+    def get_is_added(course, profile):
+        profile_to_course = ProfileCourse.objects.filter(course=course, profile=profile)
+        if profile_to_course:
+            return True
+        return False
+
+    @staticmethod
+    def get_status_progress(course, profile):
+        profile_to_course = ProfileCourse.objects.filter(course=course, profile=profile)
+        if len(profile_to_course) != 0:
+            return profile_to_course[0].status.name
+
+    @staticmethod
+    def get_progress(course, profile):
+        max_progress = 0
+        progress = 0
+        for theme in Theme.objects.filter(course=course):
+            for lesson in Lesson.objects.filter(theme=theme):
+                for step in Step.objects.filter(lesson=lesson):
+                    max_progress += step.max_mark
+                    progress += ProfileStep.objects.get(step=step, profile=profile).mark
+        return {
+            'max_progress': max_progress,
+            'progress': progress
+        }
+
+
 class CourseSerializer(serializers.ModelSerializer):
     """курс"""
     author = serializers.SerializerMethodField()
     quantity_in_collection = serializers.SerializerMethodField()
+
     is_added = serializers.BooleanField(default=False)
+    status_progress = serializers.CharField(default=None)
+    progress = serializers.DictField(default=None)
 
     class Meta:
         model = Course
         fields = (
             'title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
-            'quantity_in_collection', 'is_added'
+            'quantity_in_collection', 'is_added', 'status_progress', 'progress'
         )
 
     @staticmethod
@@ -123,13 +156,6 @@ class CourseSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_quantity_in_collection(course):
         return len(CourseCollection.objects.filter(course=course))
-
-    @staticmethod
-    def get_is_added(course, auth_profile):
-        profile_to_course = ProfileCourse.objects.filter(course=course, profile=auth_profile)
-        if profile_to_course:
-            return True
-        return False
 
 
 class MiniCourseSerializer(serializers.ModelSerializer):
@@ -142,6 +168,15 @@ class MiniCourseSerializer(serializers.ModelSerializer):
 
     def get_author(self, collection):
         return collection.profile.user.username
+
+
+class HelperCollectionSerializer:
+    @staticmethod
+    def get_is_added(collection, auth_profile):
+        profile_to_collection = ProfileCollection.objects.filter(collection=collection, profile=auth_profile)
+        if profile_to_collection:
+            return True
+        return False
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -171,13 +206,6 @@ class CollectionSerializer(serializers.ModelSerializer):
                 courses.append(MiniCourseSerializer(item.course).data)
         courses = sorted(courses, key=lambda x: x['rating'])[:5]
         return courses
-
-    @staticmethod
-    def get_is_added(collection, auth_profile):
-        profile_to_collection = ProfileCollection.objects.filter(collection=collection, profile=auth_profile)
-        if profile_to_collection:
-            return True
-        return False
 
 
 class MiniCollectionSerializer(serializers.ModelSerializer):
@@ -227,13 +255,6 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
                 courses.append(MiniCourseSerializer(item.course).data)
         # courses = sorted(courses, key=lambda x: x['rating'])[:5]
         return courses
-
-    @staticmethod
-    def get_is_added(collection, auth_profile):
-        profile_to_collection = ProfileCollection.objects.filter(collection=collection, profile=auth_profile)
-        if profile_to_collection:
-            return True
-        return False
 
 
 class EditDetailCollectionSerializer(serializers.ModelSerializer):

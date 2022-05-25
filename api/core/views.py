@@ -177,15 +177,24 @@ class CourseView(viewsets.ModelViewSet):
         profile = Profile.objects.get(user=self.request.user)
         for course in self.queryset:
             serializer_course = serializers.CourseSerializer(course).data
-            serializer_course['is_added'] = serializers.CourseSerializer.get_is_added(course, profile)
+            serializer_course['is_added'] = serializers.HelperCourseSerializer.get_is_added(course, profile)
+            serializer_course['status_progress'] = serializers.HelperCourseSerializer.get_status_progress(course, profile)
+            serializer_course['progress'] = None
+            if serializer_course['status_progress'] is not None:
+                serializer_course['progress'] = serializers.HelperCourseSerializer.get_progress(course, profile)
             serializer_course_list.append(serializer_course)
         return Response(serializer_course_list, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=False)
     def get_list_mini_course(self, request, *args, **kwargs):
         serializer_course_list = list()
+        profile = Profile.objects.get(user=self.request.user)
         for course in self.queryset:
             serializer_course = serializers.MiniCourseSerializer(course).data
+            serializer_course['status_progress'] = serializers.HelperCourseSerializer.get_status_progress(course, profile)
+            serializer_course['progress'] = None
+            if serializer_course['status_progress'] is not None:
+                serializer_course['progress'] = serializers.HelperCourseSerializer.get_progress(course, profile)
             serializer_course_list.append(serializer_course)
         return Response(serializer_course_list, status=status.HTTP_200_OK)
 
@@ -204,7 +213,7 @@ class CollectionView(viewsets.ModelViewSet):
         profile = Profile.objects.get(user=self.request.user)
         for collection in self.queryset:
             serializer_collection = serializers.CollectionSerializer(collection).data
-            serializer_collection['is_added'] = serializers.CollectionSerializer.get_is_added(collection, profile)
+            serializer_collection['is_added'] = serializers.HelperCollectionSerializer.get_is_added(collection, profile)
             serializer_collection_list.append(serializer_collection)
         return Response(serializer_collection_list)
 
@@ -214,7 +223,7 @@ class CollectionView(viewsets.ModelViewSet):
         profile = Profile.objects.get(user=self.request.user)
         for collection in self.queryset:
             serializer_collection = serializers.MiniCollectionSerializer(collection).data
-            serializer_collection['is_added'] = serializers.MiniCollectionSerializer.get_is_added(collection, profile)
+            serializer_collection['is_added'] = serializers.HelperCollectionSerializer.get_is_added(collection, profile)
             serializer_collection_list.append(serializer_collection)
         return Response(serializer_collection_list)
 
@@ -225,7 +234,7 @@ class CollectionView(viewsets.ModelViewSet):
         collection = self.queryset.get(path=path)
         serializer_collection = serializers.DetailCollectionSerializer(collection).data
         profile = Profile.objects.get(user=request.user)
-        serializer_collection['is_added'] = serializers.DetailCollectionSerializer.get_is_added(collection, profile)
+        serializer_collection['is_added'] = serializers.HelperCollectionSerializer.get_is_added(collection, profile)
         return Response(serializer_collection)
 
     @action(detail=False, methods=['post'])
