@@ -89,7 +89,7 @@ post_save.connect(create_course, sender=Course)
 # -------------- Page Course START ---------------
 class CourseInfo(models.Model):
     """CourseInfo"""
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    course = models.OneToOneField(Course, on_delete=models.CASCADE)
     title_image_url = models.ImageField(blank=True, null=True)
     goal_description = models.TextField()
 
@@ -109,7 +109,7 @@ class CourseFit(models.Model):
 
 class CourseStars(models.Model):
     """CourseStars"""
-    course_info = models.ForeignKey(CourseInfo, on_delete=models.CASCADE)
+    course_info = models.OneToOneField(CourseInfo, on_delete=models.CASCADE)
     one_stars_count = models.IntegerField(default=0)
     two_stars_count = models.IntegerField(default=0)
     three_stars_count = models.IntegerField(default=0)
@@ -306,7 +306,7 @@ class ProfileCollection(models.Model):
 
 class CollectionStars(models.Model):
     """CollectionStars"""
-    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
+    collection = models.OneToOneField(Collection, on_delete=models.CASCADE)
     one_stars_count = models.IntegerField(default=0)
     two_stars_count = models.IntegerField(default=0)
     three_stars_count = models.IntegerField(default=0)
