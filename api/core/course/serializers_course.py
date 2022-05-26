@@ -2,8 +2,8 @@ from rest_framework import serializers
 
 from .models_course import Course, ProfileCourse, Theme, Lesson, \
     Step, ProfileStep, CourseFit, CourseInfo, CourseSkill, CourseStars
-
 from ..collection.models_collection import CourseCollection
+
 
 #####################################
 #         ##  COURSE ##
@@ -112,13 +112,22 @@ class PageCourseSerializer(serializers.ModelSerializer):
 
 
 class PageInfoCourseSerializer(serializers.ModelSerializer):
+    main_info = serializers.SerializerMethodField()
     fits = serializers.SerializerMethodField()
     skills = serializers.SerializerMethodField()
     stars = serializers.SerializerMethodField()
 
     class Meta:
         model = CourseInfo
-        fields = ('title_image_url', 'goal_description', 'fits', 'skills', 'stars')
+        fields = ('main_info', 'fits', 'skills', 'stars')
+
+    @staticmethod
+    def get_main_info(course_info):
+        main_info = CourseFit.objects.get(course_info=course_info)
+        return {
+            'title_image_url': main_info.title_image_url,
+            'goal_description': main_info.goal_description
+        }
 
     @staticmethod
     def get_fits(course_info):
@@ -141,7 +150,7 @@ class PageInfoCourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_stars(course_info):
-        stars = CourseStars.objects.get(course_info=course_info)
+        stars = CourseStars.objects.get(course=course_info.course)
         stars_dict = {
             'five': stars.five_stars_count,
             'four': stars.four_stars_count,
@@ -154,3 +163,89 @@ class PageInfoCourseSerializer(serializers.ModelSerializer):
 
 
 #####################################
+
+# #########################################
+#        ######## GRADE ########
+# #########################################
+
+class GradeCourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProfileCourse
+        fields = ('grade',)
+
+    @staticmethod
+    def add_course_star(course, grade):
+        stars = CourseStars.objects.get(course=course)
+        if grade == 1:
+            stars.one_stars_count += 1
+        elif grade == 2:
+            stars.two_stars_count += 1
+        elif grade == 3:
+            stars.three_stars_count += 1
+        elif grade == 4:
+            stars.four_stars_count += 1
+        elif grade == 5:
+            stars.five_stars_count += 1
+        stars.save()
+
+    @staticmethod
+    def difference_course_star(course, grade):
+        stars = CourseStars.objects.get(course=course)
+        if grade == 1:
+            stars.one_stars_count -= 1
+        elif grade == 2:
+            stars.two_stars_count -= 1
+        elif grade == 3:
+            stars.three_stars_count -= 1
+        elif grade == 4:
+            stars.four_stars_count -= 1
+        elif grade == 5:
+            stars.five_stars_count -= 1
+        stars.save()
+
+    @staticmethod
+    def update_rating_course(course):
+        stars = CourseStars.objects.get(course=course)
+
+        sum_grade = stars.one_stars_count + stars.two_stars_count * 2 + stars.three_stars_count * 3 \
+                    + stars.four_stars_count * 4 + stars.five_stars_count * 5
+        count = stars.one_stars_count + stars.two_stars_count + stars.three_stars_count + stars.four_stars_count \
+                + stars.five_stars_count
+        try:
+            rating = sum_grade / count
+        except ZeroDivisionError:
+            rating = 0
+        course.rating = rating
+        course.save()
+
+    def create(self, validated_data):
+        profile_course = ProfileCourse.objects.get(profile=self.context.get('profile'),
+                                                   course=self.context.get('course'))
+        if profile_course.grade is not None:
+            raise Exception('This user has already rated')
+
+        profile_course.grade = validated_data['grade']
+        self.add_course_star(course=profile_course.course, grade=profile_course.grade)
+        self.update_rating_course(course=profile_course.course)
+        profile_course.save()
+        return profile_course
+
+    def update(self, instance, validated_data):
+        grade_list = (1, 2, 3, 4, 5)
+        new_grade = validated_data.get('grade')
+        if (type(new_grade) == int) and (new_grade in grade_list) and (instance.grade != new_grade):
+            self.difference_course_star(course=instance.course, grade=instance.grade)
+            instance.grade = validated_data.get('grade')
+            instance.save()
+            self.add_course_star(course=instance.course, grade=instance.grade)
+            self.update_rating_course(course=instance.course)
+        return instance
+
+    def delete_grade(self):
+        profile_course = self.context.get('profile_course')
+        if profile_course.grade is not None:
+            self.difference_course_star(course=profile_course.course, grade=profile_course.grade)
+            self.update_rating_course(course=profile_course.course)
+            profile_course.grade = None
+            profile_course.save()
+        return profile_course

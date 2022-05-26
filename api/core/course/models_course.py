@@ -6,6 +6,7 @@ from django.db.models.signals import post_save
 
 from ..profile.models_profile import Profile
 
+
 # ############## COURSE START ###############
 
 
@@ -48,6 +49,12 @@ def create_course(sender, **kwargs):
         profile_course = ProfileCourse.objects.create(course=course, profile=course.profile)
         profile_course.save()
 
+        course_info = CourseInfo.objects.create(course=course)
+        course_info.save()
+
+        course_stars = CourseStars.objects.create(course=course)
+        course_stars.save()
+
 
 post_save.connect(create_course, sender=Course)
 
@@ -56,11 +63,19 @@ post_save.connect(create_course, sender=Course)
 class CourseInfo(models.Model):
     """CourseInfo"""
     course = models.OneToOneField(Course, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.course.profile.user.username}: {self.course.title} [Info]"
+
+
+class CourseMainInfo(models.Model):
+    """CourseMainInfo"""
+    course_info = models.OneToOneField(CourseInfo, on_delete=models.CASCADE)
     title_image_url = models.ImageField(blank=True, null=True)
     goal_description = models.TextField()
 
     def __str__(self):
-        return f"{self.course.profile.user.username}: {self.course.title} [Info]"
+        return f"{self.course_info.course.profile.user.username}: {self.course_info.course.title} [MainInfo]"
 
 
 class CourseFit(models.Model):
@@ -75,7 +90,7 @@ class CourseFit(models.Model):
 
 class CourseStars(models.Model):
     """CourseStars"""
-    course_info = models.OneToOneField(CourseInfo, on_delete=models.CASCADE)
+    course = models.OneToOneField(Course, on_delete=models.CASCADE)
     one_stars_count = models.IntegerField(default=0)
     two_stars_count = models.IntegerField(default=0)
     three_stars_count = models.IntegerField(default=0)
@@ -83,7 +98,7 @@ class CourseStars(models.Model):
     five_stars_count = models.IntegerField(default=0)
 
     def __str__(self):
-        return f"{self.course_info.course.profile.user.username}: {self.course_info.course.title} [Course Stars]"
+        return f"{self.course.profile.user.username}: {self.course.title} [Course Stars]"
 
 
 class CourseSkill(models.Model):
@@ -213,7 +228,6 @@ def create_profile_to_course(sender, **kwargs):
 
 
 post_save.connect(create_profile_to_course, sender=ProfileStep)
-
 
 # -------- Profile to Course END ------------
 # ############## COURSE END #################
