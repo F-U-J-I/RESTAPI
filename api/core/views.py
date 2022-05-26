@@ -205,6 +205,11 @@ class CourseView(viewsets.ModelViewSet):
             'info': serializer_course_info.data
         }, status=status.HTTP_200_OK)
 
+    # TODO: Подборкам. Выставление оценки
+    # TODO: Курсам. Выставление оценки
+    # TODO: Сделать изменение страницы курса
+    # TODO: Сделать изменение курса
+
 
 class CollectionView(viewsets.ModelViewSet):
     """Коллекция"""
@@ -262,7 +267,7 @@ class CollectionView(viewsets.ModelViewSet):
         profile = Profile.objects.get(user=request.user)
         if collection.profile != profile:
             return Response({"error": "У вас нет доступа для изменения коллекции"}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializers.EditDetailCollectionSerializer(collection).data, status=status.HTTP_200_OK)
+        return Response(serializers.WindowDetailCollectionSerializer(collection).data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['put'])
     def update_info(self, request, path=None, *args, **kwargs):
