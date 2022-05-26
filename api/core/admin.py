@@ -1,11 +1,10 @@
 from django.contrib import admin
 
-from .models import Profile, Subscription, \
-    CourseStatus, Course, \
-    CourseInfo, CourseFit, CourseStars, CourseSkill, \
-    Theme, Lesson, Step, \
-    ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson, ProfileStepStatus, ProfileStep, \
-    Collection, CourseCollection, ProfileCollection, CollectionStars
+from .profile.models_profile import Profile, Subscription
+
+from .course.models_course import CourseStatus, Course, CourseInfo, CourseFit, CourseStars, CourseSkill, Theme, Lesson, \
+    Step, ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson, ProfileStepStatus, ProfileStep
+from .collection.models_collection import Collection, CourseCollection, ProfileCollection, CollectionStars
 
 # Register your models here.
 
