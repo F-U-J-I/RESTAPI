@@ -128,8 +128,7 @@ class GradeCollectionSerializer(serializers.ModelSerializer):
         fields = ('grade',)
 
     @staticmethod
-    def update_collection_star(collection, grade):
-        print('update_collection_star')
+    def add_collection_star(collection, grade):
         stars = CollectionStars.objects.get(collection=collection)
         if grade == 1:
             stars.one_stars_count += 1
@@ -144,41 +143,62 @@ class GradeCollectionSerializer(serializers.ModelSerializer):
         stars.save()
 
     @staticmethod
+    def difference_collection_star(collection, grade):
+        stars = CollectionStars.objects.get(collection=collection)
+        if grade == 1:
+            stars.one_stars_count -= 1
+        elif grade == 2:
+            stars.two_stars_count -= 1
+        elif grade == 3:
+            stars.three_stars_count -= 1
+        elif grade == 4:
+            stars.four_stars_count -= 1
+        elif grade == 5:
+            stars.five_stars_count -= 1
+        stars.save()
+
+    @staticmethod
     def update_rating_collection(collection):
-        print('update_rating_collection')
         stars = CollectionStars.objects.get(collection=collection)
 
         sum_grade = stars.one_stars_count + stars.two_stars_count * 2 + stars.three_stars_count * 3 \
                     + stars.four_stars_count * 4 + stars.five_stars_count * 5
         count = stars.one_stars_count + stars.two_stars_count + stars.three_stars_count + stars.four_stars_count \
                 + stars.five_stars_count
+        print(sum_grade, count)
         rating = sum_grade / count
         collection.rating = rating
         collection.save()
 
     def create(self, validated_data):
-        print('create')
         profile_collection = ProfileCollection.objects.get(profile=self.context.get('profile'),
                                                            collection=self.context.get('collection'))
+        if profile_collection.grade is not None:
+            raise Exception('This user has already rated')
+
         profile_collection.grade = validated_data['grade']
-        self.update_collection_star(collection=profile_collection.collection, grade=profile_collection.grade)
+        self.add_collection_star(collection=profile_collection.collection, grade=profile_collection.grade)
         self.update_rating_collection(collection=profile_collection.collection)
+        profile_collection.save()
         return profile_collection
 
-    def validate(self, attrs):
-        print('validate')
-        profile_collection = ProfileCollection.objects.get(profile=self.context.get('profile'),
-                                                                collection=self.context.get('collection'))
-        print(profile_collection)
-        if profile_collection.grade is not None:
-            raise BaseException('This user has already rated')
-        return super().validate(attrs)
+    def update(self, instance, validated_data):
+        grade_list = (1, 2, 3, 4, 5)
+        new_grade = validated_data.get('grade')
+        if (type(new_grade) == int) and (new_grade in grade_list) and (instance.grade != new_grade):
+            self.difference_collection_star(collection=instance.collection, grade=instance.grade)
+            instance.grade = validated_data.get('grade')
+            instance.save()
+            self.add_collection_star(collection=instance.collection, grade=instance.grade)
+            self.update_rating_collection(collection=instance.collection)
+        return instance
 
-    # def update(self, instance, validated_data):
-    #     instance.title = validated_data.get('title', instance.title)
-    #     instance.description = validated_data.get('description', instance.description)
-    #     instance.wallpaper = validated_data.get('wallpaper', instance.wallpaper)
-    #     instance.image_url = validated_data.get('image_url', instance.image_url)
-    #     instance.path = validated_data.get('path', instance.path)
-    #     instance.save()
-    #     return instance
+    def delete_grade(self):
+        profile_collection = self.context.get('profile_collection')
+        if profile_collection.grade is not None:
+            self.difference_collection_star(collection=profile_collection.collection, grade=profile_collection.grade)
+            self.update_rating_collection(collection=profile_collection.collection)
+            profile_collection.grade = None
+            profile_collection.save()
+        return profile_collection
+

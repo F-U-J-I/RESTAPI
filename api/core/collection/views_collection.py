@@ -59,12 +59,54 @@ class CollectionView(viewsets.ModelViewSet):
         profile = Profile.objects.get(user=self.request.user)
         serializer = GradeCollectionSerializer(data=request.data,
                                                context={'profile': profile, 'collection': collection})
-        serializer.is_valid(raise_exception=True)
-        # try:
-        #     serializer.is_valid(raise_exception=True)
-        # except BaseException as ex:
-        #     return Response({'error': "Вы уже оценивали эту подборку"}, status=status.HTTP_400_BAD_REQUEST)
-        # serializer.save()
+        try:
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        except Exception:
+            return Response({'error': "Вы уже оценивали эту подборку"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'collection': collection.title,
+            'path': collection.path,
+            'grade': serializer.data['grade']
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['put'])
+    def update_grade(self, request, path):
+        if not self.exists_path(path):
+            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        collection = self.queryset.get(path=path)
+        profile = Profile.objects.get(user=self.request.user)
+        profile_collection = ProfileCollection.objects.get(profile=profile, collection=collection)
+
+        serializer = GradeCollectionSerializer(data=request.data, instance=profile_collection)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception:
+            return Response({'error': "Вы уже оценивали эту подборку"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response({
+            'collection': collection.title,
+            'path': collection.path,
+            'grade': serializer.data['grade']
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'])
+    def delete_grade(self, request, path):
+        if not self.exists_path(path):
+            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        collection = self.queryset.get(path=path)
+        profile = Profile.objects.get(user=self.request.user)
+
+        if collection.profile != profile:
+            return Response({"error": "У вас нет доступа для удаления оценки у подборки от имени этого аккаунта"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        profile_collection = ProfileCollection.objects.get(profile=profile, collection=collection)
+        serializer = GradeCollectionSerializer(context={'profile_collection': profile_collection})
+        serializer.delete_grade()
+
         return Response({
             'collection': collection.title,
             'path': collection.path,
