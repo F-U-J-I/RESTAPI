@@ -147,7 +147,7 @@ class ProfileCourse(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     status = models.ForeignKey(ProfileCourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
     progress = models.IntegerField(default=0)
-    point = models.IntegerField(blank=True, null=True)
+    grade = models.IntegerField(blank=True, null=True)
     date_added = models.DateField(default=datetime.date.today)
 
     def __str__(self):

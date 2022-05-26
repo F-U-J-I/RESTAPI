@@ -10,6 +10,9 @@ urlpatterns = [
     path('collections/', CollectionView.as_view({'get': 'list'})),
     path('mini-collections/', CollectionView.as_view({'get': 'list_mini_collection'}), name="mini-collections"),
     path('collections/<slug:path>/', CollectionView.as_view({'get': 'get'})),
+
+    path('collections/create/grade/<slug:path>/', CollectionView.as_view({'post': 'set_grade'})),
+
     path('create/collection/', CollectionView.as_view({'post': 'create_collection'})),
     path('get-update/collections/<slug:path>/', CollectionView.as_view({'get': 'get_update_info'})),
     path('update/collections/<slug:path>/', CollectionView.as_view({'put': 'update_info'})),

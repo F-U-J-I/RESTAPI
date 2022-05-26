@@ -1,8 +1,9 @@
 from rest_framework import serializers
 
-from .models_collection import Collection, ProfileCollection, CourseCollection
+from .models_collection import Collection, ProfileCollection, CourseCollection, CollectionStars
 from ..course.serializers_course import MiniCourseSerializer
 from ..profile.serializers_profile import ProfileAsAuthor
+
 
 #####################################
 #       ##  COLLECTION ##
@@ -113,4 +114,71 @@ class WindowDetailCollectionSerializer(serializers.ModelSerializer):
         instance.path = validated_data.get('path', instance.path)
         instance.save()
         return instance
+
+
 #####################################
+
+# #########################################
+#        ######## GRADE ########
+# #########################################
+
+class GradeCollectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProfileCollection
+        fields = ('grade',)
+
+    @staticmethod
+    def update_collection_star(collection, grade):
+        print('update_collection_star')
+        stars = CollectionStars.objects.get(collection=collection)
+        if grade == 1:
+            stars.one_stars_count += 1
+        elif grade == 2:
+            stars.two_stars_count += 1
+        elif grade == 3:
+            stars.three_stars_count += 1
+        elif grade == 4:
+            stars.four_stars_count += 1
+        elif grade == 5:
+            stars.five_stars_count += 1
+        stars.save()
+
+    @staticmethod
+    def update_rating_collection(collection):
+        print('update_rating_collection')
+        stars = CollectionStars.objects.get(collection=collection)
+
+        sum_grade = stars.one_stars_count + stars.two_stars_count * 2 + stars.three_stars_count * 3 \
+                    + stars.four_stars_count * 4 + stars.five_stars_count * 5
+        count = stars.one_stars_count + stars.two_stars_count + stars.three_stars_count + stars.four_stars_count \
+                + stars.five_stars_count
+        rating = sum_grade / count
+        collection.rating = rating
+        collection.save()
+
+    def create(self, validated_data):
+        print('create')
+        profile_collection = ProfileCollection.objects.get(profile=self.context.get('profile'),
+                                                           collection=self.context.get('collection'))
+        profile_collection.grade = validated_data['grade']
+        self.update_collection_star(collection=profile_collection.collection, grade=profile_collection.grade)
+        self.update_rating_collection(collection=profile_collection.collection)
+        return profile_collection
+
+    def validate(self, attrs):
+        print('validate')
+        profile_collection = ProfileCollection.objects.get(profile=self.context.get('profile'),
+                                                                collection=self.context.get('collection'))
+        print(profile_collection)
+        if profile_collection.grade is not None:
+            raise BaseException('This user has already rated')
+        return super().validate(attrs)
+
+    # def update(self, instance, validated_data):
+    #     instance.title = validated_data.get('title', instance.title)
+    #     instance.description = validated_data.get('description', instance.description)
+    #     instance.wallpaper = validated_data.get('wallpaper', instance.wallpaper)
+    #     instance.image_url = validated_data.get('image_url', instance.image_url)
+    #     instance.path = validated_data.get('path', instance.path)
+    #     instance.save()
+    #     return instance

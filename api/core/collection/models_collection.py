@@ -32,8 +32,12 @@ def create_collection(sender, **kwargs):
         collection = kwargs['instance']
         collection.path = collection.pk
         collection.save()
+
         profile_collection = ProfileCollection.objects.create(collection=collection, profile=collection.profile)
         profile_collection.save()
+
+        collection_stars = CollectionStars.objects.create(collection=collection)
+        collection_stars.save()
 
 
 post_save.connect(create_collection, sender=Collection)
@@ -53,7 +57,7 @@ class ProfileCollection(models.Model):
     """ProfileCollection"""
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    point = models.IntegerField(blank=True, null=True)
+    grade = models.IntegerField(blank=True, null=True)
     date_added = models.DateField(default=datetime.date.today, blank=True, null=True)
 
     def __str__(self):
