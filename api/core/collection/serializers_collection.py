@@ -37,13 +37,12 @@ class CollectionSerializer(serializers.ModelSerializer):
     def get_author(collection):
         return ProfileAsAuthor(collection.profile).data
 
-    @staticmethod
-    def get_courses(collection):
+    def get_courses(self, collection):
         courses_to_collection = CourseCollection.objects.filter(collection=collection)
         courses = list()
         for item in courses_to_collection:
             if item.course.status.name == 'Опубликован':
-                courses.append(MiniCourseSerializer(item.course).data)
+                courses.append(MiniCourseSerializer(item.course, context={'profile': self.context.get('profile')}).data)
         courses = sorted(courses, key=lambda x: x['rating'])[:5]
         return courses
 
@@ -85,13 +84,12 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
     def get_author(collection):
         return ProfileAsAuthor(collection.profile).data
 
-    @staticmethod
-    def get_courses(collection):
+    def get_courses(self, collection):
         courses_to_collection = CourseCollection.objects.filter(collection=collection)
         courses = list()
         for item in courses_to_collection:
             if item.course.status.name == 'Опубликован':
-                courses.append(MiniCourseSerializer(item.course).data)
+                courses.append(MiniCourseSerializer(item.course, context={'profile': self.context.get('profile')}).data)
         return courses
 
     def get_is_added(self, collection):
@@ -201,4 +199,3 @@ class GradeCollectionSerializer(serializers.ModelSerializer):
             profile_collection.grade = None
             profile_collection.save()
         return profile_collection
-

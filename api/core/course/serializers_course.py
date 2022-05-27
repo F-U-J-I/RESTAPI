@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
 from .models_course import Course, ProfileCourse, Theme, Lesson, \
-    Step, ProfileStep, CourseFit, CourseInfo, CourseSkill, CourseStars
+    Step, ProfileStep, \
+    CourseInfo, CourseMainInfo, CourseFit, CourseSkill, CourseStars
 from ..collection.models_collection import CourseCollection
 
 
@@ -22,7 +23,9 @@ class HelperCourseSerializer:
     def get_status_progress(course, profile):
         profile_to_course = ProfileCourse.objects.filter(course=course, profile=profile)
         if len(profile_to_course) != 0:
-            return profile_to_course[0].status.name
+            status = profile_to_course[0].status
+            if status is not None:
+                return status.name
         return None
 
     @staticmethod
@@ -42,23 +45,34 @@ class HelperCourseSerializer:
             'progress': progress
         }
 
+    @staticmethod
+    def get_role(profile, course):
+        profile_course_list = ProfileCourse.objects.filter(profile=profile, course=course)
+        if len(profile_course_list) == 0:
+            return None
+        return profile_course_list[0].role.name
+
 
 class CourseSerializer(serializers.ModelSerializer):
     """курс"""
     author = serializers.SerializerMethodField()
     quantity_in_collection = serializers.SerializerMethodField()
 
+    role = serializers.SerializerMethodField()
     status_progress = serializers.SerializerMethodField(default=None)
     progress = serializers.SerializerMethodField(default=None)
 
     class Meta:
         model = Course
         fields = ('title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
-                  'quantity_in_collection', 'status_progress', 'progress')
+                  'quantity_in_collection', 'role', 'status_progress', 'progress')
 
     @staticmethod
     def get_author(course):
         return course.profile.user.username
+
+    def get_role(self, course):
+        return HelperCourseSerializer.get_role(course=course, profile=self.context.get('profile'))
 
     @staticmethod
     def get_quantity_in_collection(course):
@@ -74,18 +88,23 @@ class CourseSerializer(serializers.ModelSerializer):
 class MiniCourseSerializer(serializers.ModelSerializer):
     """Мини курс"""
     author = serializers.SerializerMethodField()
-
+    role = serializers.SerializerMethodField()
     status_progress = serializers.SerializerMethodField(default=None)
     progress = serializers.SerializerMethodField(default=None)
 
     class Meta:
         model = Course
-        fields = ('title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
-                  'status_progress', 'progress')
+        fields = (
+            'title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount', 'role',
+            'status_progress', 'progress')
+
+    def get_role(self, course):
+        profile = self.context.get('profile')
+        return HelperCourseSerializer.get_role(profile=profile, course=course)
 
     @staticmethod
-    def get_author(collection):
-        return collection.profile.user.username
+    def get_author(course):
+        return course.profile.user.username
 
     def get_status_progress(self, course):
         return HelperCourseSerializer.get_status_progress(course=course, profile=self.context.get('profile'))
@@ -123,9 +142,15 @@ class PageInfoCourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_main_info(course_info):
-        main_info = CourseFit.objects.get(course_info=course_info)
+        main_info_list = CourseMainInfo.objects.filter(course_info=course_info)
+        if len(main_info_list) == 0:
+            return None
+        main_info = main_info_list[0]
+        title_image_url = None
+        if main_info.title_image_url:
+            title_image_url = main_info.title_image_url.url
         return {
-            'title_image_url': main_info.title_image_url,
+            'title_image_url': title_image_url,
             'goal_description': main_info.goal_description
         }
 

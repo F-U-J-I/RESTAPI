@@ -2,8 +2,9 @@ from django.contrib import admin
 
 from .profile.models_profile import Profile, Subscription
 
-from .course.models_course import CourseStatus, Course, CourseInfo, CourseFit, CourseStars, CourseSkill, Theme, Lesson, \
-    Step, ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson, ProfileStepStatus, ProfileStep
+from .course.models_course import CourseStatus, Course, CourseInfo, CourseMainInfo, CourseFit, CourseStars, CourseSkill, Theme, Lesson, \
+    Step, ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson, ProfileStepStatus, ProfileStep, \
+    ProfileCourseRole
 from .collection.models_collection import Collection, CourseCollection, ProfileCollection, CollectionStars
 
 # Register your models here.
@@ -18,6 +19,7 @@ admin.site.register(Course)
 
 # Page COURSE
 admin.site.register(CourseInfo)
+admin.site.register(CourseMainInfo)
 admin.site.register(CourseFit)
 admin.site.register(CourseStars)
 admin.site.register(CourseSkill)
@@ -28,6 +30,7 @@ admin.site.register(Lesson)
 admin.site.register(Step)
 
 # Profile to Course START
+admin.site.register(ProfileCourseRole)
 admin.site.register(ProfileCourseStatus)
 admin.site.register(ProfileCourse)
 admin.site.register(ProfileTheme)

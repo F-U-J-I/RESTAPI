@@ -48,6 +48,9 @@ def create_course(sender, **kwargs):
 
         profile_course = ProfileCourse.objects.create(course=course, profile=course.profile)
         profile_course.save()
+        profile_course.role = ProfileCourseRole.objects.get(name="Admin")
+        profile_course.status = None
+        profile_course.save()
 
         course_info = CourseInfo.objects.create(course=course)
         course_info.save()
@@ -72,7 +75,7 @@ class CourseMainInfo(models.Model):
     """CourseMainInfo"""
     course_info = models.OneToOneField(CourseInfo, on_delete=models.CASCADE)
     title_image_url = models.ImageField(blank=True, null=True)
-    goal_description = models.TextField()
+    goal_description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.course_info.course.profile.user.username}: {self.course_info.course.title} [MainInfo]"
@@ -148,6 +151,14 @@ class Step(models.Model):
 # ------------ Content Course END ----------------
 
 # ------------ Profile to Course START --------------
+class ProfileCourseRole(models.Model):
+    """Role Profile to Course: Admin, User"""
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return f"{self.name} [Role Profile to Course]"
+
+
 class ProfileCourseStatus(models.Model):
     """Status Profile to Course: Being studied, Completed"""
     name = models.CharField(max_length=64)
@@ -160,6 +171,7 @@ class ProfileCourse(models.Model):
     """ProfileCourse"""
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    role = models.ForeignKey(ProfileCourseRole, blank=True, null=True, on_delete=models.CASCADE )
     status = models.ForeignKey(ProfileCourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
     progress = models.IntegerField(default=0)
     grade = models.IntegerField(blank=True, null=True)
@@ -173,8 +185,8 @@ def create_profile_to_course(sender, **kwargs):
     """When a ProfileCourse is created, autofill fields"""
     if kwargs['created']:
         profile_course = kwargs['instance']
-        profile_course_status = ProfileCourseStatus.objects.filter(name="Изучается")[0]
-        profile_course.status = profile_course_status
+        profile_course.status = ProfileCourseStatus.objects.get(name="Изучается")
+        profile_course.role = ProfileCourseRole.objects.get(name="User")
         profile_course.save()
 
 

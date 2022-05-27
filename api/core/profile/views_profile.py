@@ -4,6 +4,8 @@ from rest_framework.response import Response
 
 from .serializers_profile import ProfileSerializer, UserSerializer, MiniProfileSerializer
 from .models_profile import Profile
+from ..course.models_course import ProfileCourse
+from ..course.serializers_course import MiniCourseSerializer
 
 
 class ProfileView(viewsets.ModelViewSet):
@@ -30,3 +32,16 @@ class ProfileView(viewsets.ModelViewSet):
         for profile in self.queryset:
             serializer_profile_list.append(MiniProfileSerializer(profile).data)
         return Response(serializer_profile_list, status=status.HTTP_200_OK)
+
+    @action(methods=['get'], detail=False)
+    def get_studying_courses(self, request, path):
+        """Какие курсы изучает студент"""
+        if not self.exists_path(path):
+            return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
+        serializer_course_list = list()
+        profile = Profile.objects.get(path=path)
+        profile_course_list = ProfileCourse.objects.filter(profile=profile)
+        for profile_course in profile_course_list:
+            serializer_course_list.append(
+                MiniCourseSerializer(profile_course.course, context={'profile': profile}).data)
+        return Response(serializer_course_list, status=status.HTTP_200_OK)

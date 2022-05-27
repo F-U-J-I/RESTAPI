@@ -22,19 +22,19 @@ class CollectionView(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         serializer_collection_list = list()
-        profile = Profile.objects.get(user=self.request.user)
+        auth = Profile.objects.get(user=self.request.user)
         for collection in self.queryset:
             serializer_collection_list.append(
-                CollectionSerializer(collection, context={'profile': profile}).data)
+                CollectionSerializer(collection, context={'profile': auth}).data)
         return Response(serializer_collection_list)
 
     @action(detail=False, methods=['get'])
     def list_mini_collection(self, request, *args, **kwargs):
         serializer_collection_list = list()
-        profile = Profile.objects.get(user=self.request.user)
+        auth = Profile.objects.get(user=self.request.user)
         for collection in self.queryset:
             serializer_collection_list.append(
-                CollectionSerializer(collection, context={'profile': profile}).data)
+                CollectionSerializer(collection, context={'profile': auth}).data)
         return Response(serializer_collection_list)
 
     def get(self, request, path=None, *args, **kwargs):
@@ -42,8 +42,8 @@ class CollectionView(viewsets.ModelViewSet):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 
         collection = self.queryset.get(path=path)
-        profile = Profile.objects.get(user=request.user)
-        serializer = DetailCollectionSerializer(collection, context={'profile': profile})
+        auth = Profile.objects.get(user=request.user)
+        serializer = DetailCollectionSerializer(collection, context={'profile': auth})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     # #########################################

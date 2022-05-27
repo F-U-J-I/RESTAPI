@@ -2,7 +2,7 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models_course import Course, CourseInfo, ProfileCourse
+from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
     MiniCourseSerializer
 from ..profile.models_profile import Profile
@@ -13,6 +13,14 @@ class CourseView(viewsets.ModelViewSet):
     lookup_field = 'slug'
     queryset = Course.objects.all()
     permission_classes = [permissions.IsAuthenticated]
+
+    @staticmethod
+    def exists_access_page(course, profile):
+        status_development = CourseStatus.objects.get(name='В разработке')
+        status_released = CourseStatus.objects.get(name='Опубликован')
+        if (course.status == status_released) or (course.status == status_development and profile == course.profile):
+            return True
+        return False
 
     def exists_path(self, path):
         return len(self.queryset.filter(path=path)) != 0
@@ -42,8 +50,10 @@ class CourseView(viewsets.ModelViewSet):
 
         course = self.queryset.get(path=path)
         profile = Profile.objects.get(user=request.user)
-        serializer_course = PageCourseSerializer(course, context={'profile': profile})
+        if not self.exists_access_page(course=course, profile=profile):
+            return Response({'error': "У вас нет доступа к этой странице"}, status=status.HTTP_404_NOT_FOUND)
 
+        serializer_course = PageCourseSerializer(course, context={'profile': profile})
         course_info = CourseInfo.objects.get(course=course)
         serializer_course_info = PageInfoCourseSerializer(course_info, context={'profile': profile})
         return Response(data={
