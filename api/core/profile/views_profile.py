@@ -6,6 +6,7 @@ from .serializers_profile import ProfileSerializer, UserSerializer, MiniProfileS
 from .models_profile import Profile
 from ..course.models_course import ProfileCourse, ProfileCourseStatus
 from ..course.serializers_course import MiniCourseSerializer
+from ..utils import Util
 
 
 class ProfileView(viewsets.ModelViewSet):
@@ -39,13 +40,11 @@ class ProfileView(viewsets.ModelViewSet):
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
-        status_studying_list = ProfileCourseStatus.objects.filter(name='Изучается')
-        if len(status_studying_list) == 0:
-            return Response({'status': "Такой записи не существует"}, status=status.HTTP_400_BAD_REQUEST)
+        profile = Profile.objects.get(path=path)
+        status_studying = ProfileCourseStatus.objects.filter(name=Util.PROFILE_COURSE_STATUS_STUDYING_NAME)
+        profile_course_list = ProfileCourse.objects.filter(profile=profile, status__in=status_studying)
 
         serializer_course_list = list()
-        profile = Profile.objects.get(path=path)
-        profile_course_list = ProfileCourse.objects.filter(profile=profile, status=status_studying_list[0])
         for profile_course in profile_course_list:
             serializer_course_list.append(
                 MiniCourseSerializer(profile_course.course, context={'profile': profile}).data)
@@ -57,14 +56,41 @@ class ProfileView(viewsets.ModelViewSet):
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
-        status_studying_list = ProfileCourseStatus.objects.filter(name='Завершен')
-        if len(status_studying_list) == 0:
-            return Response({'status': "Такой записи не существует"}, status=status.HTTP_400_BAD_REQUEST)
+        profile = Profile.objects.get(path=path)
+        status_studied = ProfileCourseStatus.objects.filter(name=Util.PROFILE_COURSE_STATUS_STUDIED_NAME)
+        profile_course_list = ProfileCourse.objects.filter(profile=profile, status__in=status_studied)
 
         serializer_course_list = list()
-        profile = Profile.objects.get(path=path)
-        profile_course_list = ProfileCourse.objects.filter(profile=profile, status=status_studying_list[0])
         for profile_course in profile_course_list:
             serializer_course_list.append(
                 MiniCourseSerializer(profile_course.course, context={'profile': profile}).data)
         return Response(serializer_course_list, status=status.HTTP_200_OK)
+
+    @action(methods=['get'], detail=False)
+    def get_statistic_study_courses(self, request, path):
+        """Какие курсы ИЗУЧИЛ студент"""
+        if not self.exists_path(path):
+            return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile = Profile.objects.get(path=path)
+        profile_course_list = ProfileCourse.objects.filter(profile=profile)
+
+        studying_quantity = 0
+        studied_quantity = 0
+        for profile_course in profile_course_list:
+            if profile_course.status is None:
+                continue
+            if profile_course.status.name == Util.PROFILE_COURSE_STATUS_STUDYING_NAME:
+                studying_quantity += 1
+            elif profile_course.status.name == Util.PROFILE_COURSE_STATUS_STUDIED_NAME:
+                studied_quantity += 1
+
+        percent = 0
+        if studied_quantity != 0:
+            percent = studied_quantity / (studying_quantity + studied_quantity) * 100
+
+        return Response({
+            'studying_quantity': studying_quantity,
+            'studied_quantity': studied_quantity,
+            'percent': percent,
+        }, status=status.HTTP_200_OK)

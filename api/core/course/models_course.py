@@ -6,8 +6,8 @@ from django.db.models.signals import post_save
 
 from ..profile.models_profile import Profile
 
-
 # ############## COURSE START ###############
+from ..utils import Util
 
 
 class CourseStatus(models.Model):
@@ -42,13 +42,13 @@ def create_course(sender, **kwargs):
     if kwargs['created']:
         course = kwargs['instance']
         course.path = course.pk
-        course_status = CourseStatus.objects.filter(name="В разработке")[0]
+        course_status = CourseStatus.objects.filter(name=Util.COURSE_STATUS_DEV_NAME)[0]
         course.status = course_status
         course.save()
 
         profile_course = ProfileCourse.objects.create(course=course, profile=course.profile)
-        profile_course.role = ProfileCourseRole.objects.get(name="Admin")
-        profile_course.status = None
+        profile_course.role = ProfileCourseRole.objects.get(name=Util.PROFILE_COURSE_ROLE_ADMIN_NAME)
+        profile_course.status = ProfileCourseStatus.objects.get(name=Util.PROFILE_COURSE_STATUS_SEE_NAME)
         profile_course.save()
 
         course_info = CourseInfo.objects.create(course=course)
@@ -170,7 +170,7 @@ class ProfileCourse(models.Model):
     """ProfileCourse"""
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    role = models.ForeignKey(ProfileCourseRole, blank=True, null=True, on_delete=models.CASCADE)
+    role = models.ForeignKey(ProfileCourseRole, blank=True, null=True, on_delete=models.SET_NULL)
     status = models.ForeignKey(ProfileCourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
     progress = models.IntegerField(default=0)
     grade = models.IntegerField(blank=True, null=True)
@@ -178,8 +178,6 @@ class ProfileCourse(models.Model):
 
     def __str__(self):
         status = "СОЗДАТЕЛЬ"
-        if self.status is not None:
-            status = self.status.name
         return f"\"{self.profile.user.username}\" to \"{self.course.profile}: {self.course.title}\" [{status}]"
 
 
@@ -188,9 +186,9 @@ def create_profile_to_course(sender, **kwargs):
     if kwargs['created']:
         profile_course = kwargs['instance']
         if profile_course.status is None:
-            profile_course.status = ProfileCourseStatus.objects.get(name="Изучается")
+            profile_course.status = ProfileCourseStatus.objects.get(name=Util.PROFILE_COURSE_STATUS_SEE_NAME)
         if profile_course.role is None:
-            profile_course.role = ProfileCourseRole.objects.get(name="User")
+            profile_course.role = ProfileCourseRole.objects.get(name=Util.PROFILE_COURSE_ROLE_USER_NAME)
         profile_course.save()
 
 
@@ -238,7 +236,7 @@ def create_profile_to_course(sender, **kwargs):
     """When a ProfileStep is created, autofill fields"""
     if kwargs['created']:
         profile_step = kwargs['instance']
-        profile_step_status = ProfileStepStatus.objects.filter(name="Изучается")[0]
+        profile_step_status = ProfileStepStatus.objects.filter(name=Util.PROFILE_COURSE_STATUS_STUDYING_NAME)[0]
         profile_step.status = profile_step_status
         profile_step.save()
 

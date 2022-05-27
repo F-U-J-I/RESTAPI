@@ -8,6 +8,7 @@ from ..profile.serializers_profile import ProfileAsAuthor
 #####################################
 #       ##  COLLECTION ##
 #####################################
+from ..utils import Util
 
 
 class HelperCollectionSerializer:
@@ -41,7 +42,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         courses_to_collection = CourseCollection.objects.filter(collection=collection)
         courses = list()
         for item in courses_to_collection:
-            if item.course.status.name == 'Опубликован':
+            if item.course.status.name == Util.COURSE_STATUS_RELEASE_NAME:
                 courses.append(MiniCourseSerializer(item.course, context={'profile': self.context.get('profile')}).data)
         courses = sorted(courses, key=lambda x: x['rating'])[:5]
         return courses
@@ -88,7 +89,7 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
         courses_to_collection = CourseCollection.objects.filter(collection=collection)
         courses = list()
         for item in courses_to_collection:
-            if item.course.status.name == 'Опубликован':
+            if item.course.status.name == Util.COURSE_STATUS_RELEASE_NAME:
                 courses.append(MiniCourseSerializer(item.course, context={'profile': self.context.get('profile')}).data)
         return courses
 

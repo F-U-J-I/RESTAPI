@@ -12,5 +12,6 @@ urlpatterns = [
     path('mini-profiles/', ProfileView.as_view({'get': 'get_list_mini_profile'})),
     path('profiles/<slug:path>/studying/courses/', ProfileView.as_view({'get': 'get_studying_courses'})),
     path('profiles/<slug:path>/studied/courses/', ProfileView.as_view({'get': 'get_studied_courses'})),
+    path('profiles/<slug:path>/study-percent/', ProfileView.as_view({'get': 'get_statistic_study_courses'})),
     # path('profile/<slug:path>/', ProfileView.as_view()),
 ]

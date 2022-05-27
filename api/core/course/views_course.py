@@ -6,6 +6,7 @@ from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
     MiniCourseSerializer
 from ..profile.models_profile import Profile
+from ..utils import Util
 
 
 class CourseView(viewsets.ModelViewSet):
@@ -16,8 +17,8 @@ class CourseView(viewsets.ModelViewSet):
 
     @staticmethod
     def exists_access_page(course, profile):
-        status_development = CourseStatus.objects.get(name='В разработке')
-        status_released = CourseStatus.objects.get(name='Опубликован')
+        status_development = CourseStatus.objects.get(name=Util.COURSE_STATUS_DEV_NAME)
+        status_released = CourseStatus.objects.get(name=Util.COURSE_STATUS_RELEASE_NAME)
         if (course.status == status_released) or (course.status == status_development and profile == course.profile):
             return True
         return False
