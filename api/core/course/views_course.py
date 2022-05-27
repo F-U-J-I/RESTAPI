@@ -3,7 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .models_course import Course, CourseInfo, ProfileCourse
-from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer
+from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
+    MiniCourseSerializer
 from ..profile.models_profile import Profile
 
 
@@ -31,7 +32,7 @@ class CourseView(viewsets.ModelViewSet):
         profile = Profile.objects.get(user=self.request.user)
         for course in self.queryset:
             serializer_course_list.append(
-                CourseSerializer(course, context={'profile': profile}).data)
+                MiniCourseSerializer(course, context={'profile': profile}).data)
         return Response(serializer_course_list, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=True)
@@ -116,5 +117,11 @@ class CourseView(viewsets.ModelViewSet):
             'grade': serializer.data['grade']
         }, status=status.HTTP_200_OK)
 
+    # TODO: Профиль большие окна
+    # TODO: Профиль мелкие окна
+    # TODO: Профиль. Ограничение на имя (нижняя и верхняя граница)
+    # TODO: User. Уникальность email
+    # TODO: User. При регистрации не отправлять repeat_password
+    # TODO: Профиль детальная страница окна
     # TODO: Сделать изменение страницы курса
     # TODO: Сделать изменение курса

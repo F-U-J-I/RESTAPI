@@ -8,5 +8,6 @@ router = DefaultRouter()
 urlpatterns = [
     path('', include(router.urls)),
 
-    path('profile/<slug:path>/', ProfileView.as_view()),
+    path('profiles/', ProfileView.as_view({'get': 'get_list_profile'})),
+    # path('profile/<slug:path>/', ProfileView.as_view()),
 ]

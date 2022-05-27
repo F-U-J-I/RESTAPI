@@ -6,8 +6,9 @@ from django.db.models.signals import post_save
 class Profile(models.Model):
     """Advanced User"""
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    description = models.TextField(blank=True, null=True)
     path = models.CharField(max_length=64, unique=True)
-    avatar_url = models.ImageField(blank=True, null=True)
+    avatar_url = models.ImageField(default='profile-default.jpg')
     wrapper_url = models.ImageField(blank=True)
     is_verified = models.BooleanField(default=False)
 
