@@ -4,7 +4,7 @@ from rest_framework.response import Response
 
 from .serializers_profile import ProfileSerializer, UserSerializer, MiniProfileSerializer
 from .models_profile import Profile
-from ..course.models_course import ProfileCourse
+from ..course.models_course import ProfileCourse, ProfileCourseStatus
 from ..course.serializers_course import MiniCourseSerializer
 
 
@@ -35,12 +35,35 @@ class ProfileView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_studying_courses(self, request, path):
-        """Какие курсы изучает студент"""
+        """Какие курсы ИЗУЧАЕТ студент"""
         if not self.exists_path(path):
-            return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        status_studying_list = ProfileCourseStatus.objects.filter(name='Изучается')
+        if len(status_studying_list) == 0:
+            return Response({'status': "Такой записи не существует"}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer_course_list = list()
         profile = Profile.objects.get(path=path)
-        profile_course_list = ProfileCourse.objects.filter(profile=profile)
+        profile_course_list = ProfileCourse.objects.filter(profile=profile, status=status_studying_list[0])
+        for profile_course in profile_course_list:
+            serializer_course_list.append(
+                MiniCourseSerializer(profile_course.course, context={'profile': profile}).data)
+        return Response(serializer_course_list, status=status.HTTP_200_OK)
+
+    @action(methods=['get'], detail=False)
+    def get_studied_courses(self, request, path):
+        """Какие курсы ИЗУЧИЛ студент"""
+        if not self.exists_path(path):
+            return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        status_studying_list = ProfileCourseStatus.objects.filter(name='Завершен')
+        if len(status_studying_list) == 0:
+            return Response({'status': "Такой записи не существует"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer_course_list = list()
+        profile = Profile.objects.get(path=path)
+        profile_course_list = ProfileCourse.objects.filter(profile=profile, status=status_studying_list[0])
         for profile_course in profile_course_list:
             serializer_course_list.append(
                 MiniCourseSerializer(profile_course.course, context={'profile': profile}).data)

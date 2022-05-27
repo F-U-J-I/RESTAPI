@@ -47,7 +47,6 @@ def create_course(sender, **kwargs):
         course.save()
 
         profile_course = ProfileCourse.objects.create(course=course, profile=course.profile)
-        profile_course.save()
         profile_course.role = ProfileCourseRole.objects.get(name="Admin")
         profile_course.status = None
         profile_course.save()
@@ -171,22 +170,27 @@ class ProfileCourse(models.Model):
     """ProfileCourse"""
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    role = models.ForeignKey(ProfileCourseRole, blank=True, null=True, on_delete=models.CASCADE )
+    role = models.ForeignKey(ProfileCourseRole, blank=True, null=True, on_delete=models.CASCADE)
     status = models.ForeignKey(ProfileCourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
     progress = models.IntegerField(default=0)
     grade = models.IntegerField(blank=True, null=True)
     date_added = models.DateField(default=datetime.date.today)
 
     def __str__(self):
-        return f"\"{self.profile.user.username}\" to \"{self.course.title}\""
+        status = "СОЗДАТЕЛЬ"
+        if self.status is not None:
+            status = self.status.name
+        return f"\"{self.profile.user.username}\" to \"{self.course.profile}: {self.course.title}\" [{status}]"
 
 
 def create_profile_to_course(sender, **kwargs):
     """When a ProfileCourse is created, autofill fields"""
     if kwargs['created']:
         profile_course = kwargs['instance']
-        profile_course.status = ProfileCourseStatus.objects.get(name="Изучается")
-        profile_course.role = ProfileCourseRole.objects.get(name="User")
+        if profile_course.status is None:
+            profile_course.status = ProfileCourseStatus.objects.get(name="Изучается")
+        if profile_course.role is None:
+            profile_course.role = ProfileCourseRole.objects.get(name="User")
         profile_course.save()
 
 
