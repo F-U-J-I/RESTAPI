@@ -42,6 +42,18 @@ class ProfileSerializer(serializers.ModelSerializer):
         return None
 
 
+class MiniProfileSerializer(serializers.ModelSerializer):
+    """Mini Profile"""
+    username = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Profile
+        fields = ('username', 'avatar_url', 'path')
+
+    def get_username(self, profile):
+        return profile.user.username
+
+
 class UserSerializer(serializers.ModelSerializer):
     """User"""
 

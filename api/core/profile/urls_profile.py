@@ -9,5 +9,6 @@ urlpatterns = [
     path('', include(router.urls)),
 
     path('profiles/', ProfileView.as_view({'get': 'get_list_profile'})),
+    path('mini-profiles/', ProfileView.as_view({'get': 'get_list_mini_profile'})),
     # path('profile/<slug:path>/', ProfileView.as_view()),
 ]
