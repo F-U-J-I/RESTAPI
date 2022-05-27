@@ -174,7 +174,7 @@ class GradeCollectionSerializer(serializers.ModelSerializer):
         profile_collection = ProfileCollection.objects.get(profile=self.context.get('profile'),
                                                            collection=self.context.get('collection'))
         if profile_collection.grade is not None:
-            raise Exception('This user has already rated')
+            raise serializers.ValidationError({'grade': 'Вы уже оценивали подборку'})
 
         profile_collection.grade = validated_data['grade']
         self.add_collection_star(collection=profile_collection.collection, grade=profile_collection.grade)

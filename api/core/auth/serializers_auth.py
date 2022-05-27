@@ -6,11 +6,10 @@ from rest_framework import serializers
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    repeat_password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'password', 'repeat_password')
+        fields = ('id', 'username', 'email', 'password')
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -19,10 +18,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         username = validated_data['username']
         email = validated_data['email']
         password = validated_data['password']
-        repeat_password = validated_data['repeat_password']
 
-        if password != repeat_password:
-            raise serializers.ValidationError({'password': 'Пароли не совпадают'})
+        len_username = len(username)
+        if 3 > len_username or len_username > 32:
+            raise serializers.ValidationError({'username': 'Имя должно быть не больше 32 символов и не меньше 3'})
+        if len(User.objects.filter(email=email)) != 0:
+            raise serializers.ValidationError({'email': 'Пользователь с такой почтой уже существует'})
 
         user = User(username=username, email=email)
         user.set_password(password)

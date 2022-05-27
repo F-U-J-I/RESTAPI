@@ -222,7 +222,7 @@ class GradeCourseSerializer(serializers.ModelSerializer):
         profile_course = ProfileCourse.objects.get(profile=self.context.get('profile'),
                                                    course=self.context.get('course'))
         if profile_course.grade is not None:
-            raise Exception('This user has already rated')
+            raise serializers.ValidationError({'grade': 'Вы уже оценивали курс'})
 
         profile_course.grade = validated_data['grade']
         self.add_course_star(course=profile_course.course, grade=profile_course.grade)

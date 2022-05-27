@@ -59,11 +59,8 @@ class CollectionView(viewsets.ModelViewSet):
         profile = Profile.objects.get(user=self.request.user)
         serializer = GradeCollectionSerializer(data=request.data,
                                                context={'profile': profile, 'collection': collection})
-        try:
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        except Exception:
-            return Response({'error': "Вы уже оценивали эту подборку"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response({
             'collection': collection.title,
             'path': collection.path,
@@ -80,10 +77,7 @@ class CollectionView(viewsets.ModelViewSet):
         profile_collection = ProfileCollection.objects.get(profile=profile, collection=collection)
 
         serializer = GradeCollectionSerializer(data=request.data, instance=profile_collection)
-        try:
-            serializer.is_valid(raise_exception=True)
-        except Exception:
-            return Response({'error': "Вы уже оценивали эту подборку"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({
             'collection': collection.title,

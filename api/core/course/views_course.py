@@ -63,11 +63,8 @@ class CourseView(viewsets.ModelViewSet):
         course = self.queryset.get(path=path)
         profile = Profile.objects.get(user=self.request.user)
         serializer = GradeCourseSerializer(data=request.data, context={'profile': profile, 'course': course})
-        try:
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        except Exception:
-            return Response({'error': "Вы уже оценивали этот курс"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response({
             'course': course.title,
             'path': course.path,
@@ -84,10 +81,7 @@ class CourseView(viewsets.ModelViewSet):
         profile_course = ProfileCourse.objects.get(profile=profile, course=course)
 
         serializer = GradeCourseSerializer(data=request.data, instance=profile_course)
-        try:
-            serializer.is_valid(raise_exception=True)
-        except Exception:
-            return Response({'error': "Вы уже оценивали этот курс"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({
             'course': course.title,
@@ -117,11 +111,6 @@ class CourseView(viewsets.ModelViewSet):
             'grade': serializer.data['grade']
         }, status=status.HTTP_200_OK)
 
-    # TODO: Профиль большие окна
-    # TODO: Профиль мелкие окна
-    # TODO: Профиль. Ограничение на имя (нижняя и верхняя граница)
-    # TODO: User. Уникальность email
-    # TODO: User. При регистрации не отправлять repeat_password
     # TODO: Профиль детальная страница окна
     # TODO: Сделать изменение страницы курса
     # TODO: Сделать изменение курса
