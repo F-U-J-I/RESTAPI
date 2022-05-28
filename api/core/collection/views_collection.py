@@ -79,7 +79,8 @@ class ActionCollectionView(viewsets.ModelViewSet):
         serializer.save()
         return Response({
             'title': serializer.data['title'],
-            'path': serializer.data['path']
+            'path': serializer.data['path'],
+            "message": "Подборка успешно создалась",
         }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
@@ -124,7 +125,41 @@ class ActionCollectionView(viewsets.ModelViewSet):
         collection.delete()
         return Response({
             "title": collection_title,
-            "path": path
+            "path": path,
+            "message": "Подборка успешно удалилась",
+        }, status=status.HTTP_200_OK)
+
+
+# #########################################
+#    ######## ACTIONS PROFILE ########
+# #########################################
+
+class ActionProfileCollectionView(viewsets.ModelViewSet):
+    """Коллекция"""
+    lookup_field = 'slug'
+    queryset = Collection.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    def exists_path(self, path):
+        return len(self.queryset.filter(path=path)) != 0
+
+    @action(detail=False, methods=['post'])
+    def added_collection(self, request, path):
+        if not self.exists_path(path):
+            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile = Profile.objects.get(user=self.request.user)
+        collection = Collection.objects.get(path=path)
+        profile_collection_list = ProfileCollection.objects.filter(profile=profile, collection=collection)
+        if len(profile_collection_list) != 0:
+            return Response({'error': "Вы уже добавили подборку"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile_collection = ProfileCollection.objects.create(profile=profile, collection=collection)
+        profile_collection.save()
+
+        return Response({
+            'collection': profile_collection.collection.title,
+            'message': "Подборка добавлена"
         }, status=status.HTTP_200_OK)
 
 
