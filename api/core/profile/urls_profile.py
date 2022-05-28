@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from .views_profile import ProfileView
+from .views_profile import ProfileView, SubscriptionProfileView
 
 router = DefaultRouter()
 
@@ -15,6 +15,8 @@ urlpatterns = [
     path('profiles/<slug:path>/studied/courses/', ProfileView.as_view({'get': 'get_studied_courses'})),
     path('profiles/<slug:path>/study-percent/', ProfileView.as_view({'get': 'get_statistic_study_courses'})),
     path('profiles/<slug:path>/header/', ProfileView.as_view({'get': 'get_header_profile'})),
+
+    path('profiles/<slug:path>/subscribing/', SubscriptionProfileView.as_view({'get': 'get_subscribing_profile'})),
 
     # path('profile/<slug:path>/', ProfileView.as_view()),
 ]

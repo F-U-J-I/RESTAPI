@@ -104,3 +104,29 @@ class ProfileView(viewsets.ModelViewSet):
         profile = Profile.objects.get(path=path)
         auth = Profile.objects.get(user=self.request.user)
         return Response(HeaderProfileSerializer(profile, context={'auth': auth}).data, status=status.HTTP_200_OK)
+
+
+class SubscriptionProfileView(viewsets.ModelViewSet):
+    """Profile"""
+    lookup_field = 'slug'
+    profiles = Profile.objects.all()
+    queryset = Subscription.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ProfileSerializer
+
+    def exists_path(self, path):
+        return len(self.profiles.filter(path=path)) != 0
+
+    @action(methods=['get'], detail=False)
+    def get_subscribing_profile(self, request, path):
+        """На кого подписан"""
+        if not self.exists_path(path):
+            return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile = self.profiles.get(path=path)
+        auth = self.profiles.get(user=self.request.user)
+
+        subscribing_list = list()
+        for subscribing_profile in self.queryset.filter(subscriber=profile):
+            subscribing_list.append(ProfileSerializer(subscribing_profile.subscriber, context={'auth': auth}).data)
+        return Response(subscribing_list, status=status.HTTP_200_OK)
