@@ -46,9 +46,28 @@ class CollectionView(viewsets.ModelViewSet):
         serializer = DetailCollectionSerializer(collection, context={'profile': auth})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    # #########################################
-    #        ######## ACTIONS ########
-    # #########################################
+    @action(detail=False, methods=['get'])
+    def get_added_collections(self, request, *args, **kwargs):
+        serializer_collection_list = list()
+        auth = Profile.objects.get(user=self.request.user)
+        for collection in self.queryset:
+            serializer_collection_list.append(
+                CollectionSerializer(collection, context={'profile': auth}).data)
+        return Response(serializer_collection_list)
+
+
+# #########################################
+#        ######## ACTIONS ########
+# #########################################
+
+class ActionCollectionView(viewsets.ModelViewSet):
+    """Коллекция"""
+    lookup_field = 'slug'
+    queryset = Collection.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    def exists_path(self, path):
+        return len(self.queryset.filter(path=path)) != 0
 
     @action(detail=False, methods=['post'])
     def create_collection(self, request):
@@ -118,6 +137,9 @@ class GradeCollectionView(viewsets.ModelViewSet):
     lookup_field = 'slug'
     queryset = Collection.objects.all()
     permission_classes = [permissions.IsAuthenticated]
+
+    def exists_path(self, path):
+        return len(self.queryset.filter(path=path)) != 0
 
     @action(detail=False, methods=['post'])
     def set_grade(self, request, path):

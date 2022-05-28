@@ -73,6 +73,9 @@ class GradeCourseView(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
+    def exists_path(self, path):
+        return len(self.queryset.filter(path=path)) != 0
+
     @action(detail=False, methods=['post'])
     def set_grade(self, request, path):
         if not self.exists_path(path):
