@@ -47,8 +47,77 @@ class CollectionView(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     # #########################################
-    #        ######## GRADE ########
+    #        ######## ACTIONS ########
     # #########################################
+
+    @action(detail=False, methods=['post'])
+    def create_collection(self, request):
+        profile = Profile.objects.get(user=self.request.user)
+        number_new_collection = len(ProfileCollection.objects.filter(profile=profile)) + 1
+        serializer = WindowDetailCollectionSerializer(data={'title': f"Подборка #{number_new_collection}"},
+                                                      context={'profile': profile})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({
+            'title': serializer.data['title'],
+            'path': serializer.data['path']
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def get_update_info(self, request, path=None, *args, **kwargs):
+        if not self.exists_path(path):
+            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
+        collection = self.queryset.get(path=path)
+        profile = Profile.objects.get(user=request.user)
+        if collection.profile != profile:
+            return Response({"error": "У вас нет доступа для изменения коллекции"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response(WindowDetailCollectionSerializer(collection).data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['put'])
+    def update_info(self, request, path=None, *args, **kwargs):
+        if not self.exists_path(path):
+            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        collection = self.queryset.get(path=path)
+        profile = Profile.objects.get(user=request.user)
+        if collection.profile != profile:
+            return Response({"error": "У вас нет доступа для изменения подборки от имени этого аккаунта"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = WindowDetailCollectionSerializer(data=request.data, instance=collection)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'])
+    def delete_collection(self, request, path):
+        if not self.exists_path(path):
+            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        collection = self.queryset.get(path=path)
+        profile = Profile.objects.get(user=request.user)
+        if collection.profile != profile:
+            return Response({"error": "У вас нет доступа для удаления подборки от имени этого аккаунта"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        collection_title = collection.title
+        collection.delete()
+        return Response({
+            "title": collection_title,
+            "path": path
+        }, status=status.HTTP_200_OK)
+
+
+# #########################################
+#        ######## GRADE ########
+# #########################################
+
+class GradeCollectionView(viewsets.ModelViewSet):
+    """Коллекция"""
+    lookup_field = 'slug'
+    queryset = Collection.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['post'])
     def set_grade(self, request, path):
@@ -105,65 +174,4 @@ class CollectionView(viewsets.ModelViewSet):
             'collection': collection.title,
             'path': collection.path,
             'grade': serializer.data['grade']
-        }, status=status.HTTP_200_OK)
-
-    # #########################################
-    #        ######## ACTIONS ########
-    # #########################################
-
-    @action(detail=False, methods=['post'])
-    def create_collection(self, request):
-        profile = Profile.objects.get(user=self.request.user)
-        number_new_collection = len(ProfileCollection.objects.filter(profile=profile)) + 1
-        serializer = WindowDetailCollectionSerializer(data={'title': f"Подборка #{number_new_collection}"},
-                                                      context={'profile': profile})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({
-            'title': serializer.data['title'],
-            'path': serializer.data['path']
-        }, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['get'])
-    def get_update_info(self, request, path=None, *args, **kwargs):
-        if not self.exists_path(path):
-            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
-        collection = self.queryset.get(path=path)
-        profile = Profile.objects.get(user=request.user)
-        if collection.profile != profile:
-            return Response({"error": "У вас нет доступа для изменения коллекции"}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(WindowDetailCollectionSerializer(collection).data, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['put'])
-    def update_info(self, request, path=None, *args, **kwargs):
-        if not self.exists_path(path):
-            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
-
-        collection = self.queryset.get(path=path)
-        profile = Profile.objects.get(user=request.user)
-        if collection.profile != profile:
-            return Response({"error": "У вас нет доступа для изменения подборки от имени этого аккаунта"},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        serializer = WindowDetailCollectionSerializer(data=request.data, instance=collection)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['delete'])
-    def delete_collection(self, request, path):
-        if not self.exists_path(path):
-            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
-
-        collection = self.queryset.get(path=path)
-        profile = Profile.objects.get(user=request.user)
-        if collection.profile != profile:
-            return Response({"error": "У вас нет доступа для удаления подборки от имени этого аккаунта"},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        collection_title = collection.title
-        collection.delete()
-        return Response({
-            "title": collection_title,
-            "path": path
         }, status=status.HTTP_200_OK)

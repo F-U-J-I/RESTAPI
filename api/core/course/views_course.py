@@ -62,9 +62,16 @@ class CourseView(viewsets.ModelViewSet):
             'info': serializer_course_info.data
         }, status=status.HTTP_200_OK)
 
-    # #########################################
-    #        ######## GRADE ########
-    # #########################################
+
+# #########################################
+#        ######## GRADE ########
+# #########################################
+
+class GradeCourseView(viewsets.ModelViewSet):
+    """Курсы"""
+    lookup_field = 'slug'
+    queryset = Course.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['post'])
     def set_grade(self, request, path):
@@ -121,7 +128,3 @@ class CourseView(viewsets.ModelViewSet):
             'path': course.path,
             'grade': serializer.data['grade']
         }, status=status.HTTP_200_OK)
-
-    # TODO: Профиль детальная страница окна
-    # TODO: Сделать изменение страницы курса
-    # TODO: Сделать изменение курса
