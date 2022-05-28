@@ -7,18 +7,22 @@ from .serializers_collection import DetailCollectionSerializer, CollectionSerial
 from .models_collection import Profile, Collection, ProfileCollection
 
 
+# #########################################
+#        ######## GET ########
+# #########################################
+
 class CollectionView(viewsets.ModelViewSet):
     """Коллекция"""
     lookup_field = 'slug'
     queryset = Collection.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
-    def exists_path(self, path):
+    def exists_course_path(self, path):
         return len(self.queryset.filter(path=path)) != 0
 
-    # #########################################
-    #        ######## GET ########
-    # #########################################
+    @staticmethod
+    def exists_profile_path(path):
+        return len(Profile.objects.filter(path=path)) != 0
 
     def list(self, request, *args, **kwargs):
         serializer_collection_list = list()
@@ -37,23 +41,45 @@ class CollectionView(viewsets.ModelViewSet):
                 CollectionSerializer(collection, context={'profile': auth}).data)
         return Response(serializer_collection_list)
 
-    def get(self, request, path=None, *args, **kwargs):
-        if not self.exists_path(path):
+    @action(detail=False, methods=['get'])
+    def get_added_collections(self, request, path, *args, **kwargs):
+        """Добавленные подборки пользователем по path"""
+        if not self.exists_profile_path(path):
+            return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer_collection_list = list()
+        profile = Profile.objects.get(path=path)
+        auth = Profile.objects.get(user=self.request.user)
+        for profile_collection in ProfileCollection.objects.filter(profile=profile):
+            serializer_collection_list.append(
+                CollectionSerializer(profile_collection.collection, context={'profile': auth}).data)
+        return Response(serializer_collection_list)
+
+    @action(detail=False, methods=['get'])
+    def get_created_collections(self, request, path, *args, **kwargs):
+        """Созданные подборки пользователем по path"""
+        print(path)
+        if not self.exists_profile_path(path):
+            return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer_collection_list = list()
+        profile = Profile.objects.get(path=path)
+        auth = Profile.objects.get(user=self.request.user)
+        for collection in self.queryset.filter(profile=profile):
+            serializer_collection_list.append(
+                CollectionSerializer(collection, context={'profile': auth}).data)
+        return Response(serializer_collection_list)
+
+    @action(detail=False, methods=['get'])
+    def get_detail_collection(self, request, path=None, *args, **kwargs):
+        """Детальная страница подборки"""
+        if not self.exists_course_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 
         collection = self.queryset.get(path=path)
         auth = Profile.objects.get(user=request.user)
         serializer = DetailCollectionSerializer(collection, context={'profile': auth})
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['get'])
-    def get_added_collections(self, request, *args, **kwargs):
-        serializer_collection_list = list()
-        auth = Profile.objects.get(user=self.request.user)
-        for profile_collection in ProfileCollection.objects.filter(profile=auth):
-            serializer_collection_list.append(
-                CollectionSerializer(profile_collection.collection, context={'profile': auth}).data)
-        return Response(serializer_collection_list)
 
 
 # #########################################
