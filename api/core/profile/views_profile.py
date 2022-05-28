@@ -2,8 +2,7 @@ from rest_framework import permissions, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .serializers_profile import ProfileSerializer, MiniProfileSerializer, HeaderProfileSerializer, \
-    SubscriptionSerializer
+from .serializers_profile import ProfileSerializer, MiniProfileSerializer, HeaderProfileSerializer
 from .models_profile import Profile, Subscription
 from ..course.models_course import ProfileCourse, ProfileCourseStatus
 from ..course.serializers_course import MiniCourseSerializer
@@ -118,8 +117,11 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
     def exists_path(self, path):
         return len(self.profiles.filter(path=path)) != 0
 
+    def is_subscribe(self, goal, subscriber):
+        return len(Subscription.objects.filter(goal=goal, subscriber=subscriber)) != 0
+
     @action(methods=['get'], detail=False)
-    def get_subscribing_profile(self, request, path):
+    def get_goals_subscription_profile(self, request, path):
         """На кого подписан"""
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
@@ -127,13 +129,13 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
         profile = self.profiles.get(path=path)
         auth = self.profiles.get(user=self.request.user)
 
-        subscribing_list = list()
-        for subscribing_profile in self.queryset.filter(subscriber=profile):
-            subscribing_list.append(ProfileSerializer(subscribing_profile.subscriber, context={'auth': auth}).data)
-        return Response(subscribing_list, status=status.HTTP_200_OK)
+        goal_list = list()
+        for goal_profile in self.queryset.filter(subscriber=profile):
+            goal_list.append(ProfileSerializer(goal_profile.goal, context={'auth': auth}).data)
+        return Response(goal_list, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=False)
-    def get_subscriber_profile(self, request, path):
+    def get_subscribers_profile(self, request, path):
         """Кто подписан на профиль"""
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
@@ -142,28 +144,44 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
         auth = self.profiles.get(user=self.request.user)
 
         subscriber_list = list()
-        for subscriber_profile in self.queryset.filter(subscribing=profile):
+        for subscriber_profile in self.queryset.filter(goal=profile):
             subscriber_list.append(ProfileSerializer(subscriber_profile.subscriber, context={'auth': auth}).data)
         return Response(subscriber_list, status=status.HTTP_200_OK)
 
-    def is_subscribe(self, subscribing, subscriber):
-        return len(Subscription.objects.filter(subscribing=subscribing, subscriber=subscriber)) != 0
-
     @action(detail=False, methods=['post'])
-    def create_subscription(self, request, path):
+    def create_goal_subscription(self, request, path):
         if not self.exists_path(path):
             return Response({'error': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
         profile = self.profiles.get(path=path)
         auth = self.profiles.get(user=self.request.user)
         if profile == auth:
-            return Response({'error': 'Вы не можете подписаться на себя'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Вы не можете подписаться или отписаться от себя'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if self.is_subscribe(subscribing=profile, subscriber=auth):
+        if self.is_subscribe(goal=profile, subscriber=auth):
             return Response({'error': 'Вы уже подписались на этого пользователя'}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = Subscription.objects.create(subscribing=profile, subscriber=auth)
+        serializer = Subscription.objects.create(goal=profile, subscriber=auth)
         serializer.save()
         return Response({
             'success': f'Успешно подписались на {profile.user.username}'
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'])
+    def delete_goal_subscription(self, request, path):
+        if not self.exists_path(path):
+            return Response({'error': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile = self.profiles.get(path=path)
+        auth = self.profiles.get(user=self.request.user)
+        if profile == auth:
+            return Response({'error': 'Вы не можете подписаться или отписаться от себя'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not self.is_subscribe(goal=profile, subscriber=auth):
+            return Response({'error': 'Вы уже отписались на этого пользователя'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = Subscription.objects.get(goal=profile, subscriber=auth)
+        serializer.delete()
+        return Response({
+            'success': f'Успешно отписались от {profile.user.username}'
         }, status=status.HTTP_200_OK)

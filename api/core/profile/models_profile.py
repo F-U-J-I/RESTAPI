@@ -29,11 +29,11 @@ post_save.connect(create_profile, sender=User)
 
 class Subscription(models.Model):
     """
-    subscribing - the GOAL one who subscribed
+    goal - the GOAL one who subscribed
     subscriber - one who subscribes
     """
-    subscribing = models.ForeignKey(Profile, related_name="subscribing", on_delete=models.CASCADE)
+    goal = models.ForeignKey(Profile, related_name="goal", on_delete=models.CASCADE)
     subscriber = models.ForeignKey(Profile, related_name="subscriber", on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'{self.subscriber.user.username} => {self.subscribing.user.username}'
+        return f'{self.subscriber.user.username} => {self.goal.user.username}'

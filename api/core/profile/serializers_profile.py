@@ -6,13 +6,13 @@ from .models_profile import Profile, Subscription
 
 class HelperSerializer(serializers.ModelSerializer):
     @staticmethod
-    def is_subscribed(subscribing, subscriber):
+    def is_subscribed(goal, subscriber):
         """
-        subscribing: на кого подписались
+        goal: на кого подписались
         subscriber: кто подписался
         :return: True, если subscriber подписан на goal. False если нет
         """
-        subscription_list = Subscription.objects.filter(subscribing=subscribing, subscriber=subscriber)
+        subscription_list = Subscription.objects.filter(goal=goal, subscriber=subscriber)
         if len(subscription_list):
             return True
         return False
@@ -33,7 +33,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, profile):
         auth = self.context.get('auth')
         if auth != profile:
-            return HelperSerializer.is_subscribed(subscribing=profile, subscriber=auth)
+            return HelperSerializer.is_subscribed(goal=profile, subscriber=auth)
         return None
 
 
@@ -63,14 +63,14 @@ class HeaderProfileSerializer(serializers.ModelSerializer):
 
     def get_communications(self, profile):
         return {
-            'subscribing_quantity': len(Subscription.objects.filter(subscriber=profile)),
-            'subscribers_quantity': len(Subscription.objects.filter(subscribing=profile)),
+            'goal_quantity': len(Subscription.objects.filter(subscriber=profile)),
+            'subscribers_quantity': len(Subscription.objects.filter(goal=profile)),
         }
 
     def get_is_subscribed(self, profile):
         auth = self.context.get('auth')
         if auth != profile:
-            return HelperSerializer.is_subscribed(subscribing=profile, subscriber=auth)
+            return HelperSerializer.is_subscribed(goal=profile, subscriber=auth)
         return None
 
 

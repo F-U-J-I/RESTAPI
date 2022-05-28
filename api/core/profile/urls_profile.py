@@ -16,9 +16,13 @@ urlpatterns = [
     path('profiles/<slug:path>/study-percent/', ProfileView.as_view({'get': 'get_statistic_study_courses'})),
     path('profiles/<slug:path>/header/', ProfileView.as_view({'get': 'get_header_profile'})),
 
-    path('profiles/<slug:path>/subscriptions/', SubscriptionProfileView.as_view({'get': 'get_subscribing_profile'})),
-    path('profiles/<slug:path>/subscribers/', SubscriptionProfileView.as_view({'get': 'get_subscriber_profile'})),
-    path('profiles/<slug:path>/create/subscription/', SubscriptionProfileView.as_view({'post': 'create_subscription'})),
+    path('profiles/<slug:path>/goals-subscription/',
+         SubscriptionProfileView.as_view({'get': 'get_goals_subscription_profile'})),
+    path('profiles/<slug:path>/subscribers/', SubscriptionProfileView.as_view({'get': 'get_subscribers_profile'})),
+    path('profiles/<slug:path>/create/subscription/',
+         SubscriptionProfileView.as_view({'post': 'create_goal_subscription'})),
+    path('profiles/<slug:path>/delete/subscription/',
+         SubscriptionProfileView.as_view({'delete': 'delete_goal_subscription'})),
 
     # path('profile/<slug:path>/', ProfileView.as_view()),
 ]
