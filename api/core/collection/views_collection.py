@@ -144,7 +144,7 @@ class ActionProfileCollectionView(viewsets.ModelViewSet):
         return len(self.queryset.filter(path=path)) != 0
 
     @action(detail=False, methods=['post'])
-    def added_collection(self, request, path):
+    def added_collections(self, request, path):
         if not self.exists_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -152,14 +152,33 @@ class ActionProfileCollectionView(viewsets.ModelViewSet):
         collection = Collection.objects.get(path=path)
         profile_collection_list = ProfileCollection.objects.filter(profile=profile, collection=collection)
         if len(profile_collection_list) != 0:
-            return Response({'error': "Вы уже добавили подборку"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': "Вы уже добавили эту подборку"}, status=status.HTTP_404_NOT_FOUND)
 
         profile_collection = ProfileCollection.objects.create(profile=profile, collection=collection)
         profile_collection.save()
 
         return Response({
-            'collection': profile_collection.collection.title,
+            'collection': collection.title,
             'message': "Подборка добавлена"
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'])
+    def popped_collections(self, request, path):
+        if not self.exists_path(path):
+            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile = Profile.objects.get(user=self.request.user)
+        collection = Collection.objects.get(path=path)
+        profile_collection_list = ProfileCollection.objects.filter(profile=profile, collection=collection)
+        if len(profile_collection_list) == 0:
+            return Response({'error': "Вы уже удалили эту подборку"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile_collection = profile_collection_list[0]
+        profile_collection.delete()
+
+        return Response({
+            'collection': collection.title,
+            'message': "Подборка удалена"
         }, status=status.HTTP_200_OK)
 
 

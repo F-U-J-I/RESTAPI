@@ -21,5 +21,6 @@ urlpatterns = [
     path('collections/update/<slug:path>/', ActionCollectionView.as_view({'put': 'update_info'})),
     path('collections/delete/<slug:path>/', ActionCollectionView.as_view({'delete': 'delete_collection'})),
 
-    path('collections/add/<slug:path>/', ActionProfileCollectionView.as_view({'post': 'added_collection'})),
+    path('collections/add/<slug:path>/', ActionProfileCollectionView.as_view({'post': 'added_collections'})),
+    path('collections/pop/<slug:path>/', ActionProfileCollectionView.as_view({'delete': 'popped_collections'})),
 ]
