@@ -50,9 +50,9 @@ class CollectionView(viewsets.ModelViewSet):
     def get_added_collections(self, request, *args, **kwargs):
         serializer_collection_list = list()
         auth = Profile.objects.get(user=self.request.user)
-        for collection in self.queryset:
+        for profile_collection in ProfileCollection.objects.filter(profile=auth):
             serializer_collection_list.append(
-                CollectionSerializer(collection, context={'profile': auth}).data)
+                CollectionSerializer(profile_collection.collection, context={'profile': auth}).data)
         return Response(serializer_collection_list)
 
 

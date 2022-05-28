@@ -9,6 +9,7 @@ urlpatterns = [
 
     path('collections/', CollectionView.as_view({'get': 'list'})),
     path('mini-collections/', CollectionView.as_view({'get': 'list_mini_collection'}), name="mini-collections"),
+    path('added-collections/', CollectionView.as_view({'get': 'get_added_collections'})),
     path('collections/<slug:path>/', CollectionView.as_view({'get': 'get'})),
 
     path('collections/create/grade/<slug:path>/', GradeCollectionView.as_view({'post': 'set_grade'})),
