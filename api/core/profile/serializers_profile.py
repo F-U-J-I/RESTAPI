@@ -11,13 +11,13 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
 class HelperSerializer(serializers.ModelSerializer):
     @staticmethod
-    def is_subscribed(goal, subscriber):
+    def is_subscribed(subscribing, subscriber):
         """
-        goal: на кого подписались
+        subscribing: на кого подписались
         subscriber: кто подписался
         :return: True, если subscriber подписан на goal. False если нет
         """
-        subscription_list = Subscription.objects.filter(goal=goal, subscriber=subscriber)
+        subscription_list = Subscription.objects.filter(subscribing=subscribing, subscriber=subscriber)
         if len(subscription_list):
             return True
         return False
@@ -38,7 +38,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, profile):
         auth = self.context.get('auth')
         if auth != profile:
-            return HelperSerializer.is_subscribed(goal=profile, subscriber=auth)
+            return HelperSerializer.is_subscribed(subscribing=profile, subscriber=auth)
         return None
 
 
@@ -52,6 +52,31 @@ class MiniProfileSerializer(serializers.ModelSerializer):
 
     def get_username(self, profile):
         return profile.user.username
+
+
+class HeaderProfileSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+    communications = serializers.SerializerMethodField(default=None)
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Profile
+        fields = ('username', 'avatar_url', 'wrapper_url', 'communications', 'is_subscribed')
+
+    def get_username(self, profile):
+        return profile.user.username
+
+    def get_communications(self, profile):
+        return {
+            'subscribers_quantity': len(Subscription.objects.filter(subscribing=profile)),
+            'subscribing_quantity': len(Subscription.objects.filter(subscriber=profile)),
+        }
+
+    def get_is_subscribed(self, profile):
+        auth = self.context.get('auth')
+        if auth != profile:
+            return HelperSerializer.is_subscribed(subscribing=profile, subscriber=auth)
+        return None
 
 
 class UserSerializer(serializers.ModelSerializer):

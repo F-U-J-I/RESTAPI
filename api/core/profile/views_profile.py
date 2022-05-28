@@ -2,8 +2,8 @@ from rest_framework import permissions, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .serializers_profile import ProfileSerializer, UserSerializer, MiniProfileSerializer
-from .models_profile import Profile
+from .serializers_profile import ProfileSerializer, MiniProfileSerializer, HeaderProfileSerializer
+from .models_profile import Profile, Subscription
 from ..course.models_course import ProfileCourse, ProfileCourseStatus
 from ..course.serializers_course import MiniCourseSerializer
 from ..utils import Util
@@ -68,7 +68,7 @@ class ProfileView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_statistic_study_courses(self, request, path):
-        """Какие курсы ИЗУЧИЛ студент"""
+        """Статистика по студенту по изученным курсам"""
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -94,3 +94,13 @@ class ProfileView(viewsets.ModelViewSet):
             'studied_quantity': studied_quantity,
             'percent': percent,
         }, status=status.HTTP_200_OK)
+
+    @action(methods=['get'], detail=False)
+    def get_header_profile(self, request, path):
+        """Верхняя информация на странице любого пользователя"""
+        if not self.exists_path(path):
+            return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile = Profile.objects.get(path=path)
+        auth = Profile.objects.get(user=self.request.user)
+        return Response(HeaderProfileSerializer(profile, context={'auth': auth}).data, status=status.HTTP_200_OK)
