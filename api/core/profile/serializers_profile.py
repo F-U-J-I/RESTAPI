@@ -4,11 +4,6 @@ from rest_framework import serializers
 from .models_profile import Profile, Subscription
 
 
-class SubscriptionSerializer(serializers.ModelSerializer):
-    class Meta:
-        pass
-
-
 class HelperSerializer(serializers.ModelSerializer):
     @staticmethod
     def is_subscribed(subscribing, subscriber):
@@ -68,8 +63,8 @@ class HeaderProfileSerializer(serializers.ModelSerializer):
 
     def get_communications(self, profile):
         return {
-            'subscribers_quantity': len(Subscription.objects.filter(subscribing=profile)),
             'subscribing_quantity': len(Subscription.objects.filter(subscriber=profile)),
+            'subscribers_quantity': len(Subscription.objects.filter(subscribing=profile)),
         }
 
     def get_is_subscribed(self, profile):

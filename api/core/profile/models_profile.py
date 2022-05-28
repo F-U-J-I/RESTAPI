@@ -29,7 +29,7 @@ post_save.connect(create_profile, sender=User)
 
 class Subscription(models.Model):
     """
-    subscribing - the one who subscribed
+    subscribing - the GOAL one who subscribed
     subscriber - one who subscribes
     """
     subscribing = models.ForeignKey(Profile, related_name="subscribing", on_delete=models.CASCADE)

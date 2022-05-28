@@ -2,7 +2,8 @@ from rest_framework import permissions, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .serializers_profile import ProfileSerializer, MiniProfileSerializer, HeaderProfileSerializer
+from .serializers_profile import ProfileSerializer, MiniProfileSerializer, HeaderProfileSerializer, \
+    SubscriptionSerializer
 from .models_profile import Profile, Subscription
 from ..course.models_course import ProfileCourse, ProfileCourseStatus
 from ..course.serializers_course import MiniCourseSerializer
@@ -144,3 +145,25 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
         for subscriber_profile in self.queryset.filter(subscribing=profile):
             subscriber_list.append(ProfileSerializer(subscriber_profile.subscriber, context={'auth': auth}).data)
         return Response(subscriber_list, status=status.HTTP_200_OK)
+
+    def is_subscribe(self, subscribing, subscriber):
+        return len(Subscription.objects.filter(subscribing=subscribing, subscriber=subscriber)) != 0
+
+    @action(detail=False, methods=['post'])
+    def create_subscription(self, request, path):
+        if not self.exists_path(path):
+            return Response({'error': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile = self.profiles.get(path=path)
+        auth = self.profiles.get(user=self.request.user)
+        if profile == auth:
+            return Response({'error': 'Вы не можете подписаться на себя'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if self.is_subscribe(subscribing=profile, subscriber=auth):
+            return Response({'error': 'Вы уже подписались на этого пользователя'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = Subscription.objects.create(subscribing=profile, subscriber=auth)
+        serializer.save()
+        return Response({
+            'success': f'Успешно подписались на {profile.user.username}'
+        }, status=status.HTTP_200_OK)
