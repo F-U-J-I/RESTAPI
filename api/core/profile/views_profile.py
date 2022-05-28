@@ -130,3 +130,17 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
         for subscribing_profile in self.queryset.filter(subscriber=profile):
             subscribing_list.append(ProfileSerializer(subscribing_profile.subscriber, context={'auth': auth}).data)
         return Response(subscribing_list, status=status.HTTP_200_OK)
+
+    @action(methods=['get'], detail=False)
+    def get_subscriber_profile(self, request, path):
+        """Кто подписан на профиль"""
+        if not self.exists_path(path):
+            return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile = self.profiles.get(path=path)
+        auth = self.profiles.get(user=self.request.user)
+
+        subscriber_list = list()
+        for subscriber_profile in self.queryset.filter(subscribing=profile):
+            subscriber_list.append(ProfileSerializer(subscriber_profile.subscriber, context={'auth': auth}).data)
+        return Response(subscriber_list, status=status.HTTP_200_OK)

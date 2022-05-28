@@ -17,6 +17,7 @@ urlpatterns = [
     path('profiles/<slug:path>/header/', ProfileView.as_view({'get': 'get_header_profile'})),
 
     path('profiles/<slug:path>/subscribing/', SubscriptionProfileView.as_view({'get': 'get_subscribing_profile'})),
+    path('profiles/<slug:path>/subscriber/', SubscriptionProfileView.as_view({'get': 'get_subscriber_profile'})),
 
     # path('profile/<slug:path>/', ProfileView.as_view()),
 ]
