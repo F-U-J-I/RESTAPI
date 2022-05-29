@@ -7,8 +7,8 @@ router = DefaultRouter()
 urlpatterns = [
     path('', include(router.urls)),
 
-    path('collections/', CollectionView.as_view({'get': 'list'})),
-    path('mini-collections/', CollectionView.as_view({'get': 'list_mini_collection'}), name="mini-collections"),
+    path('collections/', CollectionView.as_view({'get': 'get_collection_list'})),
+    path('mini-collections/', CollectionView.as_view({'get': 'get_mini_collection_list'}), name="mini-collections"),
     path('collections/added/<slug:path>/', CollectionView.as_view({'get': 'get_added_collections'})),
     path('collections/created/<slug:path>/', CollectionView.as_view({'get': 'get_created_collections'})),
     path('collections/get/<slug:path>/', CollectionView.as_view({'get': 'get_detail_collection'})),

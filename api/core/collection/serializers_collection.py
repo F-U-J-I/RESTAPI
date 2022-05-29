@@ -2,7 +2,9 @@ from rest_framework import serializers
 
 from .models_collection import Collection, ProfileCollection, CourseCollection, CollectionStars
 from ..course.serializers_course import MiniCourseSerializer
+from ..profile.models_profile import Profile
 from ..profile.serializers_profile import ProfileAsAuthor
+from django.db.models import Q
 
 
 #####################################
@@ -29,14 +31,16 @@ class CollectionSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     courses = serializers.SerializerMethodField()
     is_added = serializers.SerializerMethodField(default=False)
+    added_number = serializers.SerializerMethodField()
 
     class Meta:
         model = Collection
-        fields = ('title', 'author', 'image_url', 'rating', 'courses', 'is_added')
+        fields = ('title', 'author', 'image_url', 'rating', 'courses', 'is_added', 'added_number')
 
     @staticmethod
     def get_author(collection):
-        return ProfileAsAuthor(collection.profile).data
+        return collection.profile.user.username
+        # return ProfileAsAuthor(collection.profile).data
 
     def get_courses(self, collection):
         courses_to_collection = CourseCollection.objects.filter(collection=collection)
@@ -49,6 +53,10 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     def get_is_added(self, collection):
         return HelperCollectionSerializer.get_is_added(collection=collection, profile=self.context.get('profile'))
+
+    def get_added_number(self, collection):
+        queryset = ProfileCollection.objects.filter(collection=collection, )
+        return len(queryset.filter(~Q(profile=self.context.get('profile'))))
 
 
 class MiniCollectionSerializer(serializers.ModelSerializer):

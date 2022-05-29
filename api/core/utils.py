@@ -38,3 +38,9 @@ class Util:
         return f"{Util.get_absolute_url(request)}{relative_link}?token={token}"
 
 
+class HelperFilter:
+
+    def __init__(self, filter_fields, search_fields, ordering_fields):
+        pass
+
+
