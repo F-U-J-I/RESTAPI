@@ -39,8 +39,25 @@ class Util:
 
 
 class HelperFilter:
+    COLLECTION_TYPE = 1
+    COLLECTION_FILTER_FIELDS = ('title', 'profile__user__username')
+    COLLECTION_SEARCH_FIELDS = ('title', 'profile__user__username')
+    COLLECTION_ORDERING_FIELDS = ('rating', 'title')
 
-    def __init__(self, filter_fields, search_fields, ordering_fields):
-        pass
+    PROFILE_COLLECTION_TYPE = 2
+    PROFILE_COLLECTION_FILTER_FIELDS = ('collection__title', 'collection__profile__user__username')
+    PROFILE_COLLECTION_SEARCH_FIELDS = ('collection__title', 'collection__profile__user__username')
+    PROFILE_COLLECTION_ORDERING_FIELDS = ('collection__rating', 'collection__title')
 
-
+    @staticmethod
+    def get_filters_field(type_filter):
+        if type_filter == HelperFilter.COLLECTION_TYPE:
+            filter_fields = HelperFilter.COLLECTION_FILTER_FIELDS
+            search_fields = HelperFilter.COLLECTION_SEARCH_FIELDS
+            ordering_fields = HelperFilter.COLLECTION_ORDERING_FIELDS
+            return filter_fields, search_fields, ordering_fields
+        elif type_filter == HelperFilter.PROFILE_COLLECTION_TYPE:
+            filter_fields = HelperFilter.PROFILE_COLLECTION_FILTER_FIELDS
+            search_fields = HelperFilter.PROFILE_COLLECTION_SEARCH_FIELDS
+            ordering_fields = HelperFilter.PROFILE_COLLECTION_ORDERING_FIELDS
+            return filter_fields, search_fields, ordering_fields

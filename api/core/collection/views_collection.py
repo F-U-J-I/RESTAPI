@@ -13,6 +13,7 @@ from .models_collection import Profile, Collection, ProfileCollection
 #        ######## GET ########
 # #########################################
 from ..services import CustomSearchFilter
+from ..utils import HelperFilter
 
 
 class CollectionView(viewsets.ModelViewSet):
@@ -23,9 +24,9 @@ class CollectionView(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
 
-    filter_fields = ('title', 'profile__user__username')
-    search_fields = ('title', 'profile__user__username')
-    ordering_fields = ('rating', 'title')
+    filter_fields = HelperFilter.COLLECTION_FILTER_FIELDS
+    search_fields = HelperFilter.COLLECTION_SEARCH_FIELDS
+    ordering_fields = HelperFilter.COLLECTION_ORDERING_FIELDS
 
     def exists_course_path(self, path):
         return len(self.queryset.filter(path=path)) != 0
@@ -33,6 +34,10 @@ class CollectionView(viewsets.ModelViewSet):
     @staticmethod
     def exists_profile_path(path):
         return len(Profile.objects.filter(path=path)) != 0
+
+    def swap_filters_field(self, type_filter):
+        print(HelperFilter.get_filters_field(type_filter))
+        (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_field(type_filter)
 
     @action(detail=False, methods=['get'])
     def get_collection_list(self, request, *args, **kwargs):
@@ -57,15 +62,15 @@ class CollectionView(viewsets.ModelViewSet):
         profile = Profile.objects.get(path=path)
         auth = Profile.objects.get(user=self.request.user)
 
-        collection_list = list()
-        for profile_collection in ProfileCollection.objects.filter(profile=profile):
-            collection_list.append(
-                CollectionSerializer(profile_collection.collection, many=True, context={'profile': auth}).data)
-        return Response(collection_list, status=status.HTTP_200_OK)
-            # serializer = CollectionSerializer(queryset, many=True, context={'profile': auth})
-        # queryset = self.filter_queryset(QuerySet(collection_list))
-        # serializer = CollectionSerializer(queryset, many=True, context={'profile': auth})
-        # return Response(serializer.data)
+        self.swap_filters_field(HelperFilter.PROFILE_COLLECTION_TYPE)
+        queryset = self.filter_queryset(ProfileCollection.objects.filter(profile=profile))
+        self.swap_filters_field(HelperFilter.COLLECTION_TYPE)
+
+        serializer_list = list()
+        for profile_collection in queryset:
+            serializer_list.append(CollectionSerializer(profile_collection.collection, context={'profile': auth}).data)
+
+        return Response(serializer_list, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def get_created_collections(self, request, path, *args, **kwargs):
