@@ -182,6 +182,25 @@ class ActionProfileCourseView(viewsets.ModelViewSet):
             'message': "Курс добавлен"
         }, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['delete'])
+    def popped_courses(self, request, path):
+        if not self.exists_path(path):
+            return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile = Profile.objects.get(user=self.request.user)
+        course = self.queryset.get(path=path)
+        profile_course_list = ProfileCourse.objects.filter(profile=profile, course=course)
+        if len(profile_course_list) == 0:
+            return Response({'error': "Вы уже удалили этот курс"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile_collection = profile_course_list[0]
+        profile_collection.delete()
+
+        return Response({
+            'course': course.title,
+            'message': "Курс удален"
+        }, status=status.HTTP_200_OK)
+
 
 # #########################################
 #        ######## GRADE ########
