@@ -41,6 +41,8 @@ class Util:
 
 
 class HelperFilter:
+    # COLLECTION
+
     COLLECTION_TYPE = 1
     COLLECTION_FILTER_FIELDS = ('title', 'profile__user__username')
     COLLECTION_SEARCH_FIELDS = ('title', 'profile__user__username')
@@ -50,6 +52,18 @@ class HelperFilter:
     PROFILE_COLLECTION_FILTER_FIELDS = ('collection__title', 'collection__profile__user__username')
     PROFILE_COLLECTION_SEARCH_FIELDS = ('collection__title', 'collection__profile__user__username')
     PROFILE_COLLECTION_ORDERING_FIELDS = ('collection__rating', 'collection__title')
+
+    # COURSE
+
+    COURSE_TYPE = 1
+    COURSE_FILTER_FIELDS = ('title', 'profile__user__username')
+    COURSE_SEARCH_FIELDS = ('title', 'profile__user__username')
+    COURSE_ORDERING_FIELDS = ('rating', 'title')
+
+    PROFILE_COURSE_TYPE = 2
+    PROFILE_COURSE_FILTER_FIELDS = ('course__title', 'course__profile__user__username')
+    PROFILE_COURSE_SEARCH_FIELDS = ('course__title', 'course__profile__user__username')
+    PROFILE_COURSE_ORDERING_FIELDS = ('course__rating', 'course__title')
 
     @staticmethod
     def get_filters_field(type_filter):

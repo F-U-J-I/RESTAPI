@@ -1,4 +1,6 @@
 from rest_framework import permissions, status, viewsets
+from rest_framework.filters import SearchFilter, OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -6,7 +8,7 @@ from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
     MiniCourseSerializer
 from ..profile.models_profile import Profile
-from ..utils import Util
+from ..utils import Util, HelperFilter
 
 
 class CourseView(viewsets.ModelViewSet):
@@ -14,6 +16,11 @@ class CourseView(viewsets.ModelViewSet):
     lookup_field = 'slug'
     queryset = Course.objects.all()
     permission_classes = [permissions.IsAuthenticated]
+
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    filter_fields = HelperFilter.COURSE_FILTER_FIELDS
+    search_fields = HelperFilter.COURSE_SEARCH_FIELDS
+    ordering_fields = HelperFilter.COURSE_ORDERING_FIELDS
 
     @staticmethod
     def exists_access_page(course, profile):
@@ -27,22 +34,18 @@ class CourseView(viewsets.ModelViewSet):
         return len(self.queryset.filter(path=path)) != 0
 
     @action(methods=['get'], detail=False)
-    def get_list_course(self, request, *args, **kwargs):
-        serializer_course_list = list()
-        profile = Profile.objects.get(user=self.request.user)
-        for course in self.queryset:
-            serializer_course_list.append(
-                CourseSerializer(course, context={'profile': profile}).data)
-        return Response(serializer_course_list, status=status.HTTP_200_OK)
+    def get_course_list(self, request, *args, **kwargs):
+        auth = Profile.objects.get(user=self.request.user)
+        queryset = self.filter_queryset(self.queryset)
+        serializer = CourseSerializer(queryset, many=True, context={'profile': auth})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=False)
-    def get_list_mini_course(self, request, *args, **kwargs):
-        serializer_course_list = list()
-        profile = Profile.objects.get(user=self.request.user)
-        for course in self.queryset:
-            serializer_course_list.append(
-                MiniCourseSerializer(course, context={'profile': profile}).data)
-        return Response(serializer_course_list, status=status.HTTP_200_OK)
+    def get_mini_course_list(self, request, *args, **kwargs):
+        auth = Profile.objects.get(user=self.request.user)
+        queryset = self.filter_queryset(self.queryset)
+        serializer = MiniCourseSerializer(queryset, many=True, context={'profile': auth})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=True)
     def get_page_course(self, request, path, *args, **kwargs):

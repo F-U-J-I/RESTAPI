@@ -1,25 +1,18 @@
-from django.db.models import QuerySet
-from django_filters.rest_framework import DjangoFilterBackend
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from .models_collection import Profile, Collection, ProfileCollection
 from .serializers_collection import DetailCollectionSerializer, CollectionSerializer, WindowDetailCollectionSerializer, \
     GradeCollectionSerializer, MiniCollectionSerializer
+
+from ..utils import HelperFilter, HelperPaginatorValue, HelperPaginator
+
 # #########################################
 #        ######## GET ########
 # #########################################
-from ..utils import HelperFilter, HelperPaginatorValue, HelperPaginator
-
-
-class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 100
-    page_size_query_param = 'page_size'
-    max_page_size = 1000
 
 
 class CollectionView(viewsets.ModelViewSet):
@@ -28,8 +21,8 @@ class CollectionView(viewsets.ModelViewSet):
     queryset = Collection.objects.all()
     serializer_class = CollectionSerializer
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
 
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     filter_fields = HelperFilter.COLLECTION_FILTER_FIELDS
     search_fields = HelperFilter.COLLECTION_SEARCH_FIELDS
     ordering_fields = HelperFilter.COLLECTION_ORDERING_FIELDS
@@ -52,6 +45,7 @@ class CollectionView(viewsets.ModelViewSet):
         pagination = HelperPaginator(request=request, queryset=queryset, max_page=max_page)
         return {
             "count": pagination.get_count(),
+            "pages": pagination.get_num_pages(),
             "next": pagination.get_link_next_page(),
             "previous": pagination.get_link_previous_page(),
             "results": pagination.page_obj
