@@ -2,7 +2,6 @@ from rest_framework import serializers
 
 from .models_collection import Collection, ProfileCollection, CourseCollection, CollectionStars
 from ..course.serializers_course import MiniCourseSerializer
-from ..profile.models_profile import Profile
 from ..profile.serializers_profile import ProfileAsAuthor
 from django.db.models import Q
 

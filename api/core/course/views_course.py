@@ -151,6 +151,39 @@ class CourseView(viewsets.ModelViewSet):
 
 
 # #########################################
+#    ######## ACTIONS PROFILE ########
+# #########################################
+
+class ActionProfileCourseView(viewsets.ModelViewSet):
+    """Коллекция"""
+    lookup_field = 'slug'
+    queryset = Course.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    def exists_path(self, path):
+        return len(self.queryset.filter(path=path)) != 0
+
+    @action(detail=False, methods=['post'])
+    def added_courses(self, request, path):
+        if not self.exists_path(path):
+            return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile = Profile.objects.get(user=self.request.user)
+        course = self.queryset.get(path=path)
+        profile_course_list = ProfileCourse.objects.filter(profile=profile, course=course)
+        if len(profile_course_list) != 0:
+            return Response({'error': "Вы уже добавили этот курс"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile_course = ProfileCourse.objects.create(profile=profile, course=course)
+        profile_course.save()
+
+        return Response({
+            'course': course.title,
+            'message': "Курс добавлен"
+        }, status=status.HTTP_200_OK)
+
+
+# #########################################
 #        ######## GRADE ########
 # #########################################
 
