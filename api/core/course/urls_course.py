@@ -9,6 +9,7 @@ urlpatterns = [
 
     path('courses/', CourseView.as_view({'get': 'get_course_list'})),
     path('mini-courses/', CourseView.as_view({'get': 'get_mini_course_list'})),
+    path('courses/all/<slug:path>/', CourseView.as_view({'get': 'get_profile_course'})),
     path('courses/page/<slug:path>/', CourseView.as_view({'get': 'get_page_course'})),
 
     path('courses/create/grade/<slug:path>/', GradeCourseView.as_view({'post': 'set_grade'})),

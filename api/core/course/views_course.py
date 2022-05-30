@@ -8,7 +8,7 @@ from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
     MiniCourseSerializer
 from ..profile.models_profile import Profile
-from ..utils import Util, HelperFilter
+from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
 
 
 class CourseView(viewsets.ModelViewSet):
@@ -22,6 +22,8 @@ class CourseView(viewsets.ModelViewSet):
     search_fields = HelperFilter.COURSE_SEARCH_FIELDS
     ordering_fields = HelperFilter.COURSE_ORDERING_FIELDS
 
+    pagination_max_page = HelperPaginatorValue.COURSE_MAX_PAGE
+
     @staticmethod
     def exists_access_page(course, profile):
         status_development = CourseStatus.objects.get(name=Util.COURSE_STATUS_DEV_NAME)
@@ -32,6 +34,25 @@ class CourseView(viewsets.ModelViewSet):
 
     def exists_path(self, path):
         return len(self.queryset.filter(path=path)) != 0
+
+    @staticmethod
+    def exists_profile_path(path):
+        return len(Profile.objects.filter(path=path)) != 0
+
+    def get_frame_pagination(self, request, queryset, max_page=None):
+        if max_page is None:
+            max_page = self.pagination_max_page
+        pagination = HelperPaginator(request=request, queryset=queryset, max_page=max_page)
+        return {
+            "count": pagination.get_count(),
+            "pages": pagination.get_num_pages(),
+            "next": pagination.get_link_next_page(),
+            "previous": pagination.get_link_previous_page(),
+            "results": pagination.page_obj
+        }
+
+    def swap_filters_field(self, type_filter):
+        (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_course_field(type_filter)
 
     @action(methods=['get'], detail=False)
     def get_course_list(self, request, *args, **kwargs):
@@ -47,8 +68,30 @@ class CourseView(viewsets.ModelViewSet):
         serializer = MiniCourseSerializer(queryset, many=True, context={'profile': auth})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'])
+    def get_profile_course(self, request, path, *args, **kwargs):
+        """Добавленные и созданные подборки пользователем по path"""
+        if not self.exists_profile_path(path):
+            return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
+        profile = Profile.objects.get(path=path)
+        auth = Profile.objects.get(user=self.request.user)
+
+        self.swap_filters_field(HelperFilter.PROFILE_COURSE_TYPE)
+        queryset = self.filter_queryset(ProfileCourse.objects.filter(profile=profile))
+        self.swap_filters_field(HelperFilter.COURSE_TYPE)
+
+        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_PAGE)
+        serializer_list = list()
+        for profile_course in frame_pagination.get('results'):
+            serializer_list.append(
+                MiniCourseSerializer(profile_course.course, context={'profile': auth}).data)
+
+        frame_pagination['results'] = serializer_list
+        return Response(frame_pagination, status=status.HTTP_200_OK)
+
     @action(methods=['get'], detail=True)
     def get_page_course(self, request, path, *args, **kwargs):
+        """Страница с инфрормацией о курсе"""
         if not self.exists_path(path):
             return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
 

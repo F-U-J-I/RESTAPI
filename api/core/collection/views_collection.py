@@ -37,7 +37,7 @@ class CollectionView(viewsets.ModelViewSet):
         return len(Profile.objects.filter(path=path)) != 0
 
     def swap_filters_field(self, type_filter):
-        (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_field(type_filter)
+        (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_collection_field(type_filter)
 
     def get_frame_pagination(self, request, queryset, max_page=None):
         if max_page is None:

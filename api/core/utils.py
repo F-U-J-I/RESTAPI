@@ -55,18 +55,18 @@ class HelperFilter:
 
     # COURSE
 
-    COURSE_TYPE = 1
+    COURSE_TYPE = 3
     COURSE_FILTER_FIELDS = ('title', 'profile__user__username')
     COURSE_SEARCH_FIELDS = ('title', 'profile__user__username')
     COURSE_ORDERING_FIELDS = ('rating', 'title')
 
-    PROFILE_COURSE_TYPE = 2
+    PROFILE_COURSE_TYPE = 4
     PROFILE_COURSE_FILTER_FIELDS = ('course__title', 'course__profile__user__username')
     PROFILE_COURSE_SEARCH_FIELDS = ('course__title', 'course__profile__user__username')
     PROFILE_COURSE_ORDERING_FIELDS = ('course__rating', 'course__title')
 
     @staticmethod
-    def get_filters_field(type_filter):
+    def get_filters_collection_field(type_filter):
         if type_filter == HelperFilter.COLLECTION_TYPE:
             filter_fields = HelperFilter.COLLECTION_FILTER_FIELDS
             search_fields = HelperFilter.COLLECTION_SEARCH_FIELDS
@@ -78,11 +78,26 @@ class HelperFilter:
             ordering_fields = HelperFilter.PROFILE_COLLECTION_ORDERING_FIELDS
             return filter_fields, search_fields, ordering_fields
 
+    @staticmethod
+    def get_filters_course_field(type_filter):
+        if type_filter == HelperFilter.COURSE_TYPE:
+            filter_fields = HelperFilter.COURSE_FILTER_FIELDS
+            search_fields = HelperFilter.COURSE_SEARCH_FIELDS
+            ordering_fields = HelperFilter.COURSE_ORDERING_FIELDS
+            return filter_fields, search_fields, ordering_fields
+        elif type_filter == HelperFilter.PROFILE_COURSE_TYPE:
+            filter_fields = HelperFilter.PROFILE_COURSE_FILTER_FIELDS
+            search_fields = HelperFilter.PROFILE_COURSE_SEARCH_FIELDS
+            ordering_fields = HelperFilter.PROFILE_COURSE_ORDERING_FIELDS
+            return filter_fields, search_fields, ordering_fields
+
 
 class HelperPaginatorValue:
     COLLECTION_MAX_PAGE = 10
     MINI_COLLECTION_PAGE = 40
-    COURSE_MAX_PAGE = 1
+
+    COURSE_MAX_PAGE = 20
+    MINI_COURSE_PAGE = 40
 
     PAGE_QUERY_PARAM = 'page'
 
