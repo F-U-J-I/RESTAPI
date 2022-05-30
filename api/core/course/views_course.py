@@ -1,7 +1,7 @@
-from rest_framework import permissions, status, viewsets
-from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
 from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus
@@ -52,7 +52,8 @@ class CourseView(viewsets.ModelViewSet):
         }
 
     def swap_filters_field(self, type_filter):
-        (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_course_field(type_filter)
+        (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_course_field(
+            type_filter)
 
     @action(methods=['get'], detail=False)
     def get_course_list(self, request, *args, **kwargs):
@@ -69,8 +70,8 @@ class CourseView(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
-    def get_profile_course(self, request, path, *args, **kwargs):
-        """Добавленные и созданные подборки пользователем по path"""
+    def get_profile_course_list(self, request, path, *args, **kwargs):
+        """Добавленные и созданные курсы пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
         profile = Profile.objects.get(path=path)
@@ -87,6 +88,31 @@ class CourseView(viewsets.ModelViewSet):
                 MiniCourseSerializer(profile_course.course, context={'profile': auth}).data)
 
         frame_pagination['results'] = serializer_list
+        return Response(frame_pagination, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def get_added_course_list(self, request, path, *args, **kwargs):
+        """Добавленные курсы пользователем по path"""
+        if not self.exists_profile_path(path):
+            return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
+        profile = Profile.objects.get(path=path)
+        auth = Profile.objects.get(user=self.request.user)
+
+        self.swap_filters_field(HelperFilter.PROFILE_COURSE_TYPE)
+        added_queryset = self.filter_queryset(ProfileCourse.objects.filter(profile=profile))
+        self.swap_filters_field(HelperFilter.COURSE_TYPE)
+
+        # Исключаем созданные подборки
+        queryset = list()
+        for item in added_queryset:
+            if item.course.profile != profile:
+                queryset.append(item.course)
+
+        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_PAGE)
+        serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True,
+                                          context={'profile': auth}).data
+
+        frame_pagination['results'] = serializer
         return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=True)
