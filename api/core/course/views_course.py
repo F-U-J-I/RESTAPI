@@ -56,21 +56,21 @@ class CourseView(viewsets.ModelViewSet):
             type_filter)
 
     @action(methods=['get'], detail=False)
-    def get_course_list(self, request, *args, **kwargs):
+    def get_courses(self, request, *args, **kwargs):
         auth = Profile.objects.get(user=self.request.user)
         queryset = self.filter_queryset(self.queryset)
         serializer = CourseSerializer(queryset, many=True, context={'profile': auth})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=False)
-    def get_mini_course_list(self, request, *args, **kwargs):
+    def get_mini_courses(self, request, *args, **kwargs):
         auth = Profile.objects.get(user=self.request.user)
         queryset = self.filter_queryset(self.queryset)
         serializer = MiniCourseSerializer(queryset, many=True, context={'profile': auth})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
-    def get_profile_course_list(self, request, path, *args, **kwargs):
+    def get_profile_courses(self, request, path, *args, **kwargs):
         """Добавленные и созданные курсы пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
@@ -91,7 +91,7 @@ class CourseView(viewsets.ModelViewSet):
         return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
-    def get_added_course_list(self, request, path, *args, **kwargs):
+    def get_added_courses(self, request, path, *args, **kwargs):
         """Добавленные курсы пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
@@ -115,9 +115,24 @@ class CourseView(viewsets.ModelViewSet):
         frame_pagination['results'] = serializer
         return Response(frame_pagination, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'])
+    def get_created_courses(self, request, path, *args, **kwargs):
+        """Созданные курсы пользователем по path"""
+        if not self.exists_profile_path(path):
+            return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        profile = Profile.objects.get(path=path)
+        auth = Profile.objects.get(user=self.request.user)
+
+        queryset = self.filter_queryset(self.queryset.filter(profile=profile))
+        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_PAGE)
+        serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
+        frame_pagination['results'] = serializer.data
+        return Response(frame_pagination, status=status.HTTP_200_OK)
+
     @action(methods=['get'], detail=True)
     def get_page_course(self, request, path, *args, **kwargs):
-        """Страница с инфрормацией о курсе"""
+        """Страница с информацией о курсе"""
         if not self.exists_path(path):
             return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
 

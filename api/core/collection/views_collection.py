@@ -52,7 +52,7 @@ class CollectionView(viewsets.ModelViewSet):
         }
 
     @action(detail=False, methods=['get'])
-    def get_collection_list(self, request, *args, **kwargs):
+    def get_collections(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.queryset)
         frame_pagination = self.get_frame_pagination(request, queryset)
 
@@ -63,7 +63,7 @@ class CollectionView(viewsets.ModelViewSet):
         return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
-    def get_mini_collection_list(self, request, *args, **kwargs):
+    def get_mini_collections(self, request, *args, **kwargs):
         auth = Profile.objects.get(user=self.request.user)
         queryset = self.filter_queryset(self.queryset)
         frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COLLECTION_PAGE)

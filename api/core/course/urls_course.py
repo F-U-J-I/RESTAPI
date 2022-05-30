@@ -7,10 +7,11 @@ router = DefaultRouter()
 urlpatterns = [
     path('', include(router.urls)),
 
-    path('courses/', CourseView.as_view({'get': 'get_course_list'})),
-    path('mini-courses/', CourseView.as_view({'get': 'get_mini_course_list'})),
-    path('courses/all/<slug:path>/', CourseView.as_view({'get': 'get_profile_course_list'})),
-    path('courses/added/<slug:path>/', CourseView.as_view({'get': 'get_added_course_list'})),
+    path('courses/', CourseView.as_view({'get': 'get_courses'})),
+    path('mini-courses/', CourseView.as_view({'get': 'get_mini_courses'})),
+    path('courses/all/<slug:path>/', CourseView.as_view({'get': 'get_profile_courses'})),
+    path('courses/added/<slug:path>/', CourseView.as_view({'get': 'get_added_courses'})),
+    path('courses/created/<slug:path>/', CourseView.as_view({'get': 'get_created_courses'})),
     path('courses/page/<slug:path>/', CourseView.as_view({'get': 'get_page_course'})),
 
     path('courses/create/grade/<slug:path>/', GradeCourseView.as_view({'post': 'set_grade'})),
