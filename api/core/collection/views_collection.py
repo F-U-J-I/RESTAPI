@@ -1,19 +1,24 @@
-from django.db.models import QuerySet
+from django_filters.rest_framework import DjangoFilterBackend
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
+from .models_collection import Profile, Collection, ProfileCollection
 from .serializers_collection import DetailCollectionSerializer, CollectionSerializer, WindowDetailCollectionSerializer, \
     GradeCollectionSerializer, MiniCollectionSerializer
-from .models_collection import Profile, Collection, ProfileCollection
-
 # #########################################
 #        ######## GET ########
 # #########################################
-from ..services import CustomSearchFilter
-from ..utils import HelperFilter
+from ..utils import HelperFilter, HelperPaginatorValue, HelperPaginator
+
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 100
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
 
 class CollectionView(viewsets.ModelViewSet):
@@ -28,6 +33,8 @@ class CollectionView(viewsets.ModelViewSet):
     search_fields = HelperFilter.COLLECTION_SEARCH_FIELDS
     ordering_fields = HelperFilter.COLLECTION_ORDERING_FIELDS
 
+    pagination_max_page = HelperPaginatorValue.COLLECTION_MAX_PAGE
+
     def exists_course_path(self, path):
         return len(self.queryset.filter(path=path)) != 0
 
@@ -36,29 +43,44 @@ class CollectionView(viewsets.ModelViewSet):
         return len(Profile.objects.filter(path=path)) != 0
 
     def swap_filters_field(self, type_filter):
-        print(HelperFilter.get_filters_field(type_filter))
         (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_field(type_filter)
+
+    def get_frame_pagination(self, request, queryset, max_page=None):
+        if max_page is None:
+            max_page = self.pagination_max_page
+        pagination = HelperPaginator(request=request, queryset=queryset, max_page=max_page)
+        return {
+            "count": pagination.get_count(),
+            "next": pagination.get_link_next_page(),
+            "previous": pagination.get_link_previous_page(),
+            "results": pagination.page_obj
+        }
 
     @action(detail=False, methods=['get'])
     def get_collection_list(self, request, *args, **kwargs):
-        auth = Profile.objects.get(user=self.request.user)
         queryset = self.filter_queryset(self.queryset)
-        serializer = CollectionSerializer(queryset, many=True, context={'profile': auth})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        frame_pagination = self.get_frame_pagination(request, queryset)
+
+        auth = Profile.objects.get(user=self.request.user)
+        serializer = CollectionSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
+
+        frame_pagination['results'] = serializer.data
+        return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def get_mini_collection_list(self, request, *args, **kwargs):
         auth = Profile.objects.get(user=self.request.user)
         queryset = self.filter_queryset(self.queryset)
-        serializer = MiniCollectionSerializer(queryset, many=True, context={'profile': auth})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        frame_pagination = self.get_frame_pagination(request, queryset, max_page=HelperPaginatorValue.MINI_COLLECTION_PAGE)
+        serializer = MiniCollectionSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
+        frame_pagination['results'] = serializer.data
+        return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def get_added_collections(self, request, path, *args, **kwargs):
         """Добавленные подборки пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
-
         profile = Profile.objects.get(path=path)
         auth = Profile.objects.get(user=self.request.user)
 
@@ -66,11 +88,15 @@ class CollectionView(viewsets.ModelViewSet):
         queryset = self.filter_queryset(ProfileCollection.objects.filter(profile=profile))
         self.swap_filters_field(HelperFilter.COLLECTION_TYPE)
 
+        frame_pagination = self.get_frame_pagination(request, queryset,
+                                                     max_page=HelperPaginatorValue.MINI_COLLECTION_PAGE)
         serializer_list = list()
-        for profile_collection in queryset:
-            serializer_list.append(CollectionSerializer(profile_collection.collection, context={'profile': auth}).data)
+        for profile_collection in frame_pagination.get('results'):
+            serializer_list.append(
+                MiniCollectionSerializer(profile_collection.collection, context={'profile': auth}).data)
 
-        return Response(serializer_list, status=status.HTTP_200_OK)
+        frame_pagination['results'] = serializer_list
+        return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def get_created_collections(self, request, path, *args, **kwargs):
@@ -82,8 +108,11 @@ class CollectionView(viewsets.ModelViewSet):
         auth = Profile.objects.get(user=self.request.user)
 
         queryset = self.filter_queryset(self.queryset.filter(profile=profile))
-        serializer = CollectionSerializer(queryset, many=True, context={'profile': auth})
-        return Response(serializer.data)
+        frame_pagination = self.get_frame_pagination(request, queryset,
+                                                     max_page=HelperPaginatorValue.MINI_COLLECTION_PAGE)
+        serializer = MiniCollectionSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
+        frame_pagination['results'] = serializer.data
+        return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def get_detail_collection(self, request, path=None, *args, **kwargs):

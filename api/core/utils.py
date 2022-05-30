@@ -1,5 +1,7 @@
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from rest_framework.utils.urls import replace_query_param
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.urls import reverse
 
@@ -61,3 +63,57 @@ class HelperFilter:
             search_fields = HelperFilter.PROFILE_COLLECTION_SEARCH_FIELDS
             ordering_fields = HelperFilter.PROFILE_COLLECTION_ORDERING_FIELDS
             return filter_fields, search_fields, ordering_fields
+
+
+class HelperPaginatorValue:
+    COLLECTION_MAX_PAGE = 10
+    MINI_COLLECTION_PAGE = 40
+    COURSE_MAX_PAGE = 1
+
+    PAGE_QUERY_PARAM = 'page'
+
+
+class HelperPaginator:
+
+    def __init__(self, request, queryset, max_page):
+        self.paginator = Paginator(queryset, max_page)
+        self.link = request.build_absolute_uri()
+        self.current_page_num = self.get_current_page_num(request=request)
+        self.page_obj = self.get_page()
+
+    @staticmethod
+    def get_current_page_num(request):
+        return request.GET.get('page', 1)
+
+    def get_page(self):
+        """Вернет страницу"""
+        try:
+            return self.paginator.page(self.current_page_num)
+        except PageNotAnInteger:
+            return self.paginator.page(1)
+        except EmptyPage:
+            return self.paginator.page(self.paginator.num_pages)
+
+    def get_num_pages(self):
+        """Вернет количество страниц"""
+        return self.paginator.num_pages
+
+    def get_count(self):
+        """Количество записей"""
+        return self.paginator.count
+
+    def get_link_next_page(self):
+        """Следующая страница"""
+        if not self.page_obj.has_next():
+            return None
+
+        page_number = self.page_obj.next_page_number()
+        return replace_query_param(self.link, HelperPaginatorValue.PAGE_QUERY_PARAM, page_number)
+
+    def get_link_previous_page(self):
+        """Предыдущая страница"""
+        if not self.page_obj.has_previous():
+            return None
+
+        page_number = self.page_obj.previous_page_number()
+        return replace_query_param(self.link, HelperPaginatorValue.PAGE_QUERY_PARAM, page_number)

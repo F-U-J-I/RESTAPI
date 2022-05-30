@@ -38,8 +38,10 @@ class HelperCourseSerializer:
         for theme in Theme.objects.filter(course=course):
             for lesson in Lesson.objects.filter(theme=theme):
                 for step in Step.objects.filter(lesson=lesson):
-                    max_progress += step.max_mark
-                    progress += ProfileStep.objects.get(step=step, profile=profile).mark
+                    profile_step = ProfileStep.objects.filter(step=step, profile=profile)
+                    if profile_step:
+                        max_progress += step.max_mark
+                        progress += profile_step.mark
         return {
             'max_progress': max_progress,
             'progress': progress
