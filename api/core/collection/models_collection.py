@@ -6,7 +6,6 @@ from django.db.models.signals import post_save
 
 
 # ########### COLLECTION START ##############
-from ..course.models_course import Course
 from ..profile.models_profile import Profile
 
 
@@ -41,16 +40,6 @@ def create_collection(sender, **kwargs):
 
 
 post_save.connect(create_collection, sender=Collection)
-
-
-class CourseCollection(models.Model):
-    """CourseCollection"""
-    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    date_added = models.DateField(default=datetime.date.today)
-
-    def __str__(self):
-        return f"\"{self.course.title}\" to \"{self.collection.title}\" [Course to Collection]"
 
 
 class ProfileCollection(models.Model):

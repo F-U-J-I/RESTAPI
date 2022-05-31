@@ -19,6 +19,10 @@ class ProfileView(viewsets.ModelViewSet):
     def exists_path(self, path):
         return len(self.queryset.filter(path=path)) != 0
 
+    # @action(methods=['get'], detail=False)
+    # def get_profile(self, request):
+    #
+
     @action(methods=['get'], detail=False)
     def get_list_profile(self, request):
         serializer_profile_list = list()

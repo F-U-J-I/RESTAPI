@@ -1,6 +1,7 @@
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from rest_framework import status
 from rest_framework.utils.urls import replace_query_param
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.urls import reverse
@@ -39,6 +40,12 @@ class Util:
         relative_link = reverse(to)
         return f"{Util.get_absolute_url(request)}{relative_link}?token={token}"
 
+    @staticmethod
+    def get_object_or_error(model, status_error=None, text=None, *args, **kwargs):
+        try:
+            return model.objects.get(*args, **kwargs)
+        except Exception:
+            raise ValueError(text, status_error)
 
 class HelperFilter:
     # COLLECTION

@@ -1,3 +1,5 @@
+from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -7,6 +9,7 @@ from rest_framework.response import Response
 from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
     MiniCourseSerializer
+from ..collection.models_collection import Collection
 from ..profile.models_profile import Profile
 from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
 
@@ -160,36 +163,56 @@ class ActionProfileCourseView(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
-    def exists_path(self, path):
+    def exists_course(self, path):
         return len(self.queryset.filter(path=path)) != 0
+
+    def exists_collection(self, path):
+        return len(Collection.objects.filter(path=path)) != 0
+
+    @staticmethod
+    def get_collection(path):
+        collection_list = Collection.objects.filter(path=path)
+        if len(collection_list) == 0:
+            raise Http404("Такой подборки не существует")
+        return collection_list[0]
+
+    def get_course(self, path):
+        course_list = self.queryset.filter(path=path)
+        if len(course_list) == 0:
+            raise Http404("Такого курса не существует")
+        return course_list[0]
 
     @action(detail=False, methods=['post'])
     def added_courses(self, request, path):
-        if not self.exists_path(path):
-            return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
-
-        profile = Profile.objects.get(user=self.request.user)
-        course = self.queryset.get(path=path)
-        profile_course_list = ProfileCourse.objects.filter(profile=profile, course=course)
+        auth = Profile.objects.get(user=self.request.user)
+        course = self.get_course(path=path)
+        collection = self.get_collection(path=request.data.get('collection'))
+        if collection.profile != auth:
+            return Response({
+                'error': f"Вы не являетесь создателем подборки, поэтому не имеете право её изменять"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        profile_course_list = ProfileCourse.objects.filter(profile=auth, course=course, collection=collection)
         if len(profile_course_list) != 0:
             return Response({'error': "Вы уже добавили этот курс"}, status=status.HTTP_404_NOT_FOUND)
 
-        profile_course = ProfileCourse.objects.create(profile=profile, course=course)
+        profile_course = ProfileCourse.objects.create(profile=auth, course=course, collection=collection)
         profile_course.save()
 
         return Response({
             'course': course.title,
-            'message': "Курс добавлен"
+            'message': "Курс добавлен в подборку"
         }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['delete'])
     def popped_courses(self, request, path):
-        if not self.exists_path(path):
-            return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
-
-        profile = Profile.objects.get(user=self.request.user)
-        course = self.queryset.get(path=path)
-        profile_course_list = ProfileCourse.objects.filter(profile=profile, course=course)
+        auth = Profile.objects.get(user=self.request.user)
+        course = self.get_course(path=path)
+        collection = self.get_collection(path=request.data.get('collection'))
+        if collection.profile != auth:
+            return Response({
+                'error': f"Вы не являетесь создателем подборки поэтому не имеете право её изменять"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        profile_course_list = ProfileCourse.objects.filter(profile=auth, course=course, collection=collection)
         if len(profile_course_list) == 0:
             return Response({'error': "Вы уже удалили этот курс"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -198,7 +221,7 @@ class ActionProfileCourseView(viewsets.ModelViewSet):
 
         return Response({
             'course': course.title,
-            'message': "Курс удален"
+            'message': "Курс удален из подборки"
         }, status=status.HTTP_200_OK)
 
 

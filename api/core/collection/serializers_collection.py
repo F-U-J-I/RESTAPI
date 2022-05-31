@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from .models_collection import Collection, ProfileCollection, CourseCollection, CollectionStars
+from .models_collection import Collection, ProfileCollection, CollectionStars
+from ..course.models_course import ProfileCourse
 from ..course.serializers_course import MiniCourseSerializer
 from ..profile.serializers_profile import ProfileAsAuthor
 from django.db.models import Q
@@ -23,7 +24,7 @@ class HelperCollectionSerializer:
 
 class CollectionSerializer(serializers.ModelSerializer):
     """
-    Item Collection.
+    Collection.
     Есть на странице каталога.
     Содержит: Подборки; Курсы в этой подборке; Добавил ли себе пользователь эту подборку
     """
@@ -42,7 +43,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         # return ProfileAsAuthor(collection.profile).data
 
     def get_courses(self, collection):
-        courses_to_collection = CourseCollection.objects.filter(collection=collection)
+        courses_to_collection = ProfileCourse.objects.filter(collection=collection)
         courses = list()
         for item in courses_to_collection:
             if item.course.status.name == Util.COURSE_STATUS_RELEASE_NAME:

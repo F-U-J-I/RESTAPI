@@ -4,8 +4,8 @@ from ckeditor_uploader.fields import RichTextUploadingField
 from django.db import models
 from django.db.models.signals import post_save
 
+from ..collection.models_collection import Collection
 from ..profile.models_profile import Profile
-
 # ############## COURSE START ###############
 from ..utils import Util
 
@@ -46,10 +46,8 @@ def create_course(sender, **kwargs):
         course.status = course_status
         course.save()
 
-        profile_course = ProfileCourse.objects.create(course=course, profile=course.profile)
-        profile_course.role = ProfileCourseRole.objects.get(name=Util.PROFILE_COURSE_ROLE_ADMIN_NAME)
-        profile_course.status = ProfileCourseStatus.objects.get(name=Util.PROFILE_COURSE_STATUS_SEE_NAME)
-        profile_course.save()
+        creator_collection = CreatorCollection.objects.create(course=course, creator=course.profile)
+        creator_collection.save()
 
         course_info = CourseInfo.objects.create(course=course)
         course_info.save()
@@ -59,6 +57,15 @@ def create_course(sender, **kwargs):
 
 
 post_save.connect(create_course, sender=Course)
+
+
+class CreatorCollection(models.Model):
+    """CreatorCollection"""
+    creator = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.creator}: \"{self.course.title}\""
 
 
 # -------------- Page Course START ---------------
@@ -170,15 +177,14 @@ class ProfileCourse(models.Model):
     """ProfileCourse"""
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    role = models.ForeignKey(ProfileCourseRole, blank=True, null=True, on_delete=models.SET_NULL)
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     status = models.ForeignKey(ProfileCourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
     progress = models.IntegerField(default=0)
     grade = models.IntegerField(blank=True, null=True)
     date_added = models.DateField(default=datetime.date.today)
 
     def __str__(self):
-        status = "СОЗДАТЕЛЬ"
-        return f"\"{self.profile.user.username}\" to \"{self.course.profile}: {self.course.title}\" [{status}]"
+        return f"\"{self.profile.user.username}\" TO \"{self.course.profile}: {self.course.title}\" TO \"{self.collection.title}\" [{self.status.name}]"
 
 
 def create_profile_to_course(sender, **kwargs):
@@ -187,8 +193,6 @@ def create_profile_to_course(sender, **kwargs):
         profile_course = kwargs['instance']
         if profile_course.status is None:
             profile_course.status = ProfileCourseStatus.objects.get(name=Util.PROFILE_COURSE_STATUS_SEE_NAME)
-        if profile_course.role is None:
-            profile_course.role = ProfileCourseRole.objects.get(name=Util.PROFILE_COURSE_ROLE_USER_NAME)
         profile_course.save()
 
 

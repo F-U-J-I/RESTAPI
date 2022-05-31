@@ -1,12 +1,39 @@
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.core.validators import validate_email
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+
+
+class UserAuthSerializer(serializers.ModelSerializer):
+    email = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ('email', 'password')
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        if not (email and password):
+            raise ValidationError("Вы не указали email или password")
+        if len(User.objects.filter(email=email)) == 0:
+            raise ValidationError("Такого email не существует")
+
+        user_request = User.objects.get(email=email)
+        user = authenticate(username=user_request.username, password=password)
+
+        attrs['user'] = user
+        print(attrs)
+        return attrs
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'password')

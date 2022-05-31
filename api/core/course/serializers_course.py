@@ -3,7 +3,6 @@ from rest_framework import serializers
 from .models_course import Course, ProfileCourse, Theme, Lesson, \
     Step, ProfileStep, \
     CourseInfo, CourseMainInfo, CourseFit, CourseSkill, CourseStars
-from ..collection.models_collection import CourseCollection
 
 
 #####################################
@@ -47,38 +46,26 @@ class HelperCourseSerializer:
             'progress': progress
         }
 
-    @staticmethod
-    def get_role(profile, course):
-        profile_course_list = ProfileCourse.objects.filter(profile=profile, course=course)
-        if len(profile_course_list) == 0:
-            return None
-        return profile_course_list[0].role.name
-
 
 class CourseSerializer(serializers.ModelSerializer):
     """курс"""
     author = serializers.SerializerMethodField()
     quantity_in_collection = serializers.SerializerMethodField()
 
-    role = serializers.SerializerMethodField()
     status_progress = serializers.SerializerMethodField(default=None)
     progress = serializers.SerializerMethodField(default=None)
 
     class Meta:
         model = Course
         fields = ('title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
-                  'quantity_in_collection', 'role', 'status_progress', 'progress')
+                  'quantity_in_collection', 'status_progress', 'progress')
 
     @staticmethod
     def get_author(course):
         return course.profile.user.username
 
-    def get_role(self, course):
-        return HelperCourseSerializer.get_role(course=course, profile=self.context.get('profile'))
-
-    @staticmethod
-    def get_quantity_in_collection(course):
-        return len(CourseCollection.objects.filter(course=course))
+    def get_quantity_in_collection(self, course):
+        return len(ProfileCourse.objects.filter(course=course), profile=self.context.get('profile'))
 
     def get_status_progress(self, course):
         return HelperCourseSerializer.get_status_progress(course=course, profile=self.context.get('profile'))
@@ -90,19 +77,14 @@ class CourseSerializer(serializers.ModelSerializer):
 class MiniCourseSerializer(serializers.ModelSerializer):
     """Мини курс"""
     author = serializers.SerializerMethodField()
-    role = serializers.SerializerMethodField()
     status_progress = serializers.SerializerMethodField(default=None)
     progress = serializers.SerializerMethodField(default=None)
 
     class Meta:
         model = Course
         fields = (
-            'title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount', 'role',
+            'title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
             'status_progress', 'progress')
-
-    def get_role(self, course):
-        profile = self.context.get('profile')
-        return HelperCourseSerializer.get_role(profile=profile, course=course)
 
     @staticmethod
     def get_author(course):

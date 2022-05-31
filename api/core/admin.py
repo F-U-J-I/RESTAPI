@@ -4,8 +4,8 @@ from .profile.models_profile import Profile, Subscription
 
 from .course.models_course import CourseStatus, Course, CourseInfo, CourseMainInfo, CourseFit, CourseStars, CourseSkill, Theme, Lesson, \
     Step, ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson, ProfileStepStatus, ProfileStep, \
-    ProfileCourseRole
-from .collection.models_collection import Collection, CourseCollection, ProfileCollection, CollectionStars
+    ProfileCourseRole, CreatorCollection
+from .collection.models_collection import Collection, ProfileCollection, CollectionStars
 
 # Register your models here.
 
@@ -15,6 +15,7 @@ admin.site.register(Subscription)
 
 # COURSE
 admin.site.register(CourseStatus)
+admin.site.register(CreatorCollection)
 admin.site.register(Course)
 
 # Page COURSE
@@ -40,6 +41,5 @@ admin.site.register(ProfileStep)
 
 # Collection
 admin.site.register(Collection)
-admin.site.register(CourseCollection)
 admin.site.register(ProfileCollection)
 admin.site.register(CollectionStars)
