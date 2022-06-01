@@ -47,6 +47,11 @@ class Util:
         except Exception:
             raise ValueError(text, status_error)
 
+
+class ModelException:
+    pass
+
+
 class HelperFilter:
     # COLLECTION
 

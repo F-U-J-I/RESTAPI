@@ -167,7 +167,7 @@ class ActionCollectionView(viewsets.ModelViewSet):
         return Response({
             'title': serializer.data['title'],
             'path': serializer.data['path'],
-            "message": "Подборка успешно создалась",
+            "message": "Подборка успешно создана",
         }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])

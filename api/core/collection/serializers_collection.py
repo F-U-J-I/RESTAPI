@@ -94,7 +94,7 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
         return ProfileAsAuthor(collection.profile).data
 
     def get_courses(self, collection):
-        courses_to_collection = CourseCollection.objects.filter(collection=collection)
+        courses_to_collection = ProfileCourse.objects.filter(collection=collection)
         courses = list()
         for item in courses_to_collection:
             if item.course.status.name == Util.COURSE_STATUS_RELEASE_NAME:

@@ -62,15 +62,21 @@ class CourseView(viewsets.ModelViewSet):
     def get_courses(self, request, *args, **kwargs):
         auth = Profile.objects.get(user=self.request.user)
         queryset = self.filter_queryset(self.queryset)
-        serializer = CourseSerializer(queryset, many=True, context={'profile': auth})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        frame_pagination = self.get_frame_pagination(request, queryset)
+        serializer = CourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
+
+        frame_pagination['results'] = serializer.data
+        return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=False)
     def get_mini_courses(self, request, *args, **kwargs):
         auth = Profile.objects.get(user=self.request.user)
         queryset = self.filter_queryset(self.queryset)
-        serializer = MiniCourseSerializer(queryset, many=True, context={'profile': auth})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_PAGE)
+        serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
+
+        frame_pagination['results'] = serializer.data
+        return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def get_profile_courses(self, request, path, *args, **kwargs):
@@ -113,9 +119,9 @@ class CourseView(viewsets.ModelViewSet):
 
         frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_PAGE)
         serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True,
-                                          context={'profile': auth}).data
+                                          context={'profile': auth})
 
-        frame_pagination['results'] = serializer
+        frame_pagination['results'] = serializer.data
         return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
@@ -150,6 +156,37 @@ class CourseView(viewsets.ModelViewSet):
         return Response(data={
             'course': serializer_course.data,
             'info': serializer_course_info.data
+        }, status=status.HTTP_200_OK)
+
+
+# #########################################
+#        ######## ACTIONS ########
+# #########################################
+
+class ActionCourseView(viewsets.ModelViewSet):
+    """Коллекция"""
+    lookup_field = 'slug'
+    queryset = Collection.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    def exists_path(self, path):
+        return len(self.queryset.filter(path=path)) != 0
+
+    @action(detail=False, methods=['post'])
+    def create_course(self, request):
+        course_title = request.data.get('title', None)
+        if course_title is None:
+            return Response({
+                'error': "Вы не ввели название курса",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        auth = Profile.objects.get(user=self.request.user)
+        course = Course.objects.create(title=course_title, profile=auth)
+        course.save()
+        return Response({
+            'title': course.title,
+            'path': course.path,
+            'message': "Курс успешно создан",
         }, status=status.HTTP_200_OK)
 
 

@@ -65,7 +65,7 @@ class CourseSerializer(serializers.ModelSerializer):
         return course.profile.user.username
 
     def get_quantity_in_collection(self, course):
-        return len(ProfileCourse.objects.filter(course=course), profile=self.context.get('profile'))
+        return len(ProfileCourse.objects.filter(course=course, profile=self.context.get('profile')))
 
     def get_status_progress(self, course):
         return HelperCourseSerializer.get_status_progress(course=course, profile=self.context.get('profile'))
