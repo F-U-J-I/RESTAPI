@@ -1,5 +1,4 @@
 from django.http import Http404
-from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -8,7 +7,7 @@ from rest_framework.response import Response
 
 from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection, Theme
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
-    MiniCourseSerializer, ThemeSerializer, ActionThemeSerializer
+    MiniCourseSerializer, ActionThemeSerializer
 from ..collection.models_collection import Collection
 from ..profile.models_profile import Profile
 from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
@@ -190,12 +189,12 @@ class ActionCourseView(viewsets.ModelViewSet):
 
 class ThemeView(viewsets.ModelViewSet):
     """Тема"""
-    lookup_field = 'int'
+    lookup_field = 'slug'
     queryset = Theme.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
-    def exists_path(self, path):
-        return len(self.queryset.filter(path=path)) != 0
+    def exists_theme(self, course, path):
+        return len(self.queryset.filter(course=course, path=path)) != 0
 
     @staticmethod
     def exists_course_path(path):
@@ -207,17 +206,43 @@ class ThemeView(viewsets.ModelViewSet):
             return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
 
         auth = Profile.objects.get(user=self.request.user)
-
         course = Course.objects.get(path=path)
-        number_new_theme = len(Theme.objects.filter(course=course)) + 1
-        serializer = ActionThemeSerializer(data={'title': f"Тема #{number_new_theme}"}, context={'profile': auth, 'course': course})
+        if course.profile != auth:
+            return Response({"error": "У вас нет доступа для создания темы от имени этого аккаунта"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        number_new_theme = len(self.queryset.filter(course=course)) + 1
+        serializer = ActionThemeSerializer(data={'title': f"Тема #{number_new_theme}"},
+                                           context={'profile': auth, 'course': course})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({
             'title': serializer.data['title'],
+            'path': serializer.data['path'],
             'message': "Тема успешно создана"
         }, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['delete'])
+    def delete_theme(self, request, path_course, path_theme):
+        if not self.exists_course_path(path=path_course):
+            return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        course = Course.objects.get(path=path_course)
+        auth = Profile.objects.get(user=self.request.user)
+        if course.profile != auth:
+            return Response({"error": "У вас нет доступа для удаления темы от имени этого аккаунта"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if not self.exists_theme(course=course, path=path_theme):
+            return Response({'error': "Такой темы не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        theme = self.queryset.get(course=course, path=path_theme)
+        theme.delete()
+        return Response({
+            'title': theme.title,
+            'path': theme.path,
+            'message': "Тема успешно удалена"
+        }, status=status.HTTP_200_OK)
 
 
 # #########################################
@@ -259,14 +284,16 @@ class ActionProfileCourseView(viewsets.ModelViewSet):
                 'error': f"Вы не являетесь создателем подборки, поэтому не имеете право её изменять"
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        profile_course_collection_list = ProfileCourseCollection.objects.filter(profile=auth, course=course, collection=collection)
+        profile_course_collection_list = ProfileCourseCollection.objects.filter(profile=auth, course=course,
+                                                                                collection=collection)
         if len(profile_course_collection_list) != 0:
             return Response({'error': "Вы уже добавили этот курс"}, status=status.HTTP_404_NOT_FOUND)
 
         profile_course = ProfileCourse.objects.create(profile=auth, course=course)
         profile_course.save()
 
-        profile_course_collection = ProfileCourseCollection.objects.create(profile=auth, course=course, collection=collection)
+        profile_course_collection = ProfileCourseCollection.objects.create(profile=auth, course=course,
+                                                                           collection=collection)
         profile_course_collection.save()
 
         return Response({
@@ -284,7 +311,8 @@ class ActionProfileCourseView(viewsets.ModelViewSet):
                 'error': f"Вы не являетесь создателем подборки, поэтому не имеете право её изменять"
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        profile_course_collection_list = ProfileCourseCollection.objects.filter(profile=auth, course=course,                            collection=collection)
+        profile_course_collection_list = ProfileCourseCollection.objects.filter(profile=auth, course=course,
+                                                                                collection=collection)
         if len(profile_course_collection_list) != 0:
             return Response({'error': "Вы уже удалили этот курс"}, status=status.HTTP_404_NOT_FOUND)
 

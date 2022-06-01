@@ -24,7 +24,7 @@ class Course(models.Model):
     description = models.TextField(max_length=175, blank=True)
     price = models.IntegerField(default=0)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    avatar_url = models.ImageField(blank=True, null=True)
+    avatar_url = models.ImageField(blank=True, null=True, default='default/course-default.png')
     duration_in_minutes = models.IntegerField(default=0)
     rating = models.FloatField(default=0)
     members_amount = models.IntegerField(default=0)
@@ -127,22 +127,46 @@ class Theme(models.Model):
     """The Course consists of Theme"""
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
-    image_url = models.ImageField(blank=True, null=True)
+    image_url = models.ImageField(blank=True, null=True, default="default/theme-default.png")
     max_progress = models.IntegerField(default=0)
+    path = models.CharField(max_length=64, blank=True)
 
     def __str__(self):
         return f"{self.course.profile.user.username}: {self.course.title} => {self.title} [Theme]"
+
+
+def create_theme(sender, **kwargs):
+    """When a course is created, autofill fields"""
+    if kwargs['created']:
+        theme = kwargs['instance']
+        theme.path = len(Theme.objects.filter(course=theme.course))
+        theme.save()
+
+
+post_save.connect(create_theme, sender=Theme)
 
 
 class Lesson(models.Model):
     """The Theme consists of Lesson"""
     theme = models.ForeignKey(Theme, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
-    image_url = models.ImageField(blank=True, null=True)
+    image_url = models.ImageField(blank=True, null=True, default="default/lesson-default.png")
     max_progress = models.IntegerField(default=0)
+    path = models.CharField(max_length=64, blank=True, unique=True)
 
     def __str__(self):
         return f"{self.theme.course.profile.user.username}: {self.theme.course.title}: {self.theme.title}: {self.title} [Lesson]"
+
+
+def create_lesson(sender, **kwargs):
+    """When a course is created, autofill fields"""
+    if kwargs['created']:
+        lesson = kwargs['instance']
+        lesson.path = len(Lesson.objects.filter(theme=lesson.theme)) + 1
+        lesson.save()
+
+
+post_save.connect(create_theme, sender=Theme)
 
 
 class Step(models.Model):

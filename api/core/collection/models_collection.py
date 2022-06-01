@@ -14,7 +14,7 @@ class Collection(models.Model):
     title = models.CharField(max_length=64)
     description = models.TextField(max_length=512, blank=True)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    image_url = models.ImageField(validators=[validate_image_file_extension], blank=True, null=True)
+    image_url = models.ImageField(validators=[validate_image_file_extension], blank=True, null=True, default='default/collection-default.png')
     wallpaper = models.ImageField(blank=True, null=True)
     rating = models.FloatField(default=0)
     members_amount = models.IntegerField(default=0)

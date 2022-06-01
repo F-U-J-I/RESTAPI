@@ -192,7 +192,7 @@ class ActionThemeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Theme
-        fields = ('title', 'image_url', 'max_progress')
+        fields = ('title', 'image_url', 'max_progress', 'path')
 
     def create(self, validated_data):
         return Theme.objects.create(**validated_data, course=self.context.get('course'))
