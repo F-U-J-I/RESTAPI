@@ -72,7 +72,7 @@ class CollectionView(viewsets.ModelViewSet):
         return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
-    def get_profile_collections(self, request, path, *args, **kwargs):
+    def get_all_profile_collections(self, request, path, *args, **kwargs):
         """Добавленные и созданные подборки пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)

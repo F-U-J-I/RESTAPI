@@ -2,9 +2,10 @@ from django.contrib import admin
 
 from .profile.models_profile import Profile, Subscription
 
-from .course.models_course import CourseStatus, Course, CourseInfo, CourseMainInfo, CourseFit, CourseStars, CourseSkill, Theme, Lesson, \
+from .course.models_course import CourseStatus, Course, CourseInfo, CourseMainInfo, CourseFit, CourseStars, CourseSkill, \
+    Theme, Lesson, \
     Step, ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson, ProfileStepStatus, ProfileStep, \
-    ProfileCourseRole, CreatorCollection
+    ProfileCourseRole, CreatorCollection, ProfileCourseCollection
 from .collection.models_collection import Collection, ProfileCollection, CollectionStars
 
 # Register your models here.
@@ -34,12 +35,13 @@ admin.site.register(Step)
 admin.site.register(ProfileCourseRole)
 admin.site.register(ProfileCourseStatus)
 admin.site.register(ProfileCourse)
+admin.site.register(ProfileCourseCollection)
 admin.site.register(ProfileTheme)
 admin.site.register(ProfileLesson)
 admin.site.register(ProfileStepStatus)
 admin.site.register(ProfileStep)
 
-# Collection
+# COLLECTION
 admin.site.register(Collection)
 admin.site.register(ProfileCollection)
 admin.site.register(CollectionStars)

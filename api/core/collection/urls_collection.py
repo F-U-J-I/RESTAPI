@@ -9,7 +9,7 @@ urlpatterns = [
 
     path('collections/', CollectionView.as_view({'get': 'get_collections'})),
     path('mini-collections/', CollectionView.as_view({'get': 'get_mini_collections'}), name="mini-collections"),
-    path('collections/all/<slug:path>/', CollectionView.as_view({'get': 'get_profile_collections'})),
+    path('collections/all/<slug:path>/', CollectionView.as_view({'get': 'get_all_profile_collections'})),
     path('collections/added/<slug:path>/', CollectionView.as_view({'get': 'get_added_collections'})),
     path('collections/created/<slug:path>/', CollectionView.as_view({'get': 'get_created_collections'})),
     path('collections/get/<slug:path>/', CollectionView.as_view({'get': 'get_detail_collection'})),

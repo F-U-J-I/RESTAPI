@@ -177,7 +177,6 @@ class ProfileCourse(models.Model):
     """ProfileCourse"""
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     status = models.ForeignKey(ProfileCourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
     progress = models.IntegerField(default=0)
     grade = models.IntegerField(blank=True, null=True)
@@ -187,7 +186,7 @@ class ProfileCourse(models.Model):
         status = None
         if self.status is not None:
             status = self.status.name
-        return f"\"{self.profile.user.username}\" TO \"{self.course.profile}: {self.course.title}\" TO \"{self.collection.title}\" [{status}]"
+        return f"\"{self.profile.user.username}\" => \"{self.course.profile}: {self.course.title}\" [{status}]"
 
 
 def create_profile_to_course(sender, **kwargs):
@@ -195,11 +194,25 @@ def create_profile_to_course(sender, **kwargs):
     if kwargs['created']:
         profile_course = kwargs['instance']
         if profile_course.status is None:
-            profile_course.status = ProfileCourseStatus.objects.get(name=Util.PROFILE_COURSE_STATUS_SEE_NAME)
+            profile_course.status = ProfileCourseStatus.objects.get(name=Util.PROFILE_COURSE_STATUS_STUDYING_NAME)
         profile_course.save()
 
 
 post_save.connect(create_profile_to_course, sender=ProfileCourse)
+
+
+class ProfileCourseCollection(models.Model):
+    """Добавление курса в подборки"""
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, blank=True, null=True)
+
+    def __str__(self):
+        course_title = "Добавленные"
+        if self.collection is not None:
+            course_title = f"{self.collection.profile}: {self.collection.title}"
+
+        return f"\"{self.profile.user.username}\" => \"{self.course.profile}: {self.course.title}\" => \"{course_title}\""
 
 
 class ProfileTheme(models.Model):

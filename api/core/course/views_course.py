@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
-from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus
+from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
     MiniCourseSerializer
 from ..collection.models_collection import Collection
@@ -79,24 +79,27 @@ class CourseView(viewsets.ModelViewSet):
         return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
-    def get_profile_courses(self, request, path, *args, **kwargs):
+    def get_all_profile_courses(self, request, path, *args, **kwargs):
         """Добавленные и созданные курсы пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
         profile = Profile.objects.get(path=path)
         auth = Profile.objects.get(user=self.request.user)
 
-        self.swap_filters_field(HelperFilter.PROFILE_COURSE_TYPE)
-        queryset = self.filter_queryset(ProfileCourse.objects.filter(profile=profile))
-        self.swap_filters_field(HelperFilter.COURSE_TYPE)
+        # Получаем созданные и добавленные курсы
+        added_profile_course = ProfileCourse.objects.filter(profile=profile)
+        created_queryset = self.queryset.filter(profile=profile)
+        queryset_list = [item.course.pk for item in added_profile_course]
+        for item in created_queryset:
+            queryset_list.append(item.pk)
+        new_queryset = self.queryset.filter(pk__in=queryset_list)
+
+        queryset = self.filter_queryset(new_queryset)
 
         frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_PAGE)
-        serializer_list = list()
-        for profile_course in frame_pagination.get('results'):
-            serializer_list.append(
-                MiniCourseSerializer(profile_course.course, context={'profile': auth}).data)
+        serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
+        frame_pagination['results'] = serializer.data
 
-        frame_pagination['results'] = serializer_list
         return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
@@ -108,15 +111,10 @@ class CourseView(viewsets.ModelViewSet):
         auth = Profile.objects.get(user=self.request.user)
 
         self.swap_filters_field(HelperFilter.PROFILE_COURSE_TYPE)
-        added_queryset = self.filter_queryset(ProfileCourse.objects.filter(profile=profile))
+        profile_queryset = self.filter_queryset(ProfileCourse.objects.filter(profile=profile))
         self.swap_filters_field(HelperFilter.COURSE_TYPE)
 
-        # Исключаем созданные подборки
-        queryset = list()
-        for item in added_queryset:
-            if item.course.profile != profile:
-                queryset.append(item.course)
-
+        queryset = [item.course for item in profile_queryset]
         frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_PAGE)
         serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True,
                                           context={'profile': auth})
@@ -228,12 +226,16 @@ class ActionProfileCourseView(viewsets.ModelViewSet):
             return Response({
                 'error': f"Вы не являетесь создателем подборки, поэтому не имеете право её изменять"
             }, status=status.HTTP_400_BAD_REQUEST)
-        profile_course_list = ProfileCourse.objects.filter(profile=auth, course=course, collection=collection)
-        if len(profile_course_list) != 0:
+
+        profile_course_collection_list = ProfileCourseCollection.objects.filter(profile=auth, course=course, collection=collection)
+        if len(profile_course_collection_list) != 0:
             return Response({'error': "Вы уже добавили этот курс"}, status=status.HTTP_404_NOT_FOUND)
 
-        profile_course = ProfileCourse.objects.create(profile=auth, course=course, collection=collection)
+        profile_course = ProfileCourse.objects.create(profile=auth, course=course)
         profile_course.save()
+
+        profile_course_collection = ProfileCourseCollection.objects.create(profile=auth, course=course, collection=collection)
+        profile_course_collection.save()
 
         return Response({
             'course': course.title,
@@ -247,14 +249,15 @@ class ActionProfileCourseView(viewsets.ModelViewSet):
         collection = self.get_collection(path=request.data.get('collection'))
         if collection.profile != auth:
             return Response({
-                'error': f"Вы не являетесь создателем подборки поэтому не имеете право её изменять"
+                'error': f"Вы не являетесь создателем подборки, поэтому не имеете право её изменять"
             }, status=status.HTTP_400_BAD_REQUEST)
-        profile_course_list = ProfileCourse.objects.filter(profile=auth, course=course, collection=collection)
-        if len(profile_course_list) == 0:
+
+        profile_course_collection_list = ProfileCourseCollection.objects.filter(profile=auth, course=course,                            collection=collection)
+        if len(profile_course_collection_list) != 0:
             return Response({'error': "Вы уже удалили этот курс"}, status=status.HTTP_404_NOT_FOUND)
 
-        profile_collection = profile_course_list[0]
-        profile_collection.delete()
+        profile_course_collection = profile_course_collection_list[0]
+        profile_course_collection.delete()
 
         return Response({
             'course': course.title,
