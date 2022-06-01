@@ -201,15 +201,9 @@ class ActionProfileCourseView(viewsets.ModelViewSet):
     def exists_course(self, path):
         return len(self.queryset.filter(path=path)) != 0
 
-    def exists_collection(self, path):
-        return len(Collection.objects.filter(path=path)) != 0
-
     @staticmethod
-    def get_collection(path):
-        collection_list = Collection.objects.filter(path=path)
-        if len(collection_list) == 0:
-            raise Http404("Такой подборки не существует")
-        return collection_list[0]
+    def exists_collection(path):
+        return len(Collection.objects.filter(path=path)) != 0
 
     def get_course(self, path):
         course_list = self.queryset.filter(path=path)
@@ -219,9 +213,15 @@ class ActionProfileCourseView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def added_courses(self, request, path):
+        collection_path = request.data.get('collection_path')
+        if self.exists_course(path=path):
+            return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
+        if self.exists_collection(path=collection_path):
+            return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
+
         auth = Profile.objects.get(user=self.request.user)
-        course = self.get_course(path=path)
-        collection = self.get_collection(path=request.data.get('collection'))
+        course = Course.objects.get(path=path)
+        collection = Collection.objects.get(path=collection_path)
         if collection.profile != auth:
             return Response({
                 'error': f"Вы не являетесь создателем подборки, поэтому не имеете право её изменять"
