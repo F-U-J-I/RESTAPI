@@ -222,6 +222,25 @@ class ThemeView(viewsets.ModelViewSet):
             'message': "Тема успешно создана"
         }, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'])
+    def get_update_info(self, request, path_course, path_theme):
+        if not self.exists_course_path(path=path_course):
+            return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        course = Course.objects.get(path=path_course)
+        auth = Profile.objects.get(user=self.request.user)
+        if course.profile != auth:
+            return Response({"error": "У вас нет доступа для удаления темы от имени этого аккаунта"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if not self.exists_theme(course=course, path=path_theme):
+            return Response({'error': "Такой темы не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        theme = self.queryset.get(course=course, path=path_theme)
+        serializer = ActionThemeSerializer(theme, context={'profile': auth, 'course': course})
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=['delete'])
     def delete_theme(self, request, path_course, path_theme):
         if not self.exists_course_path(path=path_course):

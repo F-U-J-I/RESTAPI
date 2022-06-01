@@ -189,10 +189,14 @@ class ThemeSerializer(serializers.ModelSerializer):
 
 
 class ActionThemeSerializer(serializers.ModelSerializer):
+    count_lesson = serializers.SerializerMethodField()
 
     class Meta:
         model = Theme
-        fields = ('title', 'image_url', 'max_progress', 'path')
+        fields = ('title', 'image_url', 'max_progress', 'count_lesson', 'path')
+
+    def get_count_lesson(self, theme):
+        return len(Lesson.objects.filter(theme=theme))
 
     def create(self, validated_data):
         return Theme.objects.create(**validated_data, course=self.context.get('course'))
