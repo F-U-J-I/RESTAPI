@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from .models_course import Course, ProfileCourse, Theme, Lesson, \
     Step, ProfileStep, \
-    CourseInfo, CourseMainInfo, CourseFit, CourseSkill, CourseStars
+    CourseInfo, CourseMainInfo, CourseFit, CourseSkill, CourseStars, ProfileTheme
 
 
 #####################################
@@ -172,6 +172,31 @@ class PageInfoCourseSerializer(serializers.ModelSerializer):
 
 
 #####################################
+
+
+class ThemeSerializer(serializers.ModelSerializer):
+    is_complete = serializers.SerializerMethodField(default=False)
+
+    class Meta:
+        model = Theme
+        fields = ('title', 'image_url', 'max_progress', 'is_complete')
+
+    def get_is_complete(self, theme):
+        profile_theme = ProfileTheme.objects.get(theme=theme, profile=self.context.get('profile'))
+        if profile_theme.progress == theme.max_progress:
+            return True
+        return False
+
+
+class ActionThemeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Theme
+        fields = ('title', 'image_url', 'max_progress')
+
+    def create(self, validated_data):
+        return Theme.objects.create(**validated_data, course=self.context.get('course'))
+
 
 # #########################################
 #        ######## GRADE ########

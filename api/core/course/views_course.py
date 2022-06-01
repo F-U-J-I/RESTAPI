@@ -6,9 +6,9 @@ from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
-from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection
+from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection, Theme
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
-    MiniCourseSerializer
+    MiniCourseSerializer, ThemeSerializer, ActionThemeSerializer
 from ..collection.models_collection import Collection
 from ..profile.models_profile import Profile
 from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
@@ -186,6 +186,38 @@ class ActionCourseView(viewsets.ModelViewSet):
             'path': course.path,
             'message': "Курс успешно создан",
         }, status=status.HTTP_200_OK)
+
+
+class ThemeView(viewsets.ModelViewSet):
+    """Тема"""
+    lookup_field = 'int'
+    queryset = Theme.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    def exists_path(self, path):
+        return len(self.queryset.filter(path=path)) != 0
+
+    @staticmethod
+    def exists_course_path(path):
+        return len(Course.objects.filter(path=path)) != 0
+
+    @action(detail=False, methods=['post'])
+    def create_theme(self, request, path):
+        if not self.exists_course_path(path=path):
+            return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        auth = Profile.objects.get(user=self.request.user)
+
+        course = Course.objects.get(path=path)
+        number_new_theme = len(Theme.objects.filter(course=course)) + 1
+        serializer = ActionThemeSerializer(data={'title': f"Тема #{number_new_theme}"}, context={'profile': auth, 'course': course})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({
+            'title': serializer.data['title'],
+            'message': "Тема успешно создана"
+        }, status=status.HTTP_200_OK)
+
 
 
 # #########################################

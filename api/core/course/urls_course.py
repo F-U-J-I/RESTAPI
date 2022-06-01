@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views_course import CourseView, GradeCourseView, ActionProfileCourseView, ActionCourseView
+from .views_course import CourseView, GradeCourseView, ActionProfileCourseView, ActionCourseView, ThemeView
 
 router = DefaultRouter()
 
@@ -19,6 +19,8 @@ urlpatterns = [
     path('courses/delete/grade/<slug:path>/', GradeCourseView.as_view({'delete': 'delete_grade'})),
 
     path('courses/create/', ActionCourseView.as_view({'post': 'create_course'})),
+
+    path('courses/creating/<slug:path>/create/theme/', ThemeView.as_view({'post': 'create_theme'})),
 
     path('courses/add/<slug:path>/', ActionProfileCourseView.as_view({'post': 'added_courses'})),
     path('courses/pop/<slug:path>/', ActionProfileCourseView.as_view({'delete': 'popped_courses'})),

@@ -128,9 +128,10 @@ class Theme(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
     image_url = models.ImageField(blank=True, null=True)
+    max_progress = models.IntegerField(default=0)
 
     def __str__(self):
-        return f"{self.course.profile.user.username}: {self.course.title}: {self.title} [Theme]"
+        return f"{self.course.profile.user.username}: {self.course.title} => {self.title} [Theme]"
 
 
 class Lesson(models.Model):
@@ -138,6 +139,7 @@ class Lesson(models.Model):
     theme = models.ForeignKey(Theme, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
     image_url = models.ImageField(blank=True, null=True)
+    max_progress = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.theme.course.profile.user.username}: {self.theme.course.title}: {self.theme.title}: {self.title} [Lesson]"
@@ -148,7 +150,7 @@ class Step(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
     content = RichTextUploadingField(blank=True)
-    max_mark = models.IntegerField(default=1)
+    max_progress = models.IntegerField(default=1)
 
     def __str__(self):
         return f"{self.lesson.theme.course.profile.user.username}: {self.lesson.theme.course.title}: {self.lesson.theme.title}: {self.lesson.title}: {self.title} [Step]"
@@ -219,6 +221,7 @@ class ProfileTheme(models.Model):
     """ProfileTheme"""
     theme = models.ForeignKey(Theme, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    progress = models.IntegerField(default=0)
 
     def __str__(self):
         return f"\"{self.profile.user.username}\" to \"{self.theme.course.title}: {self.theme.title}\""
@@ -228,6 +231,7 @@ class ProfileLesson(models.Model):
     """ProfileLesson"""
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    progress = models.IntegerField(default=0)
 
     def __str__(self):
         return f"\"{self.profile.user.username}\" to \"{self.lesson.theme.course.title}: {self.lesson.theme.title}: {self.lesson.title}\""
