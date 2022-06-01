@@ -184,7 +184,10 @@ class ProfileCourse(models.Model):
     date_added = models.DateField(default=datetime.date.today)
 
     def __str__(self):
-        return f"\"{self.profile.user.username}\" TO \"{self.course.profile}: {self.course.title}\" TO \"{self.collection.title}\" [{self.status.name}]"
+        status = None
+        if self.status is not None:
+            status = self.status.name
+        return f"\"{self.profile.user.username}\" TO \"{self.course.profile}: {self.course.title}\" TO \"{self.collection.title}\" [{status}]"
 
 
 def create_profile_to_course(sender, **kwargs):

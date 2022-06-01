@@ -166,7 +166,7 @@ class CourseView(viewsets.ModelViewSet):
 class ActionCourseView(viewsets.ModelViewSet):
     """Коллекция"""
     lookup_field = 'slug'
-    queryset = Collection.objects.all()
+    queryset = Course.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     def exists_path(self, path):
