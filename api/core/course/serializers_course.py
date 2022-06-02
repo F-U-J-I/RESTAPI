@@ -56,7 +56,7 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ('title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
+        fields = ('path', 'title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
                   'quantity_in_collection', 'status_progress', 'progress')
 
     @staticmethod
