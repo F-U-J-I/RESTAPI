@@ -201,6 +201,13 @@ class ActionThemeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         return Theme.objects.create(**validated_data, course=self.context.get('course'))
 
+    def update(self, instance, validated_data):
+        instance.title = validated_data.get('title', instance.title)
+        instance.image_url = validated_data.get('image_url', instance.image_url)
+        instance.path = validated_data.get('path', instance.path)
+        instance.save()
+        return instance
+
 
 # #########################################
 #        ######## GRADE ########

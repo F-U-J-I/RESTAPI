@@ -8,7 +8,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     description = models.TextField(blank=True, null=True)
     path = models.CharField(max_length=64, unique=True)
-    avatar_url = models.ImageField(default='default/profile-default.jpg')
+    avatar_url = models.ImageField(default='default-profile.jpg')
     wrapper_url = models.ImageField(blank=True)
     is_verified = models.BooleanField(default=False)
 
