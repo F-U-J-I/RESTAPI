@@ -40,6 +40,8 @@ urlpatterns = [
          LessonView.as_view({'get': 'get_update_info'})),
     path('courses/creating/<slug:path_course>/theme/<slug:path_theme>/update/lesson/<slug:path_lesson>/',
          LessonView.as_view({'put': 'update_lesson'})),
+    path('courses/creating/<slug:path_course>/theme/<slug:path_theme>/delete/lesson/<slug:path_lesson>/',
+         LessonView.as_view({'delete': 'delete_lesson'})),
 
     path('courses/add/<slug:path>/', ActionProfileCourseView.as_view({'post': 'added_courses'})),
     path('courses/pop/<slug:path>/', ActionProfileCourseView.as_view({'delete': 'popped_courses'})),
