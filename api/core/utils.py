@@ -43,6 +43,11 @@ class Util:
         return f"{Util.get_absolute_url(request)}{relative_link}?token={token}"
 
     @staticmethod
+    def exists_path(model, validated_data):
+        print(model.objects.filter(**validated_data))
+        return len(model.objects.filter(**validated_data)) != 0
+
+    @staticmethod
     def get_update_image(old, new):
         if old != new:
             try:

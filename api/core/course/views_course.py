@@ -294,20 +294,12 @@ class LessonView(viewsets.ModelViewSet):
     queryset = Lesson.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
-    @staticmethod
-    def exists_path(model, validated_data):
-        return len(model.objects.filter(**validated_data)) != 0
-
-    @staticmethod
-    def exists_course_path(path):
-        return len(Course.objects.filter(path=path)) != 0
-
     @action(detail=False, methods=['post'])
     def create_lesson(self, request, path_course, path_theme):
-        if not self.exists_path(Course, {'path': path_course}):
+        if not Util.exists_path(Course, {'path': path_course}):
             return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
 
-        if not self.exists_path(Theme, {'path': path_theme}):
+        if not Util.exists_path(Theme, {'path': path_theme}):
             return Response({'error': "Такой темы не существует"}, status=status.HTTP_404_NOT_FOUND)
 
         auth = Profile.objects.get(user=self.request.user)
@@ -320,12 +312,39 @@ class LessonView(viewsets.ModelViewSet):
         number_new_lesson = len(self.queryset.filter(theme=theme)) + 1
         serializer = ActionLessonSerializer(data={'title': f"Урок #{number_new_lesson}"}, context={'theme': theme})
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        try:
+            serializer.save()
+        except ValueError as ex:
+            return Response({'error': str(ex)}, status=status.HTTP_400_BAD_REQUEST)
+
         return Response({
             'title': serializer.data['title'],
             'path': serializer.data['path'],
             'message': "Урок успешно создан"
         }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def get_update_info(self, request, path_course, path_theme, path_lesson):
+        if not Util.exists_path(Course, {'path': path_course}):
+            return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        course = Course.objects.get(path=path_course)
+        auth = Profile.objects.get(user=self.request.user)
+        if course.profile != auth:
+            return Response({"error": "У вас нет доступа для удаления темы от имени этого аккаунта"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if not Util.exists_path(Theme, {'course': course, 'path': path_theme}):
+            return Response({'error': "Такой темы не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        theme = Theme.objects.get(path=path_theme)
+        if not Util.exists_path(Lesson, {'theme': theme, 'path': path_lesson}):
+            return Response({'error': "Такого урока не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        lesson = self.queryset.get(theme=theme, path=path_lesson)
+        serializer = ActionLessonSerializer(lesson, context={'theme': theme})
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # #########################################
