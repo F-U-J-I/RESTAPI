@@ -4,9 +4,9 @@ from django.core.validators import validate_image_file_extension
 from django.db import models
 from django.db.models.signals import post_save
 
-
 # ########### COLLECTION START ##############
 from ..profile.models_profile import Profile
+from ..utils import Util
 
 
 class Collection(models.Model):
@@ -14,7 +14,8 @@ class Collection(models.Model):
     title = models.CharField(max_length=64)
     description = models.TextField(max_length=512, blank=True)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    image_url = models.ImageField(validators=[validate_image_file_extension], blank=True, null=True, default='default-collection.png')
+    image_url = models.ImageField(validators=[validate_image_file_extension], blank=True, null=True,
+                                  default=Util.DEFAULT_IMAGES.get('collection'))
     wallpaper = models.ImageField(blank=True, null=True)
     rating = models.FloatField(default=0)
     members_amount = models.IntegerField(default=0)

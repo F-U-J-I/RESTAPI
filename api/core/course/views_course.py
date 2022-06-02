@@ -346,6 +346,33 @@ class LessonView(viewsets.ModelViewSet):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['put'])
+    def update_lesson(self, request, path_course, path_theme, path_lesson):
+        if not Util.exists_path(Course, {'path': path_course}):
+            return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        course = Course.objects.get(path=path_course)
+        auth = Profile.objects.get(user=self.request.user)
+        if course.profile != auth:
+            return Response({"error": "У вас нет доступа для удаления темы от имени этого аккаунта"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if not Util.exists_path(Theme, {'course': course, 'path': path_theme}):
+            return Response({'error': "Такой темы не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        theme = Theme.objects.get(path=path_theme)
+        if not Util.exists_path(Lesson, {'theme': theme, 'path': path_lesson}):
+            return Response({'error': "Такого урока не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        lesson = self.queryset.get(theme=theme, path=path_lesson)
+        serializer = ActionLessonSerializer(data=request.data, instance=lesson, context={'theme': theme})
+        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.save()
+        except ValueError as ex:
+            return Response({'error': str(ex)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 # #########################################
 #    ######## ACTIONS PROFILE ########

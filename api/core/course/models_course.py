@@ -24,7 +24,7 @@ class Course(models.Model):
     description = models.TextField(max_length=175, blank=True)
     price = models.IntegerField(default=0)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    avatar_url = models.ImageField(blank=True, null=True, default='default-course.png')
+    avatar_url = models.ImageField(blank=True, null=True, default=Util.DEFAULT_IMAGES.get('course'))
     duration_in_minutes = models.IntegerField(default=0)
     rating = models.FloatField(default=0)
     members_amount = models.IntegerField(default=0)
@@ -127,7 +127,7 @@ class Theme(models.Model):
     """The Course consists of Theme"""
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
-    image_url = models.ImageField(blank=True, null=True, default="default-theme.png")
+    image_url = models.ImageField(blank=True, null=True, default=Util.DEFAULT_IMAGES.get('theme'))
     max_progress = models.IntegerField(default=0)
     path = models.CharField(max_length=64, blank=True, null=True)
 
@@ -150,7 +150,7 @@ class Lesson(models.Model):
     """The Theme consists of Lesson"""
     theme = models.ForeignKey(Theme, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
-    image_url = models.ImageField(blank=True, null=True, default="default-lesson.png")
+    image_url = models.ImageField(blank=True, null=True, default=Util.DEFAULT_IMAGES.get('lesson'))
     max_progress = models.IntegerField(default=0)
     path = models.CharField(max_length=64, blank=True, null=True)
 

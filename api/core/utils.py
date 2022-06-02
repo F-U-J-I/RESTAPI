@@ -1,8 +1,11 @@
 import os
 
 from django.contrib.sites.shortcuts import get_current_site
+from django.core.files.images import ImageFile
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.db.models.fields.files import ImageFieldFile
 from rest_framework import status
 from rest_framework.utils.urls import replace_query_param
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -20,10 +23,18 @@ class Util:
     COURSE_STATUS_DEV_NAME = 'В разработке'
     COURSE_STATUS_RELEASE_NAME = 'Опубликован'
 
+    DEFAULT_IMAGES = {
+        'profile': "!default-profile.jpg",
+        'collection': "!default-collection.png",
+        'course': "!default-course.png",
+        'theme': "!default-theme.png",
+        'lesson': "!default-lesson.png",
+    }
+
     PROTOCOL = 'http'
 
     @staticmethod
-    def get_absolute_url(request, token=None, to=None):
+    def get_absolute_url(request):
         return f"{Util.PROTOCOL}://{get_current_site(request).domain}"
 
     @staticmethod
@@ -44,14 +55,24 @@ class Util:
 
     @staticmethod
     def exists_path(model, validated_data):
-        print(model.objects.filter(**validated_data))
         return len(model.objects.filter(**validated_data)) != 0
 
     @staticmethod
+    def get_image(old, new, default):
+        try:
+            if new is None or len(new) == 0:
+                path_image = "\\".join(old.path.split('\\')[:-1]) + "\\" + str(default)
+                new = ImageFile(open(path_image, "rb"))
+        except FileNotFoundError:
+            path_image = "\\".join(old.path.split('\\')[:-1]) + "\\" + str(default)
+            new = ImageFile(open(path_image, "rb"))
+        return new
+
+    @staticmethod
     def get_update_image(old, new):
-        if old != new:
+        if old.path != new.name:
             try:
-                if old is not None:
+                if (old is not None) and (old.name not in Util.DEFAULT_IMAGES.values()):
                     os.remove(old.path)
             except ValueError:
                 pass

@@ -208,14 +208,19 @@ class ActionThemeSerializer(serializers.ModelSerializer):
             new_path = Util.get_update_path(new_path=new_path)
         instance.path = Util.get_new_path(new_path=new_path, old_path=instance.path, model=Theme)
 
-        instance.image_url = Util.get_update_image(old=instance.image_url,
-                                                   new=validated_data.get('image_url', instance.image_url))
+        new_image = validated_data.get('image_url', -1)
+        if new_image != -1:
+            update_image = Util.get_image(old=instance.image_url, new=new_image, default=Util.DEFAULT_IMAGES.get('lesson'))
+            instance.image_url = Util.get_update_image(old=instance.image_url, new=update_image)
+
         instance.save()
         return instance
 
 
 class ActionLessonSerializer(serializers.ModelSerializer):
     count_step = serializers.SerializerMethodField()
+
+    # image_url = serializers.SerializerMethodField(default=Util.DEFAULT_IMAGES.get('lesson'))
 
     class Meta:
         model = Lesson
@@ -235,8 +240,11 @@ class ActionLessonSerializer(serializers.ModelSerializer):
             new_path = Util.get_update_path(new_path=new_path)
         instance.path = Util.get_new_path(new_path=new_path, old_path=instance.path, model=Lesson)
 
-        instance.image_url = Util.get_update_image(old=instance.image_url,
-                                                   new=validated_data.get('image_url', instance.image_url))
+        new_image = validated_data.get('image_url', -1)
+        if new_image != -1:
+            update_image = Util.get_image(old=instance.image_url, new=new_image, default=Util.DEFAULT_IMAGES.get('lesson'))
+            instance.image_url = Util.get_update_image(old=instance.image_url, new=update_image)
+
         instance.save()
         return instance
 
