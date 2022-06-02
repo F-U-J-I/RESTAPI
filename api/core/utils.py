@@ -54,6 +54,22 @@ class Util:
         return old
 
     @staticmethod
+    def get_update_path(new_path):
+        return "-".join(new_path.split())
+
+    @staticmethod
+    def get_new_path(new_path, old_path, model):
+        if new_path is not None:
+            if len(new_path) == 0:
+                raise ValueError("path не может быть пустым")
+            all_path = model.objects.filter(path=new_path)
+            if (len(all_path) == 0) or (len(all_path) == 1 and new_path == old_path):
+                return new_path
+            else:
+                raise ValueError("Такой path уже существует")
+        return old_path
+
+    @staticmethod
     def get_object_or_error(model, status_error=None, text=None, *args, **kwargs):
         try:
             return model.objects.get(*args, **kwargs)

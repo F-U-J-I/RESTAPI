@@ -114,7 +114,12 @@ class WindowDetailCollectionSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
         instance.description = validated_data.get('description', instance.description)
-        instance.path = validated_data.get('path', instance.path)
+
+        new_path = validated_data.get('path', None)
+        if new_path is not None:
+            new_path = Util.get_update_path(new_path=new_path)
+        instance.path = Util.get_new_path(new_path=new_path, old_path=instance.path, model=Collection)
+
         instance.wallpaper = Util.get_update_image(old=instance.wallpaper,
                                                    new=validated_data.get('wallpaper', instance.wallpaper))
         instance.image_url = Util.get_update_image(old=instance.image_url,

@@ -259,7 +259,10 @@ class ThemeView(viewsets.ModelViewSet):
         serializer = ActionThemeSerializer(data=request.data, instance=theme,
                                            context={'profile': auth, 'course': course})
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        try:
+            serializer.save()
+        except ValueError as ex:
+            return Response({'error': str(ex)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['delete'])

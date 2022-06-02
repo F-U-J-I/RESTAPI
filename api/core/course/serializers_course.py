@@ -1,12 +1,8 @@
-import os
-
 from rest_framework import serializers
 
 from .models_course import Course, ProfileCourse, Theme, Lesson, \
     Step, ProfileStep, \
     CourseInfo, CourseMainInfo, CourseFit, CourseSkill, CourseStars, ProfileTheme
-
-
 #####################################
 #         ##  COURSE ##
 #####################################
@@ -206,7 +202,12 @@ class ActionThemeSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
-        instance.path = validated_data.get('path', instance.path)
+
+        new_path = validated_data.get('path', None)
+        if new_path is not None:
+            new_path = Util.get_update_path(new_path=new_path)
+        instance.path = Util.get_new_path(new_path=new_path, old_path=instance.path, model=Theme)
+
         instance.image_url = Util.get_update_image(old=instance.image_url,
                                                    new=validated_data.get('image_url', instance.image_url))
         instance.save()
@@ -228,7 +229,12 @@ class ActionLessonSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
-        instance.path = validated_data.get('path', instance.path)
+
+        new_path = validated_data.get('path', None)
+        if new_path is not None:
+            new_path = Util.get_update_path(new_path=new_path)
+        instance.path = Util.get_new_path(new_path=new_path, old_path=instance.path, model=Lesson)
+
         instance.image_url = Util.get_update_image(old=instance.image_url,
                                                    new=validated_data.get('image_url', instance.image_url))
         instance.save()
