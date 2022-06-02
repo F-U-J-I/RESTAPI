@@ -5,9 +5,9 @@ from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
-from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection, Theme
+from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection, Theme, Lesson
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
-    MiniCourseSerializer, ActionThemeSerializer
+    MiniCourseSerializer, ActionThemeSerializer, ActionLessonSerializer
 from ..collection.models_collection import Collection
 from ..profile.models_profile import Profile
 from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
@@ -256,7 +256,8 @@ class ThemeView(viewsets.ModelViewSet):
             return Response({'error': "Такой темы не существует"}, status=status.HTTP_404_NOT_FOUND)
 
         theme = self.queryset.get(course=course, path=path_theme)
-        serializer = ActionThemeSerializer(data=request.data, instance=theme, context={'profile': auth, 'course': course})
+        serializer = ActionThemeSerializer(data=request.data, instance=theme,
+                                           context={'profile': auth, 'course': course})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -281,6 +282,46 @@ class ThemeView(viewsets.ModelViewSet):
             'title': theme.title,
             'path': theme.path,
             'message': "Тема успешно удалена"
+        }, status=status.HTTP_200_OK)
+
+
+class LessonView(viewsets.ModelViewSet):
+    """Тема"""
+    lookup_field = 'slug'
+    queryset = Lesson.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    @staticmethod
+    def exists_path(model, validated_data):
+        return len(model.objects.filter(**validated_data)) != 0
+
+    @staticmethod
+    def exists_course_path(path):
+        return len(Course.objects.filter(path=path)) != 0
+
+    @action(detail=False, methods=['post'])
+    def create_lesson(self, request, path_course, path_theme):
+        if not self.exists_path(Course, {'path': path_course}):
+            return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not self.exists_path(Theme, {'path': path_theme}):
+            return Response({'error': "Такой темы не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        auth = Profile.objects.get(user=self.request.user)
+        course = Course.objects.get(path=path_course)
+        if course.profile != auth:
+            return Response({"error": "У вас нет доступа для создания урока от имени этого аккаунта"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        theme = Theme.objects.get(path=path_theme)
+        number_new_lesson = len(self.queryset.filter(theme=theme)) + 1
+        serializer = ActionLessonSerializer(data={'title': f"Урок #{number_new_lesson}"}, context={'theme': theme})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({
+            'title': serializer.data['title'],
+            'path': serializer.data['path'],
+            'message': "Урок успешно создан"
         }, status=status.HTTP_200_OK)
 
 

@@ -213,6 +213,28 @@ class ActionThemeSerializer(serializers.ModelSerializer):
         return instance
 
 
+class ActionLessonSerializer(serializers.ModelSerializer):
+    count_step = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Lesson
+        fields = ('title', 'image_url', 'max_progress', 'count_step', 'path')
+
+    def get_count_step(self, lesson):
+        return len(Step.objects.filter(lesson=lesson))
+
+    def create(self, validated_data):
+        return Lesson.objects.create(**validated_data, theme=self.context.get('theme'))
+
+    def update(self, instance, validated_data):
+        instance.title = validated_data.get('title', instance.title)
+        instance.path = validated_data.get('path', instance.path)
+        instance.image_url = Util.get_update_image(old=instance.image_url,
+                                                   new=validated_data.get('image_url', instance.image_url))
+        instance.save()
+        return instance
+
+
 # #########################################
 #        ######## GRADE ########
 # #########################################

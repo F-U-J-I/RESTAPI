@@ -129,7 +129,7 @@ class Theme(models.Model):
     title = models.CharField(max_length=64)
     image_url = models.ImageField(blank=True, null=True, default="default-theme.png")
     max_progress = models.IntegerField(default=0)
-    path = models.CharField(max_length=64, blank=True)
+    path = models.CharField(max_length=64, blank=True, null=True)
 
     def __str__(self):
         return f"{self.course.profile.user.username}: {self.course.title} => {self.title} [Theme]"
@@ -139,7 +139,7 @@ def create_theme(sender, **kwargs):
     """When a course is created, autofill fields"""
     if kwargs['created']:
         theme = kwargs['instance']
-        theme.path = len(Theme.objects.filter(course=theme.course))
+        theme.path = theme.pk
         theme.save()
 
 
@@ -152,7 +152,7 @@ class Lesson(models.Model):
     title = models.CharField(max_length=64)
     image_url = models.ImageField(blank=True, null=True, default="default-lesson.png")
     max_progress = models.IntegerField(default=0)
-    path = models.CharField(max_length=64, blank=True, unique=True)
+    path = models.CharField(max_length=64, blank=True, null=True)
 
     def __str__(self):
         return f"{self.theme.course.profile.user.username}: {self.theme.course.title}: {self.theme.title}: {self.title} [Lesson]"
@@ -161,12 +161,13 @@ class Lesson(models.Model):
 def create_lesson(sender, **kwargs):
     """When a course is created, autofill fields"""
     if kwargs['created']:
+        print(kwargs['instance'])
         lesson = kwargs['instance']
-        lesson.path = len(Lesson.objects.filter(theme=lesson.theme)) + 1
+        lesson.path = lesson.pk
         lesson.save()
 
 
-post_save.connect(create_theme, sender=Theme)
+post_save.connect(create_lesson, sender=Lesson)
 
 
 class Step(models.Model):
