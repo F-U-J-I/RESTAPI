@@ -1,3 +1,5 @@
+import os
+
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
@@ -41,15 +43,22 @@ class Util:
         return f"{Util.get_absolute_url(request)}{relative_link}?token={token}"
 
     @staticmethod
+    def get_update_image(old, new):
+        if old != new:
+            try:
+                if old is not None:
+                    os.remove(old.path)
+            except ValueError:
+                pass
+            return new
+        return old
+
+    @staticmethod
     def get_object_or_error(model, status_error=None, text=None, *args, **kwargs):
         try:
             return model.objects.get(*args, **kwargs)
         except Exception:
             raise ValueError(text, status_error)
-
-
-class ModelException:
-    pass
 
 
 class HelperFilter:

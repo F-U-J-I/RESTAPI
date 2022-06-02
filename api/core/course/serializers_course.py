@@ -1,3 +1,5 @@
+import os
+
 from rest_framework import serializers
 
 from .models_course import Course, ProfileCourse, Theme, Lesson, \
@@ -8,6 +10,7 @@ from .models_course import Course, ProfileCourse, Theme, Lesson, \
 #####################################
 #         ##  COURSE ##
 #####################################
+from ..utils import Util
 
 
 class HelperCourseSerializer:
@@ -203,8 +206,9 @@ class ActionThemeSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
-        instance.image_url = validated_data.get('image_url', instance.image_url)
         instance.path = validated_data.get('path', instance.path)
+        instance.image_url = Util.get_update_image(old=instance.image_url,
+                                                   new=validated_data.get('image_url', instance.image_url))
         instance.save()
         return instance
 

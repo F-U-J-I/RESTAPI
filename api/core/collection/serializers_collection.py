@@ -1,12 +1,10 @@
+from django.db.models import Q
 from rest_framework import serializers
 
 from .models_collection import Collection, ProfileCollection, CollectionStars
 from ..course.models_course import ProfileCourse
 from ..course.serializers_course import MiniCourseSerializer
 from ..profile.serializers_profile import ProfileAsAuthor
-from django.db.models import Q
-
-
 #####################################
 #       ##  COLLECTION ##
 #####################################
@@ -116,9 +114,11 @@ class WindowDetailCollectionSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
         instance.description = validated_data.get('description', instance.description)
-        instance.wallpaper = validated_data.get('wallpaper', instance.wallpaper)
-        instance.image_url = validated_data.get('image_url', instance.image_url)
         instance.path = validated_data.get('path', instance.path)
+        instance.wallpaper = Util.get_update_image(old=instance.wallpaper,
+                                                   new=validated_data.get('wallpaper', instance.wallpaper))
+        instance.image_url = Util.get_update_image(old=instance.image_url,
+                                                   new=validated_data.get('image_url', instance.image_url))
         instance.save()
         return instance
 
