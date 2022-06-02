@@ -5,9 +5,9 @@ from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
-from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection, Theme, Lesson
+from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection, Theme, Lesson, Step
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
-    MiniCourseSerializer, ActionThemeSerializer, ActionLessonSerializer
+    MiniCourseSerializer, ActionThemeSerializer, ActionLessonSerializer, ActionStepSerializer
 from ..collection.models_collection import Collection
 from ..profile.models_profile import Profile
 from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
@@ -381,7 +381,7 @@ class LessonView(viewsets.ModelViewSet):
         course = Course.objects.get(path=path_course)
         auth = Profile.objects.get(user=self.request.user)
         if course.profile != auth:
-            return Response({"error": "У вас нет доступа для удаления темы от имени этого аккаунта"},
+            return Response({"error": "У вас н  ет доступа для удаления темы от имени этого аккаунта"},
                             status=status.HTTP_400_BAD_REQUEST)
 
         if not Util.exists_path(Theme, {'course': course, 'path': path_theme}):
@@ -397,6 +397,59 @@ class LessonView(viewsets.ModelViewSet):
             'title': lesson.title,
             'path': lesson.path,
             'message': "Урок успешно удален"
+        }, status=status.HTTP_200_OK)
+
+
+class StepView(viewsets.ModelViewSet):
+    """Шаг"""
+    lookup_field = 'slug'
+    queryset = Step.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    def is_valid(self, path_course=None, path_theme=None, path_lesson=None, path_step=None):
+        if path_course is not None:
+            if not Util.exists_path(Course, {'path': path_course}):
+                return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        auth = Profile.objects.get(user=self.request.user)
+        course = Course.objects.get(path=path_course)
+        if course.profile != auth:
+            return Response({"error": "У вас нет доступа для создания/изменения/удаления шага от имени этого аккаунта"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if path_theme is not None:
+            if not Util.exists_path(Theme, {'path': path_theme}):
+                return Response({'error': "Такой темы не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        if path_lesson is not None:
+            if not Util.exists_path(Lesson, {'path': path_lesson}):
+                return Response({'error': "Такого урока не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        if path_step is not None:
+            if not Util.exists_path(Step, {'path': path_step}):
+                return Response({'error': "Такого шага не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        return True
+
+    @action(detail=False, methods=['post'])
+    def create_step(self, request, path_course, path_theme, path_lesson):
+        is_valid = self.is_valid(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson)
+        if not is_valid:
+            return is_valid
+
+        lesson = Lesson.objects.get(path=path_lesson)
+        number_new_step = len(self.queryset.filter(lesson=lesson)) + 1
+        serializer = ActionStepSerializer(data={'title': f"Шаг #{number_new_step}"}, context={'lesson': lesson})
+        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.save()
+        except ValueError as ex:
+            return Response({'error': str(ex)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'title': serializer.data['title'],
+            'path': serializer.data['path'],
+            'message': "Шаг успешно создан"
         }, status=status.HTTP_200_OK)
 
 

@@ -161,7 +161,6 @@ class Lesson(models.Model):
 def create_lesson(sender, **kwargs):
     """When a course is created, autofill fields"""
     if kwargs['created']:
-        print(kwargs['instance'])
         lesson = kwargs['instance']
         lesson.path = lesson.pk
         lesson.save()
@@ -176,9 +175,21 @@ class Step(models.Model):
     title = models.CharField(max_length=64)
     content = RichTextUploadingField(blank=True)
     max_progress = models.IntegerField(default=1)
+    path = models.CharField(max_length=64, blank=True, null=True)
 
     def __str__(self):
         return f"{self.lesson.theme.course.profile.user.username}: {self.lesson.theme.course.title}: {self.lesson.theme.title}: {self.lesson.title}: {self.title} [Step]"
+
+
+def create_step(sender, **kwargs):
+    """When a course is created, autofill fields"""
+    if kwargs['created']:
+        step = kwargs['instance']
+        step.path = step.pk
+        step.save()
+
+
+post_save.connect(create_step, sender=Step)
 
 
 # ------------ Content Course END ----------------

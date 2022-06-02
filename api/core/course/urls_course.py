@@ -1,7 +1,8 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from .views_course import CourseView, GradeCourseView, ActionProfileCourseView, ActionCourseView, ThemeView, LessonView
+from .views_course import CourseView, GradeCourseView, ActionProfileCourseView, ActionCourseView, ThemeView, LessonView, \
+    StepView
 
 router = DefaultRouter()
 
@@ -42,6 +43,10 @@ urlpatterns = [
          LessonView.as_view({'put': 'update_lesson'})),
     path('courses/creating/<slug:path_course>/theme/<slug:path_theme>/delete/lesson/<slug:path_lesson>/',
          LessonView.as_view({'delete': 'delete_lesson'})),
+
+    # STEP
+    path('courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/create/step/',
+         StepView.as_view({'post': 'create_step'})),
 
     path('courses/add/<slug:path>/', ActionProfileCourseView.as_view({'post': 'added_courses'})),
     path('courses/pop/<slug:path>/', ActionProfileCourseView.as_view({'delete': 'popped_courses'})),

@@ -249,6 +249,15 @@ class ActionLessonSerializer(serializers.ModelSerializer):
         return instance
 
 
+class ActionStepSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Step
+        fields = ('title', 'content', 'max_progress', 'path')
+
+    def create(self, validated_data):
+        return Step.objects.create(**validated_data, lesson=self.context.get('lesson'))
+
+
 # #########################################
 #        ######## GRADE ########
 # #########################################

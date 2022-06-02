@@ -3,8 +3,8 @@ from django.contrib import admin
 from .profile.models_profile import Profile, Subscription
 
 from .course.models_course import CourseStatus, Course, CourseInfo, CourseMainInfo, CourseFit, CourseStars, CourseSkill, \
-    Theme, Lesson, \
-    Step, ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson, ProfileStepStatus, ProfileStep, \
+    Theme, Lesson, Step, \
+    ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson, ProfileStepStatus, ProfileStep, \
     ProfileCourseRole, CreatorCollection, ProfileCourseCollection
 from .collection.models_collection import Collection, ProfileCollection, CollectionStars
 
