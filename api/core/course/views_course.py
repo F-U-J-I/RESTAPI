@@ -420,23 +420,25 @@ class StepView(viewsets.ModelViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
 
         if path_theme is not None:
-            if not Util.exists_path(Theme, {'path': path_theme}):
+            if not Util.exists_path(Theme, {'course': course, 'path': path_theme}):
                 return Response({'error': "Такой темы не существует"}, status=status.HTTP_404_NOT_FOUND)
 
+        theme = Theme.objects.get(course=course, path=path_theme)
         if path_lesson is not None:
-            if not Util.exists_path(Lesson, {'path': path_lesson}):
+            if not Util.exists_path(Lesson, {'theme': theme, 'path': path_lesson}):
                 return Response({'error': "Такого урока не существует"}, status=status.HTTP_404_NOT_FOUND)
 
+        lesson = Lesson.objects.get(theme=theme, path=path_lesson)
         if path_step is not None:
-            if not Util.exists_path(Step, {'path': path_step}):
+            if not Util.exists_path(Step, {'lesson': lesson, 'path': path_step}):
                 return Response({'error': "Такого шага не существует"}, status=status.HTTP_404_NOT_FOUND)
 
-        return True
+        return None
 
     @action(detail=False, methods=['post'])
     def create_step(self, request, path_course, path_theme, path_lesson):
         is_valid = self.is_valid(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson)
-        if not is_valid:
+        if is_valid is not None:
             return is_valid
 
         lesson = Lesson.objects.get(path=path_lesson)
@@ -459,7 +461,7 @@ class StepView(viewsets.ModelViewSet):
     def get_update_info(self, request, path_course, path_theme, path_lesson, path_step):
         is_valid = self.is_valid(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
                                  path_step=path_step)
-        if not is_valid:
+        if is_valid is not None:
             return is_valid
 
         course = Course.objects.get(path=path_course)
@@ -474,7 +476,7 @@ class StepView(viewsets.ModelViewSet):
     def update_step(self, request, path_course, path_theme, path_lesson, path_step):
         is_valid = self.is_valid(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
                                  path_step=path_step)
-        if not is_valid:
+        if is_valid is not None:
             return is_valid
 
         course = Course.objects.get(path=path_course)
@@ -488,6 +490,24 @@ class StepView(viewsets.ModelViewSet):
         except ValueError as ex:
             return Response({'error': str(ex)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'])
+    def delete_step(self, request, path_course, path_theme, path_lesson, path_step):
+        is_valid = self.is_valid(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
+                                 path_step=path_step)
+        if is_valid is not None:
+            return is_valid
+
+        course = Course.objects.get(path=path_course)
+        theme = Theme.objects.get(course=course, path=path_theme)
+        lesson = Lesson.objects.get(theme=theme, path=path_lesson)
+        step = self.queryset.get(lesson=lesson, path=path_step)
+        step.delete()
+        return Response({
+            'title': step.title,
+            'path': step.path,
+            'message': "Шаг успешно удален"
+        }, status=status.HTTP_200_OK)
 
 
 # #########################################
