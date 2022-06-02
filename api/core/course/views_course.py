@@ -212,7 +212,8 @@ class ThemeView(viewsets.ModelViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
 
         number_new_theme = len(self.queryset.filter(course=course)) + 1
-        serializer = ActionThemeSerializer(data={'title': f"Тема #{number_new_theme}"},
+        path_theme = Util.get_max_path(self.queryset.filter(course=course)) + 1
+        serializer = ActionThemeSerializer(data={'title': f"Тема #{number_new_theme}", 'path': path_theme},
                                            context={'profile': auth, 'course': course})
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -310,7 +311,8 @@ class LessonView(viewsets.ModelViewSet):
 
         theme = Theme.objects.get(path=path_theme)
         number_new_lesson = len(self.queryset.filter(theme=theme)) + 1
-        serializer = ActionLessonSerializer(data={'title': f"Урок #{number_new_lesson}"}, context={'theme': theme})
+        path_lesson = Util.get_max_path(self.queryset.filter(theme=theme)) + 1
+        serializer = ActionLessonSerializer(data={'title': f"Урок #{number_new_lesson}", 'path': path_lesson}, context={'theme': theme})
         serializer.is_valid(raise_exception=True)
         try:
             serializer.save()
@@ -439,7 +441,8 @@ class StepView(viewsets.ModelViewSet):
 
         lesson = Lesson.objects.get(path=path_lesson)
         number_new_step = len(self.queryset.filter(lesson=lesson)) + 1
-        serializer = ActionStepSerializer(data={'title': f"Шаг #{number_new_step}"}, context={'lesson': lesson})
+        path_step = Util.get_max_path(self.queryset.filter(lesson=lesson)) + 1
+        serializer = ActionStepSerializer(data={'title': f"Шаг #{number_new_step}", 'path': path_step}, context={'lesson': lesson})
         serializer.is_valid(raise_exception=True)
         try:
             serializer.save()
@@ -459,10 +462,31 @@ class StepView(viewsets.ModelViewSet):
         if not is_valid:
             return is_valid
 
-        lesson = Lesson.objects.get(path=path_lesson)
+        course = Course.objects.get(path=path_course)
+        theme = Theme.objects.get(course=course, path=path_theme)
+        lesson = Lesson.objects.get(theme=theme, path=path_lesson)
         step = self.queryset.get(lesson=lesson, path=path_step)
         serializer = ActionStepSerializer(step, context={'lesson': lesson})
 
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['put'])
+    def update_step(self, request, path_course, path_theme, path_lesson, path_step):
+        is_valid = self.is_valid(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
+                                 path_step=path_step)
+        if not is_valid:
+            return is_valid
+
+        course = Course.objects.get(path=path_course)
+        theme = Theme.objects.get(course=course, path=path_theme)
+        lesson = Lesson.objects.get(theme=theme, path=path_lesson)
+        step = self.queryset.get(lesson=lesson, path=path_step)
+        serializer = ActionStepSerializer(data=request.data, instance=step, context={'step': step})
+        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.save()
+        except ValueError as ex:
+            return Response({'error': str(ex)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

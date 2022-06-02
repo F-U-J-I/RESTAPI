@@ -235,11 +235,6 @@ class ActionLessonSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
 
-        new_path = validated_data.get('path', None)
-        if new_path is not None:
-            new_path = Util.get_update_path(new_path=new_path)
-        instance.path = Util.get_new_path(new_path=new_path, old_path=instance.path, model=Lesson)
-
         new_image = validated_data.get('image_url', -1)
         if new_image != -1:
             update_image = Util.get_image(old=instance.image_url, new=new_image, default=Util.DEFAULT_IMAGES.get('lesson'))
@@ -256,6 +251,13 @@ class ActionStepSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return Step.objects.create(**validated_data, lesson=self.context.get('lesson'))
+
+    def update(self, instance, validated_data):
+        instance.title = validated_data.get('title', instance.title)
+        instance.content = validated_data.get('content', instance.content)
+
+        instance.save()
+        return instance
 
 
 # #########################################

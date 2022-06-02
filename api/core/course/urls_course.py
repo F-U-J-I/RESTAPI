@@ -49,6 +49,8 @@ urlpatterns = [
          StepView.as_view({'post': 'create_step'})),
     path('courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/get-update/step/<slug:path_step>',
          StepView.as_view({'get': 'get_update_info'})),
+    path('courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/update/step/<slug:path_step>',
+         StepView.as_view({'put': 'update_step'})),
 
     path('courses/add/<slug:path>/', ActionProfileCourseView.as_view({'post': 'added_courses'})),
     path('courses/pop/<slug:path>/', ActionProfileCourseView.as_view({'delete': 'popped_courses'})),

@@ -96,6 +96,14 @@ class Util:
         return old_path
 
     @staticmethod
+    def get_max_path(queryset):
+        max_path = 0
+        for item in queryset:
+            if (type(item.path) == int) and (item.path > max_path):
+                max_path = item.path
+        return max_path
+
+    @staticmethod
     def get_object_or_error(model, status_error=None, text=None, *args, **kwargs):
         try:
             return model.objects.get(*args, **kwargs)
