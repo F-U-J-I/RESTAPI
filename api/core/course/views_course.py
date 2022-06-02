@@ -452,6 +452,19 @@ class StepView(viewsets.ModelViewSet):
             'message': "Шаг успешно создан"
         }, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'])
+    def get_update_info(self, request, path_course, path_theme, path_lesson, path_step):
+        is_valid = self.is_valid(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
+                                 path_step=path_step)
+        if not is_valid:
+            return is_valid
+
+        lesson = Lesson.objects.get(path=path_lesson)
+        step = self.queryset.get(lesson=lesson, path=path_step)
+        serializer = ActionStepSerializer(step, context={'lesson': lesson})
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 # #########################################
 #    ######## ACTIONS PROFILE ########
