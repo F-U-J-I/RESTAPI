@@ -33,7 +33,7 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = ('title', 'author', 'image_url', 'rating', 'courses', 'is_added', 'added_number')
+        fields = ('path', 'title', 'author', 'image_url', 'rating', 'courses', 'is_added', 'added_number')
 
     @staticmethod
     def get_author(collection):
@@ -67,7 +67,7 @@ class MiniCollectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = ('title', 'author', 'image_url', 'is_added')
+        fields = ('path', 'title', 'author', 'image_url', 'is_added')
 
     @staticmethod
     def get_author(collection):

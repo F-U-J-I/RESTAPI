@@ -82,7 +82,7 @@ class MiniCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = (
-            'title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
+            'path', 'title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
             'status_progress', 'progress')
 
     @staticmethod
@@ -173,29 +173,31 @@ class PageInfoCourseSerializer(serializers.ModelSerializer):
 #####################################
 
 
-class ThemeSerializer(serializers.ModelSerializer):
+class ProfileThemeSerializer(serializers.ModelSerializer):
+    count_lesson = serializers.SerializerMethodField()
+    progress = serializers.SerializerMethodField()
     is_complete = serializers.SerializerMethodField(default=False)
 
     class Meta:
         model = Theme
-        fields = ('title', 'image_url', 'max_progress', 'is_complete')
+        fields = ('path', 'title', 'image_url', 'max_progress', 'is_complete')
+
+    def get_count_lesson(self, theme):
+        return len(Lesson.objects.filter(theme=theme))
+
+    def get_progress(self, theme):
+        return ProfileTheme.objects.get(theme=theme, profile=self.context.get('profile')).progress
 
     def get_is_complete(self, theme):
-        profile_theme = ProfileTheme.objects.get(theme=theme, profile=self.context.get('profile'))
-        if profile_theme.progress == theme.max_progress:
+        if self.progress == theme.max_progress:
             return True
         return False
 
 
 class ActionThemeSerializer(serializers.ModelSerializer):
-    count_lesson = serializers.SerializerMethodField()
-
     class Meta:
         model = Theme
         fields = ('title', 'image_url', 'max_progress', 'count_lesson', 'path')
-
-    def get_count_lesson(self, theme):
-        return len(Lesson.objects.filter(theme=theme))
 
     def create(self, validated_data):
         return Theme.objects.create(**validated_data, course=self.context.get('course'))

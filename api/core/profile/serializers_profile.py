@@ -25,7 +25,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ('username', 'avatar_url', 'path', 'description', 'is_subscribed')
+        fields = ('path', 'username', 'avatar_url', 'description', 'is_subscribed')
 
     def get_username(self, profile):
         return profile.user.username
@@ -43,7 +43,7 @@ class MiniProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ('username', 'avatar_url', 'path')
+        fields = ('path', 'username', 'avatar_url')
 
     def get_username(self, profile):
         return profile.user.username
