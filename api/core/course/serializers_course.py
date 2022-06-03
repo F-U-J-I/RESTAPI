@@ -375,8 +375,6 @@ class ProfileLessonSerializer(serializers.ModelSerializer):
 class ActionLessonSerializer(serializers.ModelSerializer):
     count_step = serializers.SerializerMethodField()
 
-    # image_url = serializers.SerializerMethodField(default=Util.DEFAULT_IMAGES.get('lesson'))
-
     class Meta:
         model = Lesson
         fields = ('title', 'image_url', 'max_progress', 'count_step', 'path')
@@ -398,15 +396,6 @@ class ActionLessonSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
-
-    def delete(self):
-        lesson = self.instance.delete()
-        lesson_max_progress = lesson.max_progress
-
-        theme = Theme.objects.get(lesson=lesson)
-        theme.max_progress -= lesson_max_progress
-        theme.save()
-        return lesson
 
 
 # PAGE STEPS
@@ -434,10 +423,12 @@ class ProfileStepSerializer(serializers.ModelSerializer):
 
 class StepSerializer(serializers.ModelSerializer):
     is_complete = serializers.SerializerMethodField(default=False)
+    prev = serializers.SerializerMethodField()
+    next = serializers.SerializerMethodField()
 
     class Meta:
         model = Step
-        fields = ('path', 'title', 'content', 'is_complete')
+        fields = ('path', 'title', 'content', 'is_complete', 'prev', 'next')
 
     def get_is_complete(self, step):
         profile_step_list = ProfileStep.objects.filter(step=step, profile=self.context.get('profile'))
@@ -447,20 +438,38 @@ class StepSerializer(serializers.ModelSerializer):
             return True
         return False
 
+    def get_link(self):
+        link_old = self.context.get('request').build_absolute_uri()
+        return "/".join(link_old.split('/')[:-2])
+
+    def get_prev(self, step):
+        if step.number == 1:
+            return None
+        step_prev = Step.objects.get(number=step.number - 1)
+        return f"{self.get_link()}/{step_prev.path}"
+
+    def get_next(self, step):
+        if step.number == Step.objects.filter(lesson=step.lesson):
+            return None
+        step_next = Step.objects.get(number=step.number + 1)
+        return f"{self.get_link()}/{step_next.path}"
+
 
 class ActionStepSerializer(serializers.ModelSerializer):
     class Meta:
         model = Step
         fields = ('title', 'content', 'max_progress', 'path')
 
-    def update_numbers(self, step_list):
+    @staticmethod
+    def update_numbers(step_list):
         for i in range(len(step_list)):
             step_list[i].number = i + 1
-            # step.
+            step_list[i].save()
 
     def create(self, validated_data):
         lesson = self.context.get('lesson')
-        step = Step.objects.create(**validated_data, lesson=lesson)
+        number = self.context.get('number')
+        step = Step.objects.create(**validated_data, lesson=lesson, number=number)
         MaxProgressUpdater.update_max_progress(old=0, new=1, step=step)
         return step
 

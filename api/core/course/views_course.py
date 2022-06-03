@@ -299,7 +299,7 @@ class CourseCompletionPage(viewsets.ModelViewSet):
 
         auth = Profile.objects.get(user=self.request.user)
         step = Step.objects.get(path=path_step)
-        serializer = StepSerializer(step, context={'profile': auth})
+        serializer = StepSerializer(step, context={'profile': auth, 'request': request})
 
         return Response(serializer.data, status=status.HTTP_200_OK)
     # ###########
@@ -461,8 +461,8 @@ class StepView(viewsets.ModelViewSet):
 
         lesson = Lesson.objects.get(path=path_lesson)
         number_new_step = len(self.queryset.filter(lesson=lesson)) + 1
-        serializer = ActionStepSerializer(data={'title': f"Шаг #{number_new_step}", 'number': number_new_step},
-                                          context={'lesson': lesson})
+        serializer = ActionStepSerializer(data={'title': f"Шаг #{number_new_step}"},
+                                          context={'lesson': lesson, 'number': number_new_step})
         serializer.is_valid(raise_exception=True)
         try:
             serializer.save()
@@ -514,6 +514,7 @@ class StepView(viewsets.ModelViewSet):
         step = self.queryset.get(path=path_step)
         MaxProgressUpdater.update_max_progress(old=step.max_progress, new=0, step=step)
         step.delete()
+        ActionStepSerializer.update_numbers(step_list=Step.objects.filter(lesson=step.lesson))
         return Response({
             'title': step.title,
             'path': step.path,

@@ -159,7 +159,7 @@ class HelperPaginatorValue:
     COLLECTION_MAX_PAGE = 10
     MINI_COLLECTION_PAGE = 40
 
-    COURSE_MAX_PAGE = 20
+    COURSE_MAX_PAGE = 2
     MINI_COURSE_PAGE = 40
 
     PAGE_QUERY_PARAM = 'page'
