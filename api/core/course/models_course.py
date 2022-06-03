@@ -28,7 +28,7 @@ class Course(models.Model):
     duration_in_minutes = models.IntegerField(default=0)
     rating = models.FloatField(default=0)
     members_amount = models.IntegerField(default=0)
-    max_progress_points = models.IntegerField(default=0)
+    max_progress = models.IntegerField(default=0)
     status = models.ForeignKey(CourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
     date_create = models.DateField(default=datetime.date.today)
     path = models.CharField(max_length=64, blank=True, unique=True)
@@ -174,7 +174,8 @@ class Step(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
     content = RichTextUploadingField(blank=True)
-    max_progress = models.IntegerField(default=1)
+    max_progress = models.IntegerField(default=0)
+    number = models.IntegerField(default=0)
     path = models.CharField(max_length=64, blank=True, null=True)
 
     def __str__(self):

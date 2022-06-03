@@ -61,6 +61,56 @@ class HelperCourseSerializer:
         }
 
 
+class MaxProgressUpdater:
+    @staticmethod
+    def update_max_progress(old, new, step=None, lesson=None, theme=None, course=None):
+        diff_max_progress = new - old
+
+        generate_lesson = None
+        if step is not None:
+            MaxProgressUpdater.update_max_progress_step(step=step, diff_max_progress=diff_max_progress)
+            generate_lesson = step.lesson
+
+        generate_theme = None
+        if lesson is None:
+            lesson = generate_lesson
+        if lesson is not None:
+            MaxProgressUpdater.update_max_progress_lesson(lesson=lesson, diff_max_progress=diff_max_progress)
+            generate_theme = lesson.theme
+
+        generate_course = None
+        if theme is None:
+            theme = generate_theme
+        if theme is not None:
+            MaxProgressUpdater.update_max_progress_theme(theme=theme, diff_max_progress=diff_max_progress)
+            generate_course = theme.course
+
+        if course is None:
+            course = generate_course
+        if course is not None:
+            MaxProgressUpdater.update_max_progress_course(course=course, diff_max_progress=diff_max_progress)
+
+    @staticmethod
+    def update_max_progress_course(course, diff_max_progress):
+        course.max_progress += diff_max_progress
+        course.save()
+
+    @staticmethod
+    def update_max_progress_theme(theme, diff_max_progress):
+        theme.max_progress += diff_max_progress
+        theme.save()
+
+    @staticmethod
+    def update_max_progress_lesson(lesson, diff_max_progress):
+        lesson.max_progress += diff_max_progress
+        lesson.save()
+
+    @staticmethod
+    def update_max_progress_step(step, diff_max_progress):
+        step.max_progress += diff_max_progress
+        step.save()
+
+
 class CourseSerializer(serializers.ModelSerializer):
     """курс"""
     author = serializers.SerializerMethodField()
@@ -71,8 +121,9 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ('path', 'title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
-                  'quantity_in_collection', 'status_progress', 'progress')
+        fields = (
+            'path', 'title', 'description', 'author', 'image_url', 'duration_in_minutes', 'rating', 'members_amount',
+            'quantity_in_collection', 'status_progress', 'progress')
 
     @staticmethod
     def get_author(course):
@@ -85,7 +136,13 @@ class CourseSerializer(serializers.ModelSerializer):
         return HelperCourseSerializer.get_status_progress(course=course, profile=self.context.get('profile'))
 
     def get_progress(self, course):
-        return HelperCourseSerializer.get_progress(course=course, profile=self.context.get('profile'))
+        profile_course_list = ProfileCourse.objects.filter(course=course, profile=self.context.get('profile'))
+        if len(profile_course_list) == 0:
+            return None
+        return {
+            'progress': profile_course_list[0].progress,
+            'max_progress': course.max_progress,
+        }
 
 
 class MiniCourseSerializer(serializers.ModelSerializer):
@@ -97,7 +154,7 @@ class MiniCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = (
-            'path', 'title', 'description', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
+            'path', 'title', 'description', 'author', 'image_url', 'duration_in_minutes', 'rating', 'members_amount',
             'status_progress', 'progress')
 
     @staticmethod
@@ -117,7 +174,7 @@ class PageCourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ('title', 'author', 'avatar_url', 'duration_in_minutes', 'rating', 'members_amount',
+        fields = ('title', 'author', 'image_url', 'duration_in_minutes', 'rating', 'members_amount',
                   'status_progress')
 
     @staticmethod
@@ -246,7 +303,8 @@ class ActionThemeSerializer(serializers.ModelSerializer):
 
         new_image = validated_data.get('image_url', -1)
         if new_image != -1:
-            update_image = Util.get_image(old=instance.image_url, new=new_image, default=Util.DEFAULT_IMAGES.get('lesson'))
+            update_image = Util.get_image(old=instance.image_url, new=new_image,
+                                          default=Util.DEFAULT_IMAGES.get('lesson'))
             instance.image_url = Util.get_update_image(old=instance.image_url, new=update_image)
 
         instance.save()
@@ -324,7 +382,8 @@ class ActionLessonSerializer(serializers.ModelSerializer):
 
         new_image = validated_data.get('image_url', -1)
         if new_image != -1:
-            update_image = Util.get_image(old=instance.image_url, new=new_image, default=Util.DEFAULT_IMAGES.get('lesson'))
+            update_image = Util.get_image(old=instance.image_url, new=new_image,
+                                          default=Util.DEFAULT_IMAGES.get('lesson'))
             instance.image_url = Util.get_update_image(old=instance.image_url, new=update_image)
 
         instance.save()
@@ -341,12 +400,6 @@ class ActionLessonSerializer(serializers.ModelSerializer):
 
 
 # PAGE STEPS
-class LessonTitleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Lesson
-        fields = ('path', 'title', 'image_url')
-
-
 class ProfileStepSerializer(serializers.ModelSerializer):
     is_active = serializers.SerializerMethodField(default=False)
     is_complete = serializers.SerializerMethodField(default=False)
@@ -360,14 +413,21 @@ class ProfileStepSerializer(serializers.ModelSerializer):
             return True
         return False
 
-    def get_progress(self, lesson):
-        profile_lesson_list = ProfileLesson.objects.filter(lesson=lesson, profile=self.context.get('profile'))
-        if len(profile_lesson_list) == 0:
-            return None
-        return {
-            'progress': profile_lesson_list[0].progress,
-            'max_progress': lesson.max_progress,
-        }
+    def get_is_complete(self, step):
+        profile_step_list = ProfileStep.objects.filter(step=step, profile=self.context.get('profile'))
+        if len(profile_step_list) == 0:
+            return False
+        if profile_step_list[0].status.name == Util.PROFILE_COURSE_STATUS_STUDIED_NAME:
+            return True
+        return False
+
+
+class StepSerializer(serializers.ModelSerializer):
+    is_complete = serializers.SerializerMethodField(default=False)
+
+    class Meta:
+        model = Step
+        fields = ('path', 'title', 'content', 'is_complete')
 
     def get_is_complete(self, step):
         profile_step_list = ProfileStep.objects.filter(step=step, profile=self.context.get('profile'))
@@ -383,36 +443,27 @@ class ActionStepSerializer(serializers.ModelSerializer):
         model = Step
         fields = ('title', 'content', 'max_progress', 'path')
 
+    def update_numbers(self, step_list):
+        for i in range(len(step_list)):
+            step_list[i].number = i + 1
+            # step.
+
     def create(self, validated_data):
         lesson = self.context.get('lesson')
         step = Step.objects.create(**validated_data, lesson=lesson)
-        lesson.max_progress += step.max_progress
-        lesson.save()
-
-        theme = Theme.objects.get(lesson=lesson)
-        theme.max_progress += step.max_progress
-        theme.save()
+        MaxProgressUpdater.update_max_progress(old=0, new=1, step=step)
         return step
 
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
         instance.content = validated_data.get('content', instance.content)
 
+        new_max_progress = validated_data.get('max_progress', None)
+        if (new_max_progress is not None) and (new_max_progress != instance.max_number):
+            MaxProgressUpdater.update_max_progress(old=instance.max_progress, new=new_max_progress, step=instance)
+
         instance.save()
         return instance
-
-    def delete(self):
-        step = self.instance.delete()
-        step_max_progress = step.max_progress
-
-        lesson = Lesson.objects.get(step=step)
-        lesson.max_progress -= step_max_progress
-        lesson.save()
-
-        theme = Theme.objects.get(lesson=lesson)
-        theme.max_progress -= step_max_progress
-        theme.save()
-        return step
 
 
 # #########################################

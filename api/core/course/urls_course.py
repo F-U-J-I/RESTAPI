@@ -34,8 +34,10 @@ urlpatterns = [
          CourseCompletionPage.as_view({'get': 'get_title_theme'})),
     path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/lessons/',
          CourseCompletionPage.as_view({'get': 'get_lessons'})),
-    path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/steps/<slug:path_step>/',
+    path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/steps/<slug:path_step>/list/',
          CourseCompletionPage.as_view({'get': 'get_steps'})),
+    path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/steps/<slug:path_step>/',
+         CourseCompletionPage.as_view({'get': 'get_detail_step'})),
 
     # THEME
     path('courses/creating/<slug:path>/create/theme/',

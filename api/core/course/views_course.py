@@ -8,7 +8,8 @@ from rest_framework.response import Response
 from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection, Theme, Lesson, Step
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
     MiniCourseSerializer, ActionThemeSerializer, ActionLessonSerializer, ActionStepSerializer, ProfileThemeSerializer, \
-    CourseTitleSerializer, ThemeTitleSerializer, ProfileLessonSerializer, LessonTitleSerializer, ProfileStepSerializer
+    CourseTitleSerializer, ThemeTitleSerializer, ProfileLessonSerializer, ProfileStepSerializer, StepSerializer, \
+    MaxProgressUpdater
 from ..collection.models_collection import Collection
 from ..profile.models_profile import Profile
 from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
@@ -18,7 +19,7 @@ class CourseView(viewsets.ModelViewSet):
     """Курсы"""
     lookup_field = 'slug'
     queryset = Course.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     filter_fields = HelperFilter.COURSE_FILTER_FIELDS
@@ -187,6 +188,21 @@ class ActionCourseView(viewsets.ModelViewSet):
             'message': "Курс успешно создан",
         }, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['delete'])
+    def delete_course(self, request, path):
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        course = self.queryset.get(path=path)
+        MaxProgressUpdater.update_max_progress(old=course.max_progress, new=0, course=course)
+        course.delete()
+        return Response({
+            'title': course.title,
+            'path': course.path,
+            'message': "Курс успешно удален"
+        }, status=status.HTTP_200_OK)
+
 
 class CourseCompletionPage(viewsets.ModelViewSet):
     lookup_field = 'slug'
@@ -195,7 +211,7 @@ class CourseCompletionPage(viewsets.ModelViewSet):
     # PAGE THEMES
     @action(detail=False, methods=['get'])
     def get_title_course(self, request, path_course):
-        exists = ExistsPath.exists(path_course=path_course)
+        exists = PathValidator.exists(path_course=path_course)
         if exists.get('error', None) is not None:
             return exists.get('error')
 
@@ -205,7 +221,7 @@ class CourseCompletionPage(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_themes(self, request, path_course):
-        exists = ExistsPath.exists(path_course=path_course)
+        exists = PathValidator.exists(path_course=path_course)
         if exists.get('error', None) is not None:
             return exists.get('error')
 
@@ -221,7 +237,7 @@ class CourseCompletionPage(viewsets.ModelViewSet):
     # PAGE LESSONS
     @action(detail=False, methods=['get'])
     def get_title_theme(self, request, path_course, path_theme):
-        exists = ExistsPath.exists(path_course=path_course, path_theme=path_theme)
+        exists = PathValidator.exists(path_course=path_course, path_theme=path_theme)
         if exists.get('error', None) is not None:
             return exists.get('error')
 
@@ -231,7 +247,7 @@ class CourseCompletionPage(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_lessons(self, request, path_course, path_theme):
-        exists = ExistsPath.exists(path_course=path_course, path_theme=path_theme)
+        exists = PathValidator.exists(path_course=path_course, path_theme=path_theme)
         if exists.get('error', None) is not None:
             return exists.get('error')
 
@@ -247,8 +263,8 @@ class CourseCompletionPage(viewsets.ModelViewSet):
     # PAGE STEPS
     @action(detail=False, methods=['get'])
     def get_steps(self, request, path_course, path_theme, path_lesson, path_step):
-        exists = ExistsPath.exists(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
-                                   path_step=path_step)
+        exists = PathValidator.exists(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
+                                      path_step=path_step)
         if exists.get('error', None) is not None:
             return exists.get('error')
 
@@ -258,6 +274,19 @@ class CourseCompletionPage(viewsets.ModelViewSet):
         current_step = step_list.get(path=path_step)
         serializer = ProfileStepSerializer(step_list, many=True,
                                            context={'profile': auth, 'current_step': current_step})
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def get_detail_step(self, request, path_course, path_theme, path_lesson, path_step):
+        exists = PathValidator.exists(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
+                                      path_step=path_step)
+        if exists.get('error', None) is not None:
+            return exists.get('error')
+
+        auth = Profile.objects.get(user=self.request.user)
+        step = Step.objects.get(path=path_step)
+        serializer = StepSerializer(step, context={'profile': auth})
 
         return Response(serializer.data, status=status.HTTP_200_OK)
     # ###########
@@ -271,7 +300,7 @@ class ThemeView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def create_theme(self, request, path):
-        is_valid = ExistsPath.is_valid(user=self.request.user, path_course=path)
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
@@ -288,7 +317,7 @@ class ThemeView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_update_info(self, request, path_course, path_theme):
-        is_valid = ExistsPath.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
@@ -300,7 +329,7 @@ class ThemeView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def update_theme(self, request, path_course, path_theme):
-        is_valid = ExistsPath.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
@@ -316,11 +345,12 @@ class ThemeView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def delete_theme(self, request, path_course, path_theme):
-        is_valid = ExistsPath.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
         theme = self.queryset.get(path=path_theme)
+        MaxProgressUpdater.update_max_progress(old=theme.max_progress, new=0, theme=theme)
         theme.delete()
         return Response({
             'title': theme.title,
@@ -337,7 +367,7 @@ class LessonView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def create_lesson(self, request, path_course, path_theme):
-        is_valid = ExistsPath.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
@@ -360,8 +390,8 @@ class LessonView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_update_info(self, request, path_course, path_theme, path_lesson):
-        is_valid = ExistsPath.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
-                                       path_lesson=path_lesson)
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
+                                          path_lesson=path_lesson)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
@@ -373,7 +403,7 @@ class LessonView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def update_lesson(self, request, path_course, path_theme, path_lesson):
-        is_valid = ExistsPath.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
@@ -389,11 +419,12 @@ class LessonView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def delete_lesson(self, request, path_course, path_theme, path_lesson):
-        is_valid = ExistsPath.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
         lesson = self.queryset.get(path=path_lesson)
+        MaxProgressUpdater.update_max_progress(old=lesson.max_progress, new=0, lesson=lesson)
         lesson.delete()
         return Response({
             'title': lesson.title,
@@ -410,15 +441,14 @@ class StepView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def create_step(self, request, path_course, path_theme, path_lesson):
-        is_valid = ExistsPath.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
-                                       path_lesson=path_lesson)
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
+                                          path_lesson=path_lesson)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
         lesson = Lesson.objects.get(path=path_lesson)
         number_new_step = len(self.queryset.filter(lesson=lesson)) + 1
-        path_step = Util.get_max_path(self.queryset.filter(lesson=lesson)) + 1
-        serializer = ActionStepSerializer(data={'title': f"Шаг #{number_new_step}", 'path': path_step},
+        serializer = ActionStepSerializer(data={'title': f"Шаг #{number_new_step}", 'number': number_new_step},
                                           context={'lesson': lesson})
         serializer.is_valid(raise_exception=True)
         try:
@@ -434,8 +464,8 @@ class StepView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_update_info(self, request, path_course, path_theme, path_lesson, path_step):
-        is_valid = ExistsPath.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
-                                       path_lesson=path_lesson, path_step=path_step)
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
+                                          path_lesson=path_lesson, path_step=path_step)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
@@ -447,8 +477,8 @@ class StepView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def update_step(self, request, path_course, path_theme, path_lesson, path_step):
-        is_valid = ExistsPath.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
-                                       path_lesson=path_lesson, path_step=path_step)
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
+                                          path_lesson=path_lesson, path_step=path_step)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
@@ -463,13 +493,14 @@ class StepView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def delete_step(self, request, path_course, path_theme, path_lesson, path_step):
-        is_valid = ExistsPath.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
-                                       path_lesson=path_lesson, path_step=path_step)
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
+                                          path_lesson=path_lesson, path_step=path_step)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
         step = self.queryset.get(path=path_step)
-        print(step.delete())
+        MaxProgressUpdater.update_max_progress(old=step.max_progress, new=0, step=step)
+        step.delete()
         return Response({
             'title': step.title,
             'path': step.path,
@@ -627,7 +658,7 @@ class GradeCourseView(viewsets.ModelViewSet):
         }, status=status.HTTP_200_OK)
 
 
-class ExistsPath:
+class PathValidator:
 
     @staticmethod
     def get_exists(path, model, error_text):
@@ -642,12 +673,12 @@ class ExistsPath:
     @staticmethod
     def is_valid(user=None, path_course=None, path_theme=None, path_lesson=None, path_step=None):
         if user is not None:
-            is_access = ExistsPath.is_access(user=user, path_course=path_course)
+            is_access = PathValidator.is_access(user=user, path_course=path_course)
             if is_access.get('error', None) is not None:
                 return is_access
 
-        exists = ExistsPath.exists(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
-                                   path_step=path_step)
+        exists = PathValidator.exists(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
+                                      path_step=path_step)
         if exists.get('error', None) is not None:
             return exists
         return {'valid': True}
@@ -655,38 +686,38 @@ class ExistsPath:
     @staticmethod
     def exists(path_course=None, path_theme=None, path_lesson=None, path_step=None):
         if path_course is not None:
-            exists_course = ExistsPath.exists_course(path_course=path_course)
+            exists_course = PathValidator.exists_course(path_course=path_course)
             if exists_course.get('error', None) is not None:
                 return exists_course
 
-        exists_theme = ExistsPath.exists_theme(path_theme=path_theme)
+        exists_theme = PathValidator.exists_theme(path_theme=path_theme)
         if exists_theme.get('error', None) is not None:
             return exists_theme
 
-        exists_lesson = ExistsPath.exists_lesson(path_lesson=path_lesson)
+        exists_lesson = PathValidator.exists_lesson(path_lesson=path_lesson)
         if exists_lesson.get('error', None) is not None:
             return exists_lesson
 
-        exists_step = ExistsPath.exists_step(path_step=path_step)
+        exists_step = PathValidator.exists_step(path_step=path_step)
         if exists_step.get('error', None) is not None:
             return exists_step
         return {'valid': True}
 
     @staticmethod
     def exists_course(path_course):
-        return ExistsPath.get_exists(path=path_course, model=Course, error_text="Такого курса не существует")
+        return PathValidator.get_exists(path=path_course, model=Course, error_text="Такого курса не существует")
 
     @staticmethod
     def exists_theme(path_theme):
-        return ExistsPath.get_exists(path=path_theme, model=Theme, error_text="Такой темы не существует")
+        return PathValidator.get_exists(path=path_theme, model=Theme, error_text="Такой темы не существует")
 
     @staticmethod
     def exists_lesson(path_lesson):
-        return ExistsPath.get_exists(path=path_lesson, model=Lesson, error_text="Такого урока не существует")
+        return PathValidator.get_exists(path=path_lesson, model=Lesson, error_text="Такого урока не существует")
 
     @staticmethod
     def exists_step(path_step):
-        return ExistsPath.get_exists(path=path_step, model=Step, error_text="Такого шага не существует")
+        return PathValidator.get_exists(path=path_step, model=Step, error_text="Такого шага не существует")
 
     @staticmethod
     def is_access(user, path_course):
