@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from .models_course import Course, ProfileCourse, Theme, Lesson, \
     Step, ProfileStep, \
-    CourseInfo, CourseMainInfo, CourseFit, CourseSkill, CourseStars, ProfileTheme
+    CourseInfo, CourseMainInfo, CourseFit, CourseSkill, CourseStars, ProfileTheme, ProfileLesson
 #####################################
 #         ##  COURSE ##
 #####################################
@@ -38,8 +38,23 @@ class HelperCourseSerializer:
                 for step in Step.objects.filter(lesson=lesson):
                     profile_step = ProfileStep.objects.filter(step=step, profile=profile)
                     if profile_step:
-                        max_progress += step.max_mark
+                        max_progress += step.max_progress
                         progress += profile_step.mark
+        return {
+            'max_progress': max_progress,
+            'progress': progress
+        }
+
+    @staticmethod
+    def get_progress_theme(theme, profile):
+        max_progress = 0
+        progress = 0
+        for lesson in Lesson.objects.filter(theme=theme):
+            for step in Step.objects.filter(lesson=lesson):
+                profile_step = ProfileStep.objects.filter(step=step, profile=profile)
+                if profile_step:
+                    progress += profile_step.mark
+                max_progress += step.max_progress
         return {
             'max_progress': max_progress,
             'progress': progress
@@ -173,6 +188,18 @@ class PageInfoCourseSerializer(serializers.ModelSerializer):
 #####################################
 
 
+#####################################
+#   ##  COURSE COMPLETION PAGE ##
+#####################################
+
+
+# PAGE THEMES
+class CourseTitleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Theme
+        fields = ('path', 'title', 'image_url')
+
+
 class ProfileThemeSerializer(serializers.ModelSerializer):
     count_lesson = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
@@ -180,16 +207,23 @@ class ProfileThemeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Theme
-        fields = ('path', 'title', 'image_url', 'max_progress', 'is_complete')
+        fields = ('path', 'title', 'image_url', 'count_lesson', 'progress', 'is_complete')
 
     def get_count_lesson(self, theme):
         return len(Lesson.objects.filter(theme=theme))
 
     def get_progress(self, theme):
-        return ProfileTheme.objects.get(theme=theme, profile=self.context.get('profile')).progress
+        profile_theme_list = ProfileTheme.objects.filter(theme=theme, profile=self.context.get('profile'))
+        if len(profile_theme_list) == 0:
+            return None
+        return {
+            'progress': profile_theme_list[0].progress,
+            'max_progress': theme.max_progress,
+        }
 
     def get_is_complete(self, theme):
-        if self.progress == theme.max_progress:
+        progress = self.get_progress(theme=theme)
+        if (progress is not None) and (progress.get('progress') == progress.get('max_progress')):
             return True
         return False
 
@@ -197,7 +231,7 @@ class ProfileThemeSerializer(serializers.ModelSerializer):
 class ActionThemeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Theme
-        fields = ('title', 'image_url', 'max_progress', 'count_lesson', 'path')
+        fields = ('title', 'image_url', 'max_progress', 'path')
 
     def create(self, validated_data):
         return Theme.objects.create(**validated_data, course=self.context.get('course'))
@@ -217,6 +251,41 @@ class ActionThemeSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+
+
+# PAGE LESSONS
+class ThemeTitleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Theme
+        fields = ('path', 'title', 'image_url')
+
+
+class ProfileLessonSerializer(serializers.ModelSerializer):
+    count_step = serializers.SerializerMethodField()
+    progress = serializers.SerializerMethodField()
+    is_complete = serializers.SerializerMethodField(default=False)
+
+    class Meta:
+        model = Lesson
+        fields = ('path', 'title', 'image_url', 'count_step', 'progress', 'is_complete')
+
+    def get_count_step(self, lesson):
+        return len(Step.objects.filter(lesson=lesson))
+
+    def get_progress(self, lesson):
+        profile_lesson_list = ProfileLesson.objects.filter(lesson=lesson, profile=self.context.get('profile'))
+        if len(profile_lesson_list) == 0:
+            return None
+        return {
+            'progress': profile_lesson_list[0].progress,
+            'max_progress': lesson.max_progress,
+        }
+
+    def get_is_complete(self, lesson):
+        progress = self.get_progress(lesson=lesson)
+        if (progress is not None) and (progress.get('progress') == progress.get('max_progress')):
+            return True
+        return False
 
 
 class ActionLessonSerializer(serializers.ModelSerializer):
@@ -245,6 +314,32 @@ class ActionLessonSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+    def delete(self):
+        lesson = self.instance.delete()
+        lesson_max_progress = lesson.max_progress
+
+        theme = Theme.objects.get(lesson=lesson)
+        theme.max_progress -= lesson_max_progress
+        theme.save()
+        return lesson
+
+
+class ProfileStepSerializer(serializers.ModelSerializer):
+    progress = serializers.SerializerMethodField()
+    is_complete = serializers.SerializerMethodField(default=False)
+
+    class Meta:
+        model = Step
+        fields = ('path', 'title', 'image_url', 'max_progress', 'progress', 'is_complete')
+
+    def get_progress(self, lesson):
+        return ProfileLesson.objects.get(lesson=lesson, profile=self.context.get('profile')).progress
+
+    def get_is_complete(self, lesson):
+        if self.progress == lesson.max_progress:
+            return True
+        return False
+
 
 class ActionStepSerializer(serializers.ModelSerializer):
     class Meta:
@@ -252,7 +347,15 @@ class ActionStepSerializer(serializers.ModelSerializer):
         fields = ('title', 'content', 'max_progress', 'path')
 
     def create(self, validated_data):
-        return Step.objects.create(**validated_data, lesson=self.context.get('lesson'))
+        lesson = self.context.get('lesson')
+        step = Step.objects.create(**validated_data, lesson=lesson)
+        lesson.max_progress += step.max_progress
+        lesson.save()
+
+        theme = Theme.objects.get(lesson=lesson)
+        theme.max_progress += step.max_progress
+        theme.save()
+        return step
 
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
@@ -260,6 +363,19 @@ class ActionStepSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+
+    def delete(self):
+        step = self.instance.delete()
+        step_max_progress = step.max_progress
+
+        lesson = Lesson.objects.get(step=step)
+        lesson.max_progress -= step_max_progress
+        lesson.save()
+
+        theme = Theme.objects.get(lesson=lesson)
+        theme.max_progress -= step_max_progress
+        theme.save()
+        return step
 
 
 # #########################################

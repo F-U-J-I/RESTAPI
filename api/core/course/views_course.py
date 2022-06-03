@@ -7,7 +7,8 @@ from rest_framework.response import Response
 
 from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection, Theme, Lesson, Step
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
-    MiniCourseSerializer, ActionThemeSerializer, ActionLessonSerializer, ActionStepSerializer
+    MiniCourseSerializer, ActionThemeSerializer, ActionLessonSerializer, ActionStepSerializer, ProfileThemeSerializer, \
+    CourseTitleSerializer, ThemeTitleSerializer, ProfileLessonSerializer
 from ..collection.models_collection import Collection
 from ..profile.models_profile import Profile
 from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
@@ -185,6 +186,90 @@ class ActionCourseView(viewsets.ModelViewSet):
             'path': course.path,
             'message': "Курс успешно создан",
         }, status=status.HTTP_200_OK)
+
+
+class CourseCompletionPage(viewsets.ModelViewSet):
+    lookup_field = 'slug'
+    permission_classes = [permissions.IsAuthenticated]
+
+    def is_valid(self, path_course=None, path_theme=None, path_lesson=None, path_step=None):
+        if path_course is not None:
+            if not Util.exists_path(Course, {'path': path_course}):
+                return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        auth = Profile.objects.get(user=self.request.user)
+        course = Course.objects.get(path=path_course)
+        if course.profile != auth:
+            return Response({"error": "У вас нет доступа для создания/изменения/удаления шага от имени этого аккаунта"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if path_theme is not None:
+            if not Util.exists_path(Theme, {'course': course, 'path': path_theme}):
+                return Response({'error': "Такой темы не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        if path_lesson is not None:
+            theme = Theme.objects.get(course=course, path=path_theme)
+            if not Util.exists_path(Lesson, {'theme': theme, 'path': path_lesson}):
+                return Response({'error': "Такого урока не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+            if path_step is not None:
+                lesson = Lesson.objects.get(theme=theme, path=path_lesson)
+                if not Util.exists_path(Step, {'lesson': lesson, 'path': path_step}):
+                    return Response({'error': "Такого шага не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        return None
+
+    # PAGE THEMES
+    @action(detail=False, methods=['get'])
+    def get_title_course(self, request, path_course):
+        is_valid = self.is_valid(path_course=path_course)
+        if is_valid is not None:
+            return is_valid
+
+        course = Course.objects.get(path=path_course)
+        serializer = CourseTitleSerializer(course)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def get_themes(self, request, path_course):
+        is_valid = self.is_valid(path_course=path_course)
+        if is_valid is not None:
+            return is_valid
+
+        auth = Profile.objects.get(user=self.request.user)
+        course = Course.objects.get(path=path_course)
+        theme_list = Theme.objects.filter(course=course)
+        serializer = ProfileThemeSerializer(theme_list, many=True, context={'profile': auth})
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    # ###########
+
+    # PAGE LESSONS
+    @action(detail=False, methods=['get'])
+    def get_title_theme(self, request, path_course, path_theme):
+        is_valid = self.is_valid(path_course=path_course, path_theme=path_theme)
+        if is_valid is not None:
+            return is_valid
+
+        course = Course.objects.get(path=path_course)
+        theme = Theme.objects.get(course=course, path=path_theme)
+        serializer = ThemeTitleSerializer(theme)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def get_lessons(self, request, path_course, path_theme):
+        is_valid = self.is_valid(path_course=path_course, path_theme=path_theme)
+        if is_valid is not None:
+            return is_valid
+
+        auth = Profile.objects.get(user=self.request.user)
+        course = Course.objects.get(path=path_course)
+        theme = Theme.objects.get(course=course, path=path_theme)
+        lesson_list = Lesson.objects.filter(theme=theme)
+        serializer = ProfileLessonSerializer(lesson_list, many=True, context={'profile': auth})
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    # ###########
 
 
 class ThemeView(viewsets.ModelViewSet):
@@ -502,7 +587,7 @@ class StepView(viewsets.ModelViewSet):
         theme = Theme.objects.get(course=course, path=path_theme)
         lesson = Lesson.objects.get(theme=theme, path=path_lesson)
         step = self.queryset.get(lesson=lesson, path=path_step)
-        step.delete()
+        print(step.delete())
         return Response({
             'title': step.title,
             'path': step.path,

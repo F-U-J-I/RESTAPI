@@ -24,7 +24,7 @@ class Course(models.Model):
     description = models.TextField(max_length=175, blank=True)
     price = models.IntegerField(default=0)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    avatar_url = models.ImageField(blank=True, null=True, default=Util.DEFAULT_IMAGES.get('course'))
+    image_url = models.ImageField(blank=True, null=True, default=Util.DEFAULT_IMAGES.get('course'))
     duration_in_minutes = models.IntegerField(default=0)
     rating = models.FloatField(default=0)
     members_amount = models.IntegerField(default=0)

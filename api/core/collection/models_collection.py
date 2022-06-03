@@ -4,9 +4,10 @@ from django.core.validators import validate_image_file_extension
 from django.db import models
 from django.db.models.signals import post_save
 
-# ########### COLLECTION START ##############
 from ..profile.models_profile import Profile
 from ..utils import Util
+
+# ########### COLLECTION START ##############
 
 
 class Collection(models.Model):
