@@ -130,17 +130,17 @@ class CourseSerializer(serializers.ModelSerializer):
         return course.profile.user.username
 
     def get_quantity_in_collection(self, course):
-        if self.context.get('profile') is None:
+        if self.context.get('profile', None) is None:
             return None
         return len(ProfileCourse.objects.filter(course=course, profile=self.context.get('profile')))
 
     def get_status_progress(self, course):
-        if self.context.get('profile') is None:
+        if self.context.get('profile', None) is None:
             return None
         return HelperCourseSerializer.get_status_progress(course=course, profile=self.context.get('profile'))
 
     def get_progress(self, course):
-        if self.context.get('profile') is None:
+        if self.context.get('profile', None) is None:
             return None
         profile_course_list = ProfileCourse.objects.filter(course=course, profile=self.context.get('profile'))
         if len(profile_course_list) == 0:
@@ -168,9 +168,13 @@ class MiniCourseSerializer(serializers.ModelSerializer):
         return course.profile.user.username
 
     def get_status_progress(self, course):
+        if self.context.get('profile', None) is None:
+            return None
         return HelperCourseSerializer.get_status_progress(course=course, profile=self.context.get('profile'))
 
     def get_progress(self, course):
+        if self.context.get('profile', None) is None:
+            return None
         return HelperCourseSerializer.get_progress(course=course, profile=self.context.get('profile'))
 
 

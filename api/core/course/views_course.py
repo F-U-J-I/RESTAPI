@@ -74,7 +74,9 @@ class CourseView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_mini_courses(self, request, *args, **kwargs):
-        auth = Profile.objects.get(user=self.request.user)
+        auth = None
+        if type(self.request.user) != AnonymousUser:
+            auth = Profile.objects.get(user=self.request.user)
         queryset = self.filter_queryset(self.queryset)
         frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_PAGE)
         serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
@@ -87,10 +89,13 @@ class CourseView(viewsets.ModelViewSet):
         """Добавленные и созданные курсы пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
-        profile = Profile.objects.get(path=path)
-        auth = Profile.objects.get(user=self.request.user)
+
+        auth = None
+        if type(self.request.user) != AnonymousUser:
+            auth = Profile.objects.get(user=self.request.user)
 
         # Получаем созданные и добавленные курсы
+        profile = Profile.objects.get(path=path)
         added_profile_course = ProfileCourse.objects.filter(profile=profile)
         created_queryset = self.queryset.filter(profile=profile)
         queryset_list = [item.course.pk for item in added_profile_course]
@@ -111,9 +116,12 @@ class CourseView(viewsets.ModelViewSet):
         """Добавленные курсы пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
-        profile = Profile.objects.get(path=path)
-        auth = Profile.objects.get(user=self.request.user)
 
+        auth = None
+        if type(self.request.user) != AnonymousUser:
+            auth = Profile.objects.get(user=self.request.user)
+
+        profile = Profile.objects.get(path=path)
         self.swap_filters_field(HelperFilter.PROFILE_COURSE_TYPE)
         profile_queryset = self.filter_queryset(ProfileCourse.objects.filter(profile=profile))
         self.swap_filters_field(HelperFilter.COURSE_TYPE)
@@ -132,9 +140,11 @@ class CourseView(viewsets.ModelViewSet):
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
 
-        profile = Profile.objects.get(path=path)
-        auth = Profile.objects.get(user=self.request.user)
+        auth = None
+        if type(self.request.user) != AnonymousUser:
+            auth = Profile.objects.get(user=self.request.user)
 
+        profile = Profile.objects.get(path=path)
         queryset = self.filter_queryset(self.queryset.filter(profile=profile))
         frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_PAGE)
         serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})

@@ -73,6 +73,7 @@ class MiniCollectionSerializer(serializers.ModelSerializer):
         return collection.profile.user.username
 
     def get_is_added(self, collection):
+
         return HelperCollectionSerializer.get_is_added(collection=collection, profile=self.context.get('profile'))
 
 
