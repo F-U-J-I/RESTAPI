@@ -38,7 +38,6 @@ class CollectionSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_author(collection):
         return collection.profile.user.username
-        # return ProfileAsAuthor(collection.profile).data
 
     def get_courses(self, collection):
         courses_to_collection = ProfileCourse.objects.filter(collection=collection)

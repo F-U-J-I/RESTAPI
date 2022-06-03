@@ -1,3 +1,4 @@
+from django.contrib.auth.models import AnonymousUser
 from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, viewsets
@@ -61,7 +62,9 @@ class CourseView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_courses(self, request, *args, **kwargs):
-        auth = Profile.objects.get(user=self.request.user)
+        auth = None
+        if type(self.request.user) != AnonymousUser:
+            auth = Profile.objects.get(user=self.request.user)
         queryset = self.filter_queryset(self.queryset)
         frame_pagination = self.get_frame_pagination(request, queryset)
         serializer = CourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
