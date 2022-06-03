@@ -26,13 +26,20 @@ urlpatterns = [
     path('courses/create/', ActionCourseView.as_view({'post': 'create_course'})),
 
     # COURSE completion
-    path('courses/learn/<slug:path_course>/title', CourseCompletionPage.as_view({'get': 'get_title_course'})),
-    path('courses/learn/<slug:path_course>/themes', CourseCompletionPage.as_view({'get': 'get_themes'})),
-    path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/title', CourseCompletionPage.as_view({'get': 'get_title_theme'})),
-    path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/lessons', CourseCompletionPage.as_view({'get': 'get_lessons'})),
+    path('courses/learn/<slug:path_course>/title/',
+         CourseCompletionPage.as_view({'get': 'get_title_course'})),
+    path('courses/learn/<slug:path_course>/themes/',
+         CourseCompletionPage.as_view({'get': 'get_themes'})),
+    path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/title/',
+         CourseCompletionPage.as_view({'get': 'get_title_theme'})),
+    path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/lessons/',
+         CourseCompletionPage.as_view({'get': 'get_lessons'})),
+    path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/steps/<slug:path_step>/',
+         CourseCompletionPage.as_view({'get': 'get_steps'})),
 
     # THEME
-    path('courses/creating/<slug:path>/create/theme/', ThemeView.as_view({'post': 'create_theme'})),
+    path('courses/creating/<slug:path>/create/theme/',
+         ThemeView.as_view({'post': 'create_theme'})),
     path('courses/creating/<slug:path_course>/get-update/theme/<slug:path_theme>/',
          ThemeView.as_view({'get': 'get_update_info'})),
     path('courses/creating/<slug:path_course>/update/theme/<slug:path_theme>/',
@@ -53,12 +60,15 @@ urlpatterns = [
     # STEP
     path('courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/create/step/',
          StepView.as_view({'post': 'create_step'})),
-    path('courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/get-update/step/<slug:path_step>',
-         StepView.as_view({'get': 'get_update_info'})),
-    path('courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/update/step/<slug:path_step>',
-         StepView.as_view({'put': 'update_step'})),
-    path('courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/delete/step/<slug:path_step>',
-         StepView.as_view({'delete': 'delete_step'})),
+    path(
+        'courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/get-update/step/<slug:path_step>',
+        StepView.as_view({'get': 'get_update_info'})),
+    path(
+        'courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/update/step/<slug:path_step>',
+        StepView.as_view({'put': 'update_step'})),
+    path(
+        'courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/delete/step/<slug:path_step>',
+        StepView.as_view({'delete': 'delete_step'})),
 
     path('courses/add/<slug:path>/', ActionProfileCourseView.as_view({'post': 'added_courses'})),
     path('courses/pop/<slug:path>/', ActionProfileCourseView.as_view({'delete': 'popped_courses'})),

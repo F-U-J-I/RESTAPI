@@ -178,7 +178,7 @@ class Step(models.Model):
     path = models.CharField(max_length=64, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.lesson.theme.course.profile.user.username}: {self.lesson.theme.course.title}: {self.lesson.theme.title}: {self.lesson.title}: {self.title} [Step]"
+        return f"{self.lesson.theme.course.profile.user.username} => {self.lesson.theme.course.title}: {self.lesson.theme.title} => {self.lesson.title} => {self.title} [Step]"
 
 
 def create_step(sender, **kwargs):
@@ -195,6 +195,14 @@ post_save.connect(create_step, sender=Step)
 # ------------ Content Course END ----------------
 
 # ------------ Profile to Course START --------------
+
+
+class ProfileActionsLogs(models.Model):
+    step = models.ForeignKey(Step, on_delete=models.SET_NULL, blank=True, null=True)
+    profile = models.ForeignKey(Profile, on_delete=models.SET_NULL, blank=True, null=True)
+    date_action = models.DateTimeField(default=datetime.datetime.now)
+
+
 class ProfileCourseRole(models.Model):
     """Role Profile to Course: Admin, User"""
     name = models.CharField(max_length=64)

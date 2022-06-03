@@ -2,14 +2,12 @@ import os
 
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.files.images import ImageFile
-from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import EmailMessage
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models.fields.files import ImageFieldFile
-from rest_framework import status
+from django.urls import reverse
+
 from rest_framework.utils.urls import replace_query_param
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.urls import reverse
 
 
 class Util:
@@ -103,12 +101,6 @@ class Util:
                 max_path = item.path
         return max_path
 
-    @staticmethod
-    def get_object_or_error(model, status_error=None, text=None, *args, **kwargs):
-        try:
-            return model.objects.get(*args, **kwargs)
-        except Exception:
-            raise ValueError(text, status_error)
 
 
 class HelperFilter:

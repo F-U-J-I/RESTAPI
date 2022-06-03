@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from .models_course import Course, ProfileCourse, Theme, Lesson, \
     Step, ProfileStep, \
-    CourseInfo, CourseMainInfo, CourseFit, CourseSkill, CourseStars, ProfileTheme, ProfileLesson
+    CourseInfo, CourseMainInfo, CourseFit, CourseSkill, CourseStars, ProfileTheme, ProfileLesson, ProfileActionsLogs
 #####################################
 #         ##  COURSE ##
 #####################################
@@ -264,10 +264,11 @@ class ProfileLessonSerializer(serializers.ModelSerializer):
     count_step = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
     is_complete = serializers.SerializerMethodField(default=False)
+    current_step = serializers.SerializerMethodField()
 
     class Meta:
         model = Lesson
-        fields = ('path', 'title', 'image_url', 'count_step', 'progress', 'is_complete')
+        fields = ('path', 'title', 'image_url', 'current_step', 'count_step', 'progress', 'is_complete')
 
     def get_count_step(self, lesson):
         return len(Step.objects.filter(lesson=lesson))
@@ -286,6 +287,21 @@ class ProfileLessonSerializer(serializers.ModelSerializer):
         if (progress is not None) and (progress.get('progress') == progress.get('max_progress')):
             return True
         return False
+
+    def get_current_step(self, lesson):
+        step_list = Step.objects.filter(lesson=lesson)
+        if len(step_list) == 0:
+            return None
+        logs = ProfileActionsLogs.objects.filter(step__in=step_list)
+        if len(logs) == 0:
+            return step_list[0].path
+        current_step = logs[0]
+        last_date = current_step.date_action
+        for log in logs:
+            if log.date_action > last_date:
+                last_date = log.date_action
+                current_step = log
+        return current_step.path
 
 
 class ActionLessonSerializer(serializers.ModelSerializer):
@@ -324,19 +340,40 @@ class ActionLessonSerializer(serializers.ModelSerializer):
         return lesson
 
 
+# PAGE STEPS
+class LessonTitleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Lesson
+        fields = ('path', 'title', 'image_url')
+
+
 class ProfileStepSerializer(serializers.ModelSerializer):
-    progress = serializers.SerializerMethodField()
+    is_active = serializers.SerializerMethodField(default=False)
     is_complete = serializers.SerializerMethodField(default=False)
 
     class Meta:
         model = Step
-        fields = ('path', 'title', 'image_url', 'max_progress', 'progress', 'is_complete')
+        fields = ('path', 'is_active', 'is_complete')
+
+    def get_is_active(self, step):
+        if step == self.context.get('current_step'):
+            return True
+        return False
 
     def get_progress(self, lesson):
-        return ProfileLesson.objects.get(lesson=lesson, profile=self.context.get('profile')).progress
+        profile_lesson_list = ProfileLesson.objects.filter(lesson=lesson, profile=self.context.get('profile'))
+        if len(profile_lesson_list) == 0:
+            return None
+        return {
+            'progress': profile_lesson_list[0].progress,
+            'max_progress': lesson.max_progress,
+        }
 
-    def get_is_complete(self, lesson):
-        if self.progress == lesson.max_progress:
+    def get_is_complete(self, step):
+        profile_step_list = ProfileStep.objects.filter(step=step, profile=self.context.get('profile'))
+        if len(profile_step_list) == 0:
+            return False
+        if profile_step_list[0].status.name == Util.PROFILE_COURSE_STATUS_STUDIED_NAME:
             return True
         return False
 
