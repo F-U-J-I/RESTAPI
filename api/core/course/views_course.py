@@ -78,7 +78,7 @@ class CourseView(viewsets.ModelViewSet):
         if type(self.request.user) != AnonymousUser:
             auth = Profile.objects.get(user=self.request.user)
         queryset = self.filter_queryset(self.queryset)
-        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_PAGE)
+        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_MAX_PAGE)
         serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
 
         frame_pagination['results'] = serializer.data
@@ -105,7 +105,7 @@ class CourseView(viewsets.ModelViewSet):
 
         queryset = self.filter_queryset(new_queryset)
 
-        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_PAGE)
+        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_MAX_PAGE)
         serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
         frame_pagination['results'] = serializer.data
 
@@ -127,7 +127,7 @@ class CourseView(viewsets.ModelViewSet):
         self.swap_filters_field(HelperFilter.COURSE_TYPE)
 
         queryset = [item.course for item in profile_queryset]
-        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_PAGE)
+        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_MAX_PAGE)
         serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True,
                                           context={'profile': auth})
 
@@ -146,7 +146,7 @@ class CourseView(viewsets.ModelViewSet):
 
         profile = Profile.objects.get(path=path)
         queryset = self.filter_queryset(self.queryset.filter(profile=profile))
-        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_PAGE)
+        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_MAX_PAGE)
         serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
         frame_pagination['results'] = serializer.data
         return Response(frame_pagination, status=status.HTTP_200_OK)
@@ -484,7 +484,7 @@ class StepView(viewsets.ModelViewSet):
 
         lesson = Lesson.objects.get(path=path_lesson)
         step = self.queryset.get(path=path_step)
-        serializer = ActionStepSerializer(step, context={'lesson': lesson})
+        serializer = StepSerializer(step, context={'lesson': lesson})
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 

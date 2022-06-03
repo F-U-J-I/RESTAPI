@@ -68,8 +68,8 @@ class HeaderProfileSerializer(serializers.ModelSerializer):
         }
 
     def get_is_subscribed(self, profile):
-        auth = self.context.get('auth')
-        if auth != profile:
+        auth = self.context.get('auth', None)
+        if (auth is not None) and (auth != profile):
             return HelperSerializer.is_subscribed(goal=profile, subscriber=auth)
         return None
 

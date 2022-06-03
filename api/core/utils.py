@@ -102,7 +102,6 @@ class Util:
         return max_path
 
 
-
 class HelperFilter:
     # COLLECTION
 
@@ -127,6 +126,13 @@ class HelperFilter:
     PROFILE_COURSE_FILTER_FIELDS = ('course__title', 'course__profile__user__username')
     PROFILE_COURSE_SEARCH_FIELDS = ('course__title', 'course__profile__user__username')
     PROFILE_COURSE_ORDERING_FIELDS = ('course__rating', 'course__title')
+
+    # PROFILE
+
+    PROFILE_TYPE = 5
+    PROFILE_FILTER_FIELDS = ('path', 'user__username')
+    PROFILE_SEARCH_FIELDS = ('path', 'user__username')
+    PROFILE_ORDERING_FIELDS = ('path', 'user__username')
 
     @staticmethod
     def get_filters_collection_field(type_filter):
@@ -154,13 +160,24 @@ class HelperFilter:
             ordering_fields = HelperFilter.PROFILE_COURSE_ORDERING_FIELDS
             return filter_fields, search_fields, ordering_fields
 
+    @staticmethod
+    def get_filters_profile_field(type_filter):
+        if type_filter == HelperFilter.PROFILE_TYPE:
+            filter_fields = HelperFilter.PROFILE_FILTER_FIELDS
+            search_fields = HelperFilter.PROFILE_SEARCH_FIELDS
+            ordering_fields = HelperFilter.PROFILE_ORDERING_FIELDS
+            return filter_fields, search_fields, ordering_fields
+
 
 class HelperPaginatorValue:
     COLLECTION_MAX_PAGE = 10
-    MINI_COLLECTION_PAGE = 40
+    MINI_COLLECTION_MAX_PAGE = 40
 
-    COURSE_MAX_PAGE = 2
-    MINI_COURSE_PAGE = 40
+    COURSE_MAX_PAGE = 20
+    MINI_COURSE_MAX_PAGE = 40
+
+    PROFILE_MAX_PAGE = 20
+    MINI_PROFILE_MAX_PAGE = 40
 
     PAGE_QUERY_PARAM = 'page'
 

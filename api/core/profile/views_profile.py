@@ -1,42 +1,113 @@
+from django.contrib.auth.models import AnonymousUser
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, viewsets, status
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
-from .serializers_profile import ProfileSerializer, MiniProfileSerializer, HeaderProfileSerializer
 from .models_profile import Profile, Subscription
+from .serializers_profile import ProfileSerializer, MiniProfileSerializer, HeaderProfileSerializer
 from ..course.models_course import ProfileCourse, ProfileCourseStatus
 from ..course.serializers_course import MiniCourseSerializer
-from ..utils import Util
+from ..utils import Util, HelperFilter, HelperPaginatorValue, HelperPaginator
 
 
 class ProfileView(viewsets.ModelViewSet):
     """Profile"""
     lookup_field = 'slug'
     queryset = Profile.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     serializer_class = ProfileSerializer
+
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    filter_fields = HelperFilter.PROFILE_FILTER_FIELDS
+    search_fields = HelperFilter.PROFILE_SEARCH_FIELDS
+    ordering_fields = HelperFilter.PROFILE_ORDERING_FIELDS
+
+    pagination_max_page = HelperPaginatorValue.PROFILE_MAX_PAGE
 
     def exists_path(self, path):
         return len(self.queryset.filter(path=path)) != 0
 
-    # @action(methods=['get'], detail=False)
-    # def get_profile(self, request):
-    #
+    def get_frame_pagination(self, request, queryset, max_page=None):
+        if max_page is None:
+            max_page = self.pagination_max_page
+        pagination = HelperPaginator(request=request, queryset=queryset, max_page=max_page)
+        return {
+            "count": pagination.get_count(),
+            "pages": pagination.get_num_pages(),
+            "next": pagination.get_link_next_page(),
+            "previous": pagination.get_link_previous_page(),
+            "results": pagination.page_obj
+        }
 
     @action(methods=['get'], detail=False)
     def get_list_profile(self, request):
-        serializer_profile_list = list()
-        auth = Profile.objects.get(user=self.request.user)
-        for profile in self.queryset:
-            serializer_profile_list.append(ProfileSerializer(profile, context={'auth': auth}).data)
-        return Response(serializer_profile_list, status=status.HTTP_200_OK)
+        auth = None
+        if type(self.request.user) != AnonymousUser:
+            auth = Profile.objects.get(user=self.request.user)
+
+        queryset = self.filter_queryset(self.queryset)
+        frame_pagination = self.get_frame_pagination(request, queryset)
+        serializer = ProfileSerializer(frame_pagination.get('results'), many=True, context={'auth': auth})
+        frame_pagination['results'] = serializer.data
+        return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=False)
     def get_list_mini_profile(self, request):
-        serializer_profile_list = list()
-        for profile in self.queryset:
-            serializer_profile_list.append(MiniProfileSerializer(profile).data)
-        return Response(serializer_profile_list, status=status.HTTP_200_OK)
+        queryset = self.filter_queryset(self.queryset)
+        frame_pagination = self.get_frame_pagination(request, queryset,
+                                                     max_page=HelperPaginatorValue.MINI_PROFILE_MAX_PAGE)
+        serializer = MiniProfileSerializer(frame_pagination.get('results'), many=True)
+        frame_pagination['results'] = serializer.data
+        return Response(frame_pagination, status=status.HTTP_200_OK)
+
+    @action(methods=['get'], detail=False)
+    def get_header_profile(self, request, path):
+        """Верхняя информация на странице любого пользователя"""
+        if not self.exists_path(path):
+            return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        auth = None
+        if type(self.request.user) != AnonymousUser:
+            auth = Profile.objects.get(user=self.request.user)
+
+        profile = Profile.objects.get(path=path)
+        return Response(HeaderProfileSerializer(profile, context={'auth': auth}).data, status=status.HTTP_200_OK)
+
+
+class CourseProfileView(viewsets.ModelViewSet):
+    """Course Profile"""
+    lookup_field = 'slug'
+    queryset = Profile.objects.all()
+    permission_classes = [permissions.AllowAny]
+    serializer_class = ProfileSerializer
+
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    filter_fields = HelperFilter.COURSE_FILTER_FIELDS
+    search_fields = HelperFilter.COURSE_SEARCH_FIELDS
+    ordering_fields = HelperFilter.COURSE_ORDERING_FIELDS
+
+    pagination_max_page = HelperPaginatorValue.PROFILE_MAX_PAGE
+
+    def exists_path(self, path):
+        return len(self.queryset.filter(path=path)) != 0
+
+    def swap_filters_field(self, type_filter):
+        (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_course_field(
+            type_filter)
+
+    def get_frame_pagination(self, request, queryset, max_page=None):
+        if max_page is None:
+            max_page = self.pagination_max_page
+        pagination = HelperPaginator(request=request, queryset=queryset, max_page=max_page)
+        return {
+            "count": pagination.get_count(),
+            "pages": pagination.get_num_pages(),
+            "next": pagination.get_link_next_page(),
+            "previous": pagination.get_link_previous_page(),
+            "results": pagination.page_obj
+        }
 
     @action(methods=['get'], detail=False)
     def get_studying_courses(self, request, path):
@@ -44,15 +115,25 @@ class ProfileView(viewsets.ModelViewSet):
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
+        auth = None
+        if type(self.request.user) != AnonymousUser:
+            auth = Profile.objects.get(user=self.request.user)
         profile = Profile.objects.get(path=path)
+
+        self.swap_filters_field(HelperFilter.PROFILE_COURSE_TYPE)
         status_studying = ProfileCourseStatus.objects.filter(name=Util.PROFILE_COURSE_STATUS_STUDYING_NAME)
         profile_course_list = ProfileCourse.objects.filter(profile=profile, status__in=status_studying)
+        queryset = self.filter_queryset(profile_course_list)
+        self.swap_filters_field(HelperFilter.COURSE_TYPE)
 
-        serializer_course_list = list()
-        for profile_course in profile_course_list:
-            serializer_course_list.append(
-                MiniCourseSerializer(profile_course.course, context={'profile': profile}).data)
-        return Response(serializer_course_list, status=status.HTTP_200_OK)
+        frame_pagination = self.get_frame_pagination(request, queryset,
+                                                     max_page=HelperPaginatorValue.MINI_COURSE_MAX_PAGE)
+        serializer_list = list()
+        for profile_course in frame_pagination.get('results'):
+            serializer_list.append(
+                MiniCourseSerializer(profile_course.course, context={'profile': profile, 'auth': auth}).data)
+        frame_pagination['results'] = serializer_list
+        return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=False)
     def get_studied_courses(self, request, path):
@@ -60,15 +141,26 @@ class ProfileView(viewsets.ModelViewSet):
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
+        auth = None
+        if type(self.request.user) != AnonymousUser:
+            auth = Profile.objects.get(user=self.request.user)
         profile = Profile.objects.get(path=path)
+
+        self.swap_filters_field(HelperFilter.PROFILE_COURSE_TYPE)
         status_studied = ProfileCourseStatus.objects.filter(name=Util.PROFILE_COURSE_STATUS_STUDIED_NAME)
         profile_course_list = ProfileCourse.objects.filter(profile=profile, status__in=status_studied)
+        queryset = self.filter_queryset(profile_course_list)
+        self.swap_filters_field(HelperFilter.COURSE_TYPE)
 
-        serializer_course_list = list()
-        for profile_course in profile_course_list:
-            serializer_course_list.append(
-                MiniCourseSerializer(profile_course.course, context={'profile': profile}).data)
-        return Response(serializer_course_list, status=status.HTTP_200_OK)
+        frame_pagination = self.get_frame_pagination(request, queryset,
+                                                     max_page=HelperPaginatorValue.MINI_COURSE_MAX_PAGE)
+
+        serializer_list = list()
+        for profile_course in frame_pagination.get('results'):
+            serializer_list.append(
+                MiniCourseSerializer(profile_course.course, context={'profile': profile, 'auth': auth}).data)
+        frame_pagination['results'] = serializer_list
+        return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=False)
     def get_statistic_study_courses(self, request, path):
@@ -98,16 +190,6 @@ class ProfileView(viewsets.ModelViewSet):
             'studied_quantity': studied_quantity,
             'percent': percent,
         }, status=status.HTTP_200_OK)
-
-    @action(methods=['get'], detail=False)
-    def get_header_profile(self, request, path):
-        """Верхняя информация на странице любого пользователя"""
-        if not self.exists_path(path):
-            return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
-
-        profile = Profile.objects.get(path=path)
-        auth = Profile.objects.get(user=self.request.user)
-        return Response(HeaderProfileSerializer(profile, context={'auth': auth}).data, status=status.HTTP_200_OK)
 
 
 class SubscriptionProfileView(viewsets.ModelViewSet):
@@ -160,7 +242,8 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
         profile = self.profiles.get(path=path)
         auth = self.profiles.get(user=self.request.user)
         if profile == auth:
-            return Response({'error': 'Вы не можете подписаться или отписаться от себя'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Вы не можете подписаться или отписаться от себя'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         if self.is_subscribe(goal=profile, subscriber=auth):
             return Response({'error': 'Вы уже подписались на этого пользователя'}, status=status.HTTP_400_BAD_REQUEST)
@@ -179,7 +262,8 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
         profile = self.profiles.get(path=path)
         auth = self.profiles.get(user=self.request.user)
         if profile == auth:
-            return Response({'error': 'Вы не можете подписаться или отписаться от себя'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Вы не можете подписаться или отписаться от себя'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         if not self.is_subscribe(goal=profile, subscriber=auth):
             return Response({'error': 'Вы уже отписались на этого пользователя'}, status=status.HTTP_400_BAD_REQUEST)
