@@ -6,7 +6,8 @@ from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
-from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection, Theme, Lesson, Step
+from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection, Theme, Lesson, \
+    Step, ProfileCourseStatus
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
     MiniCourseSerializer, ActionThemeSerializer, ActionLessonSerializer, ActionStepSerializer, ProfileThemeSerializer, \
     CourseTitleSerializer, ThemeTitleSerializer, ProfileLessonSerializer, ProfileStepSerializer, StepSerializer, \
@@ -314,6 +315,27 @@ class CourseCompletionPage(viewsets.ModelViewSet):
         profile_course = ProfileCourse.objects.filter(course=course, profile=auth)
         if len(profile_course) == 0:
             profile_course = ProfileCourse.objects.create(course=course, profile=auth)
+        return Response({
+            'profile': auth.user.username,
+            'course': course.path,
+            'status': profile_course[0].status.name,
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'])
+    def complete_course(self, request, path):
+        exists = PathValidator.exists(path_course=path)
+        if exists.get('error', None) is not None:
+            return exists.get('error')
+
+        auth = Profile.objects.get(user=self.request.user)
+        course = Course.objects.get(path=path)
+        profile_course_list = ProfileCourse.objects.filter(course=course, profile=auth)
+        if len(profile_course_list) == 0:
+            return Response({'error': "Вы не поступили на этот курс, чтобы завершить его"}, status=status.HTTP_400_BAD_REQUEST)
+        profile_course = profile_course_list[0]
+        profile_course.status = ProfileCourseStatus.objects.get(name=Util.PROFILE_COURSE_STATUS_STUDIED_NAME)
+        profile_course.save()
+
         return Response({
             'profile': auth.user.username,
             'course': course.path,
