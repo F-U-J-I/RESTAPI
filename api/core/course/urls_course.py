@@ -24,6 +24,7 @@ urlpatterns = [
 
     # COURSE
     path('courses/create/', ActionCourseView.as_view({'post': 'create_course'})),
+    path('courses/learn/<slug:path>/', CourseCompletionPage.as_view({'post': 'take_course'})),
 
     # COURSE completion
     path('courses/learn/<slug:path_course>/title/',

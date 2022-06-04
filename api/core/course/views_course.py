@@ -302,6 +302,24 @@ class CourseCompletionPage(viewsets.ModelViewSet):
         serializer = StepSerializer(step, context={'profile': auth, 'request': request})
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'])
+    def take_course(self, request, path):
+        exists = PathValidator.exists(path_course=path)
+        if exists.get('error', None) is not None:
+            return exists.get('error')
+
+        auth = Profile.objects.get(user=self.request.user)
+        course = Course.objects.get(path=path)
+        profile_course = ProfileCourse.objects.filter(course=course, profile=auth)
+        if len(profile_course) == 0:
+            profile_course = ProfileCourse.objects.create(course=course, profile=auth)
+        return Response({
+            'profile': auth.user.username,
+            'course': course.path,
+            'status': profile_course.status.name,
+        }, status=status.HTTP_200_OK)
+
     # ###########
 
 
