@@ -7,11 +7,11 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
 from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection, Theme, Lesson, \
-    Step, ProfileCourseStatus
+    Step, ProfileCourseStatus, CourseFit
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
     MiniCourseSerializer, ActionThemeSerializer, ActionLessonSerializer, ActionStepSerializer, ProfileThemeSerializer, \
     CourseTitleSerializer, ThemeTitleSerializer, ProfileLessonSerializer, ProfileStepSerializer, StepSerializer, \
-    MaxProgressUpdater
+    MaxProgressUpdater, CourseFitSerializer
 from ..collection.models_collection import Collection
 from ..profile.models_profile import Profile
 from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
@@ -218,7 +218,88 @@ class ActionCourseView(viewsets.ModelViewSet):
         }, status=status.HTTP_200_OK)
 
 
-class CourseCompletionPage(viewsets.ModelViewSet):
+class CoursePageView(viewsets.ModelViewSet):
+    lookup_field = 'slug'
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class CourseFitView(viewsets.ModelViewSet):
+    lookup_field = 'slug'
+    queryset = CourseFit.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    @staticmethod
+    def exists_fit(pk):
+        return PathValidator.get_exists(data={'pk': pk}, model=CourseFit,
+                                        error_text="Такого представителя не существует")
+
+    @action(detail=False, methods=['post'])
+    def create_fit(self, request, path):
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        course = Course.objects.get(path=path)
+        course_info = CourseInfo.objects.get(course=course)
+        number_new = len(self.queryset.filter(course_info=course_info)) + 1
+        data = {
+            'title': f"Представитель #{number_new}",
+            'description': f"Причина почему",
+        }
+
+        serializer = CourseFitSerializer(data=data, context={'course_info': course_info})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({
+            'pk': serializer.data['pk'],
+            'title': serializer.data['title'],
+            'description': serializer.data['description'],
+            'message': "Представитель успешно создан",
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'])
+    def update_fit(self, request, path):
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        exists_fit = self.exists_fit(pk=request.data.get('pk', None))
+        if exists_fit.get('error', None) is not None:
+            return exists_fit.get('error')
+
+        fit = self.queryset.get(pk=request.data.get('pk'))
+        serializer = CourseFitSerializer(data=request.data, instance=fit)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            'pk': request.data.get('pk'),
+            'title': fit.title,
+            'description': fit.description,
+            'message': "Представитель успешно обновлен"
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'])
+    def delete_fit(self, request, path):
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        exists_fit = self.exists_fit(pk=request.data.get('pk', None))
+        if exists_fit.get('error', None) is not None:
+            return exists_fit.get('error')
+
+        fit = self.queryset.get(pk=request.data.get('pk'))
+        fit.delete()
+        return Response({
+            'pk': request.data.get('pk'),
+            'title': fit.title,
+            'description': fit.description,
+            'message': "Представитель успешно удален"
+        }, status=status.HTTP_200_OK)
+
+
+class CourseCompletionPageView(viewsets.ModelViewSet):
     lookup_field = 'slug'
     permission_classes = [permissions.IsAuthenticated]
 
@@ -335,7 +416,8 @@ class CourseCompletionPage(viewsets.ModelViewSet):
         course = Course.objects.get(path=path)
         profile_course_list = ProfileCourse.objects.filter(course=course, profile=auth)
         if len(profile_course_list) == 0:
-            return Response({'error': "Вы не поступили на этот курс, чтобы завершить его"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': "Вы не поступили на этот курс, чтобы завершить его"},
+                            status=status.HTTP_400_BAD_REQUEST)
         profile_course = profile_course_list[0]
         profile_course.status = ProfileCourseStatus.objects.get(name=Util.PROFILE_COURSE_STATUS_STUDIED_NAME)
         profile_course.save()
@@ -719,9 +801,9 @@ class GradeCourseView(viewsets.ModelViewSet):
 class PathValidator:
 
     @staticmethod
-    def get_exists(path, model, error_text):
-        if path is not None:
-            if not Util.exists_path(model, {'path': path}):
+    def get_exists(data, model, error_text):
+        if data is not None:
+            if not Util.exists_path(model, validated_data=data):
                 return {
                     'valid': False,
                     'error': Response({'error': error_text}, status=status.HTTP_404_NOT_FOUND),
@@ -748,34 +830,40 @@ class PathValidator:
             if exists_course.get('error', None) is not None:
                 return exists_course
 
-        exists_theme = PathValidator.exists_theme(path_theme=path_theme)
-        if exists_theme.get('error', None) is not None:
-            return exists_theme
+        if path_theme is not None:
+            exists_theme = PathValidator.exists_theme(path_theme=path_theme)
+            if exists_theme.get('error', None) is not None:
+                return exists_theme
 
-        exists_lesson = PathValidator.exists_lesson(path_lesson=path_lesson)
-        if exists_lesson.get('error', None) is not None:
-            return exists_lesson
+        if path_lesson is not None:
+            exists_lesson = PathValidator.exists_lesson(path_lesson=path_lesson)
+            if exists_lesson.get('error', None) is not None:
+                return exists_lesson
 
-        exists_step = PathValidator.exists_step(path_step=path_step)
-        if exists_step.get('error', None) is not None:
-            return exists_step
+        if path_step is not None:
+            exists_step = PathValidator.exists_step(path_step=path_step)
+            if exists_step.get('error', None) is not None:
+                return exists_step
+
         return {'valid': True}
 
     @staticmethod
     def exists_course(path_course):
-        return PathValidator.get_exists(path=path_course, model=Course, error_text="Такого курса не существует")
+        return PathValidator.get_exists(data={'path': path_course}, model=Course,
+                                        error_text="Такого курса не существует")
 
     @staticmethod
     def exists_theme(path_theme):
-        return PathValidator.get_exists(path=path_theme, model=Theme, error_text="Такой темы не существует")
+        return PathValidator.get_exists(data={'path': path_theme}, model=Theme, error_text="Такой темы не существует")
 
     @staticmethod
     def exists_lesson(path_lesson):
-        return PathValidator.get_exists(path=path_lesson, model=Lesson, error_text="Такого урока не существует")
+        return PathValidator.get_exists(data={'path': path_lesson}, model=Lesson,
+                                        error_text="Такого урока не существует")
 
     @staticmethod
     def exists_step(path_step):
-        return PathValidator.get_exists(path=path_step, model=Step, error_text="Такого шага не существует")
+        return PathValidator.get_exists(data={'path': path_step}, model=Step, error_text="Такого шага не существует")
 
     @staticmethod
     def is_access(user, path_course):

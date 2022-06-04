@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from .views_course import CourseView, GradeCourseView, ActionProfileCourseView, ActionCourseView, ThemeView, LessonView, \
-    StepView, CourseCompletionPage
+    StepView, CourseCompletionPageView, CourseFitView
 
 router = DefaultRouter()
 
@@ -24,22 +24,29 @@ urlpatterns = [
 
     # COURSE
     path('courses/create/', ActionCourseView.as_view({'post': 'create_course'})),
-    path('courses/start-learn/<slug:path>/', CourseCompletionPage.as_view({'post': 'start_learn_course'})),
-    path('courses/complete-learn/<slug:path>/', CourseCompletionPage.as_view({'post': 'complete_learn_course'})),
+    path('courses/start-learn/<slug:path>/', CourseCompletionPageView.as_view({'post': 'start_learn_course'})),
+    path('courses/complete-learn/<slug:path>/', CourseCompletionPageView.as_view({'post': 'complete_learn_course'})),
+
+    # COURSE PAGE
+    # COURSE FIT
+    path('courses/creating/<slug:path>/create/fit/', CourseFitView.as_view({'post': 'create_fit'})),
+    path('courses/creating/<slug:path>/update/fit/', CourseFitView.as_view({'put': 'update_fit'})),
+    path('courses/creating/<slug:path>/delete/fit/', CourseFitView.as_view({'delete': 'delete_fit'})),
+
 
     # COURSE completion
     path('courses/learn/<slug:path_course>/title/',
-         CourseCompletionPage.as_view({'get': 'get_title_course'})),
+         CourseCompletionPageView.as_view({'get': 'get_title_course'})),
     path('courses/learn/<slug:path_course>/themes/',
-         CourseCompletionPage.as_view({'get': 'get_themes'})),
+         CourseCompletionPageView.as_view({'get': 'get_themes'})),
     path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/title/',
-         CourseCompletionPage.as_view({'get': 'get_title_theme'})),
+         CourseCompletionPageView.as_view({'get': 'get_title_theme'})),
     path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/lessons/',
-         CourseCompletionPage.as_view({'get': 'get_lessons'})),
+         CourseCompletionPageView.as_view({'get': 'get_lessons'})),
     path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/steps/<slug:path_step>/list/',
-         CourseCompletionPage.as_view({'get': 'get_steps'})),
+         CourseCompletionPageView.as_view({'get': 'get_steps'})),
     path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/steps/<slug:path_step>/',
-         CourseCompletionPage.as_view({'get': 'get_detail_step'})),
+         CourseCompletionPageView.as_view({'get': 'get_detail_step'})),
 
     # THEME
     path('courses/creating/<slug:path>/create/theme/',

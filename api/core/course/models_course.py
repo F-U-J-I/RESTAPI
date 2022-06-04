@@ -52,6 +52,9 @@ def create_course(sender, **kwargs):
         course_info = CourseInfo.objects.create(course=course)
         course_info.save()
 
+        course_main_info = CourseMainInfo.objects.create(course_info=course_info)
+        course_main_info.save()
+
         course_stars = CourseStars.objects.create(course=course)
         course_stars.save()
 
@@ -90,8 +93,8 @@ class CourseMainInfo(models.Model):
 class CourseFit(models.Model):
     """CourseFit"""
     course_info = models.ForeignKey(CourseInfo, on_delete=models.CASCADE)
-    title = models.CharField(max_length=32)
-    description = models.TextField(max_length=256)
+    title = models.CharField(max_length=32, blank=True, null=True)
+    description = models.TextField(max_length=256, blank=True, null=True)
 
     def __str__(self):
         return f"{self.course_info.course.profile.user.username}: {self.course_info.course.title}: {self.title} [Fit]"

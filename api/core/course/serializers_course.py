@@ -258,6 +258,166 @@ class PageInfoCourseSerializer(serializers.ModelSerializer):
         return stars_dict
 
 
+class CourseEditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ('title', 'image_url', 'description')
+
+
+class EditPageInfoCourseSerializer(serializers.ModelSerializer):
+    course = serializers.SerializerMethodField()
+    main_info = serializers.SerializerMethodField()
+    fits = serializers.SerializerMethodField()
+    skills = serializers.SerializerMethodField()
+    stars = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CourseInfo
+        fields = ('course', 'main_info', 'fits', 'skills', 'stars')
+
+    @staticmethod
+    def get_main_info(course_info):
+        return CourseEditSerializer(course_info.course)
+
+    @staticmethod
+    def get_main_info(course_info):
+        main_info_list = CourseMainInfo.objects.filter(course_info=course_info)
+        if len(main_info_list) == 0:
+            return None
+        main_info = main_info_list[0]
+        title_image_url = None
+        if main_info.title_image_url:
+            title_image_url = main_info.title_image_url.url
+        return {
+            'title_image_url': title_image_url,
+            'goal_description': main_info.goal_description
+        }
+
+    @staticmethod
+    def get_fits(course_info):
+        filter_fits = CourseFit.objects.filter(course_info=course_info)
+        fits = list()
+        for fit in filter_fits:
+            fits.append({
+                'pk': fit.pk,
+                'title': fit.title,
+                'description': fit.description
+            })
+        return fits
+
+    @staticmethod
+    def get_skills(course_info):
+        filter_skills = CourseSkill.objects.filter(course_info=course_info)
+        skills = list()
+        for skill in filter_skills:
+            skills.append({
+                'pk': skill.pk,
+                'title': skill.name
+            })
+        return skills
+
+    @staticmethod
+    def get_stars(course_info):
+        stars = CourseStars.objects.get(course=course_info.course)
+        stars_dict = {
+            'five': stars.five_stars_count,
+            'four': stars.four_stars_count,
+            'three': stars.three_stars_count,
+            'two': stars.two_stars_count,
+            'one': stars.one_stars_count,
+        }
+        stars_dict['total_number'] = sum(stars_dict.values())
+        return stars_dict
+
+
+class CourseFitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseFit
+        fields = ('pk', 'title', 'description')
+
+    def create(self, validated_data):
+        course_info = self.context.get('course_info')
+        title = validated_data.get('title', None)
+        description = validated_data.get('description', None)
+        return CourseFit.objects.create(course_info=course_info, title=title, description=description)
+
+    def update(self, instance, validated_data):
+        instance.title = validated_data.get('title', instance.title)
+        instance.description = validated_data.get('description', instance.description)
+        instance.save()
+        return instance
+
+
+class ActionPageInfoCourseSerializer(serializers.ModelSerializer):
+    course_info = serializers.SerializerMethodField()
+    main_info = serializers.SerializerMethodField()
+    fits = serializers.SerializerMethodField()
+    skills = serializers.SerializerMethodField()
+    stars = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CourseInfo
+        fields = ('course_info', 'main_info', 'fits', 'skills', 'stars')
+
+    def update_course(self, instance, validated_data):
+        if validated_data is None:
+            return None
+
+        instance.title = validated_data.get('title', instance.title)
+        instance.description = validated_data.get('description', instance.description)
+
+        new_image = validated_data.get('image_url', -1)
+        if new_image != -1:
+            update_image = Util.get_image(old=instance.image_url, new=new_image,
+                                          default=Util.DEFAULT_IMAGES.get('course'))
+            instance.image_url = Util.get_update_image(old=instance.image_url, new=update_image)
+
+        instance.save()
+
+    def update_main_info(self, instance, validated_data):
+        if validated_data is None:
+            return None
+
+        instance.goal_description = validated_data.get('goal_description', instance.goal_description)
+
+        new_image = validated_data.get('title_image_url', -1)
+        if new_image != -1:
+            instance.title_image_url = Util.get_update_image(old=instance.title_image_url, new=new_image)
+
+        instance.save()
+
+    def update_fits(self, fit_list, validated_data, course_info):
+        if validated_data is None:
+            return None
+
+        for fit in validated_data:
+            fit_pk = fit.get('pk', None)
+            if fit_pk is None:
+                curr_fit = CourseFit.objects.create(course_info=course_info)
+                curr_fit.is_valid(raise_exception=True)
+            else:
+                curr_fit = fit_list.filter(pk=fit_pk)
+
+            if fit.get('title', -1) != -1:
+                curr_fit.title = fit.get('title')
+            if fit.get('description', -1) != -1:
+                curr_fit.description = fit.get('description')
+            curr_fit.save()
+
+    def update(self, instance, validated_data):
+        course = instance.course
+        self.update_course(instance=course, validated_data=validated_data.get('course', None))
+
+        course_main_info = CourseMainInfo.objects.get(course_info=instance)
+        self.update_main_info(instance=course_main_info, validated_data=validated_data.get('main_info', None))
+
+        course_fit_list = CourseFit.objects.filter(course_info=instance)
+        self.update_fits(fit_list=course_fit_list, course_info=instance,
+                         validated_data=validated_data.get('fits', None))
+
+        course_skill_list = CourseSkill.objects.filter(course_info=instance)
+
+
 #####################################
 
 
