@@ -269,15 +269,14 @@ class EditPageInfoCourseSerializer(serializers.ModelSerializer):
     main_info = serializers.SerializerMethodField()
     fits = serializers.SerializerMethodField()
     skills = serializers.SerializerMethodField()
-    stars = serializers.SerializerMethodField()
 
     class Meta:
         model = CourseInfo
-        fields = ('course', 'main_info', 'fits', 'skills', 'stars')
+        fields = ('course', 'main_info', 'fits', 'skills')
 
     @staticmethod
-    def get_main_info(course_info):
-        return CourseEditSerializer(course_info.course)
+    def get_course(course_info):
+        return CourseEditSerializer(course_info.course).data
 
     @staticmethod
     def get_main_info(course_info):
@@ -315,19 +314,6 @@ class EditPageInfoCourseSerializer(serializers.ModelSerializer):
                 'title': skill.name
             })
         return skills
-
-    @staticmethod
-    def get_stars(course_info):
-        stars = CourseStars.objects.get(course=course_info.course)
-        stars_dict = {
-            'five': stars.five_stars_count,
-            'four': stars.four_stars_count,
-            'three': stars.three_stars_count,
-            'two': stars.two_stars_count,
-            'one': stars.one_stars_count,
-        }
-        stars_dict['total_number'] = sum(stars_dict.values())
-        return stars_dict
 
 
 class CourseFitSerializer(serializers.ModelSerializer):
@@ -403,22 +389,38 @@ class ActionPageInfoCourseSerializer(serializers.ModelSerializer):
         instance.save()
 
     def update_fits(self, fit_list, validated_data, course_info):
+        if validated_data == -1:
+            return None
+
         if validated_data is None:
+            for fit in fit_list:
+                fit.delete()
             return None
 
         for fit in validated_data:
-            fit_pk = fit.get('pk', None)
-            if fit_pk is None:
-                curr_fit = CourseFit.objects.create(course_info=course_info)
-                curr_fit.is_valid(raise_exception=True)
-            else:
-                curr_fit = fit_list.filter(pk=fit_pk)
+            curr_fit = fit_list.filter(pk=fit.get('pk'))
 
             if fit.get('title', -1) != -1:
                 curr_fit.title = fit.get('title')
             if fit.get('description', -1) != -1:
                 curr_fit.description = fit.get('description')
             curr_fit.save()
+
+    def update_skills(self, skill_list, validated_data, course_info):
+        if validated_data == -1:
+            return None
+
+        if validated_data is None:
+            for skill in skill_list:
+                skill.delete()
+            return None
+
+        for skill in validated_data:
+            curr_skill = skill_list.filter(pk=skill.get('pk'))
+
+            if skill.get('name', -1) != -1:
+                curr_skill.title = skill.get('name')
+            curr_skill.save()
 
     def update(self, instance, validated_data):
         course = instance.course
@@ -429,9 +431,11 @@ class ActionPageInfoCourseSerializer(serializers.ModelSerializer):
 
         course_fit_list = CourseFit.objects.filter(course_info=instance)
         self.update_fits(fit_list=course_fit_list, course_info=instance,
-                         validated_data=validated_data.get('fits', None))
+                         validated_data=validated_data.get('fits', -1))
 
         course_skill_list = CourseSkill.objects.filter(course_info=instance)
+        self.update_skills(skill_list=course_skill_list, course_info=instance,
+                           validated_data=validated_data.get('skills', -1))
 
 
 #####################################

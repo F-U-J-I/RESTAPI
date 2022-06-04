@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from .views_course import CourseView, GradeCourseView, ActionProfileCourseView, ActionCourseView, ThemeView, LessonView, \
-    StepView, CourseCompletionPageView, CourseFitView, CourseSkillView
+    StepView, CourseCompletionPageView, CourseFitView, CourseSkillView, CoursePageView
 
 router = DefaultRouter()
 
@@ -27,7 +27,10 @@ urlpatterns = [
     path('courses/start-learn/<slug:path>/', CourseCompletionPageView.as_view({'post': 'start_learn_course'})),
     path('courses/complete-learn/<slug:path>/', CourseCompletionPageView.as_view({'post': 'complete_learn_course'})),
 
+
     # COURSE PAGE
+    path('courses/creating/<slug:path>/get/page/', CoursePageView.as_view({'get': 'get_page'})),
+
     # COURSE FIT
     path('courses/creating/<slug:path>/create/fit/', CourseFitView.as_view({'post': 'create_fit'})),
     path('courses/creating/<slug:path>/update/fit/', CourseFitView.as_view({'put': 'update_fit'})),
@@ -86,6 +89,7 @@ urlpatterns = [
         'courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/delete/step/<slug:path_step>',
         StepView.as_view({'delete': 'delete_step'})),
 
+    # COURSE ADD/POP
     path('courses/add/<slug:path>/', ActionProfileCourseView.as_view({'post': 'added_courses'})),
     path('courses/pop/<slug:path>/', ActionProfileCourseView.as_view({'delete': 'popped_courses'})),
 ]

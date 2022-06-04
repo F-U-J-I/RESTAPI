@@ -29,7 +29,6 @@ class UserAuthSerializer(serializers.ModelSerializer):
         user = authenticate(username=user_request.username, password=password)
 
         attrs['user'] = user
-        print(attrs)
         return attrs
 
 
@@ -48,9 +47,9 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         len_username = len(username)
         if 3 > len_username or len_username > 32:
-            raise serializers.ValidationError({'username': 'Имя должно быть не больше 32 символов и не меньше 3'})
+            raise serializers.ValidationError({'error': 'username должно быть не больше 32 символов и не меньше 3'})
         if len(User.objects.filter(email=email)) != 0:
-            raise serializers.ValidationError({'email': 'Пользователь с такой почтой уже существует'})
+            raise serializers.ValidationError({'error': 'Пользователь с таким email уже существует'})
 
         user = User(username=username, email=email)
         user.set_password(password)

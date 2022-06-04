@@ -11,7 +11,7 @@ from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, Prof
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
     MiniCourseSerializer, ActionThemeSerializer, ActionLessonSerializer, ActionStepSerializer, ProfileThemeSerializer, \
     CourseTitleSerializer, ThemeTitleSerializer, ProfileLessonSerializer, ProfileStepSerializer, StepSerializer, \
-    MaxProgressUpdater, CourseFitSerializer, CourseSkillSerializer
+    MaxProgressUpdater, CourseFitSerializer, CourseSkillSerializer, EditPageInfoCourseSerializer
 from ..collection.models_collection import Collection
 from ..profile.models_profile import Profile
 from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
@@ -221,6 +221,17 @@ class ActionCourseView(viewsets.ModelViewSet):
 class CoursePageView(viewsets.ModelViewSet):
     lookup_field = 'slug'
     permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['get'])
+    def get_page(self, request, path):
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        course = Course.objects.get(path=path)
+        course_info = CourseInfo.objects.get(course=course)
+        serializer = EditPageInfoCourseSerializer(course_info)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CourseFitView(viewsets.ModelViewSet):
