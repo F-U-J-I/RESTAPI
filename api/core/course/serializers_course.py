@@ -348,6 +348,22 @@ class CourseFitSerializer(serializers.ModelSerializer):
         return instance
 
 
+class CourseSkillSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseSkill
+        fields = ('pk', 'name')
+
+    def create(self, validated_data):
+        course_info = self.context.get('course_info')
+        name = validated_data.get('name', None)
+        return self.Meta.model.objects.create(course_info=course_info, name=name)
+
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get('name', instance.name)
+        instance.save()
+        return instance
+
+
 class ActionPageInfoCourseSerializer(serializers.ModelSerializer):
     course_info = serializers.SerializerMethodField()
     main_info = serializers.SerializerMethodField()

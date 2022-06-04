@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from .views_course import CourseView, GradeCourseView, ActionProfileCourseView, ActionCourseView, ThemeView, LessonView, \
-    StepView, CourseCompletionPageView, CourseFitView
+    StepView, CourseCompletionPageView, CourseFitView, CourseSkillView
 
 router = DefaultRouter()
 
@@ -32,6 +32,11 @@ urlpatterns = [
     path('courses/creating/<slug:path>/create/fit/', CourseFitView.as_view({'post': 'create_fit'})),
     path('courses/creating/<slug:path>/update/fit/', CourseFitView.as_view({'put': 'update_fit'})),
     path('courses/creating/<slug:path>/delete/fit/', CourseFitView.as_view({'delete': 'delete_fit'})),
+
+    # COURSE SKILL
+    path('courses/creating/<slug:path>/create/skill/', CourseSkillView.as_view({'post': 'create_skill'})),
+    path('courses/creating/<slug:path>/update/skill/', CourseSkillView.as_view({'put': 'update_skill'})),
+    path('courses/creating/<slug:path>/delete/skill/', CourseSkillView.as_view({'delete': 'delete_skill'})),
 
 
     # COURSE completion

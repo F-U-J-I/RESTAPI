@@ -7,11 +7,11 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
 from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection, Theme, Lesson, \
-    Step, ProfileCourseStatus, CourseFit
+    Step, ProfileCourseStatus, CourseFit, CourseSkill
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
     MiniCourseSerializer, ActionThemeSerializer, ActionLessonSerializer, ActionStepSerializer, ProfileThemeSerializer, \
     CourseTitleSerializer, ThemeTitleSerializer, ProfileLessonSerializer, ProfileStepSerializer, StepSerializer, \
-    MaxProgressUpdater, CourseFitSerializer
+    MaxProgressUpdater, CourseFitSerializer, CourseSkillSerializer
 from ..collection.models_collection import Collection
 from ..profile.models_profile import Profile
 from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
@@ -229,7 +229,7 @@ class CourseFitView(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     @staticmethod
-    def exists_fit(pk):
+    def exists(pk):
         return PathValidator.get_exists(data={'pk': pk}, model=CourseFit,
                                         error_text="Такого представителя не существует")
 
@@ -257,13 +257,13 @@ class CourseFitView(viewsets.ModelViewSet):
             'message': "Представитель успешно создан",
         }, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['delete'])
+    @action(detail=False, methods=['put'])
     def update_fit(self, request, path):
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
-        exists_fit = self.exists_fit(pk=request.data.get('pk', None))
+        exists_fit = self.exists(pk=request.data.get('pk', None))
         if exists_fit.get('error', None) is not None:
             return exists_fit.get('error')
 
@@ -285,7 +285,7 @@ class CourseFitView(viewsets.ModelViewSet):
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
 
-        exists_fit = self.exists_fit(pk=request.data.get('pk', None))
+        exists_fit = self.exists(pk=request.data.get('pk', None))
         if exists_fit.get('error', None) is not None:
             return exists_fit.get('error')
 
@@ -296,6 +296,76 @@ class CourseFitView(viewsets.ModelViewSet):
             'title': fit.title,
             'description': fit.description,
             'message': "Представитель успешно удален"
+        }, status=status.HTTP_200_OK)
+
+
+class CourseSkillView(viewsets.ModelViewSet):
+    lookup_field = 'slug'
+    queryset = CourseSkill.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    @staticmethod
+    def exists(pk):
+        return PathValidator.get_exists(data={'pk': pk}, model=CourseSkill,
+                                        error_text="Такого представителя не существует")
+
+    @action(detail=False, methods=['post'])
+    def create_skill(self, request, path):
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        course = Course.objects.get(path=path)
+        course_info = CourseInfo.objects.get(course=course)
+        number_new = len(self.queryset.filter(course_info=course_info)) + 1
+        data = {'name': f"Умение #{number_new}"}
+
+        serializer = CourseSkillSerializer(data=data, context={'course_info': course_info})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({
+            'pk': serializer.data['pk'],
+            'name': serializer.data['name'],
+            'message': "Умение успешно создано",
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['put'])
+    def update_skill(self, request, path):
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        exists = self.exists(pk=request.data.get('pk', None))
+        if exists.get('error', None) is not None:
+            return exists.get('error')
+
+        skill = self.queryset.get(pk=request.data.get('pk'))
+        serializer = CourseSkillSerializer(data=request.data, instance=skill)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            'pk': serializer.data['pk'],
+            'name': serializer.data['name'],
+            'message': "Умение успешно обновлено",
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'])
+    def delete_skill(self, request, path):
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        exists = self.exists(pk=request.data.get('pk', None))
+        if exists.get('error', None) is not None:
+            return exists.get('error')
+
+        skill = self.queryset.get(pk=request.data.get('pk'))
+        skill.delete()
+        return Response({
+            'pk': request.data.get('pk'),
+            'name': skill.name,
+            'message': "Умение успешно удалено"
         }, status=status.HTTP_200_OK)
 
 
