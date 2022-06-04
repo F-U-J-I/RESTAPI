@@ -305,24 +305,28 @@ class CourseCompletionPage(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
-    def take_course(self, request, path):
+    def start_learn_course(self, request, path):
         exists = PathValidator.exists(path_course=path)
         if exists.get('error', None) is not None:
             return exists.get('error')
 
         auth = Profile.objects.get(user=self.request.user)
         course = Course.objects.get(path=path)
-        profile_course = ProfileCourse.objects.filter(course=course, profile=auth)
-        if len(profile_course) == 0:
-            profile_course = ProfileCourse.objects.create(course=course, profile=auth)
+        profile_course_list = ProfileCourse.objects.filter(course=course, profile=auth)
+        if len(profile_course_list) == 0:
+            profile_course_list = ProfileCourse.objects.create(course=course, profile=auth)
+        profile_course = profile_course_list[0]
+        profile_course.status = ProfileCourseStatus.objects.get(name=Util.PROFILE_COURSE_STATUS_STUDYING_NAME)
+        profile_course.save()
+
         return Response({
             'profile': auth.user.username,
             'course': course.path,
-            'status': profile_course[0].status.name,
+            'status': profile_course.status.name,
         }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
-    def complete_course(self, request, path):
+    def complete_learn_course(self, request, path):
         exists = PathValidator.exists(path_course=path)
         if exists.get('error', None) is not None:
             return exists.get('error')
