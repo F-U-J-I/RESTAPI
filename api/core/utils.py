@@ -134,6 +134,20 @@ class HelperFilter:
     PROFILE_SEARCH_FIELDS = ('path', 'user__username')
     PROFILE_ORDERING_FIELDS = ('path', 'user__username')
 
+    # GOAL Subscription
+
+    GOAL_TYPE = 6
+    GOAL_FILTER_FIELDS = ('goal__path', 'goal__user__username')
+    GOAL_SEARCH_FIELDS = ('goal__path', 'goal__user__username')
+    GOAL_ORDERING_FIELDS = ('goal__path', 'goal__user__username')
+
+    # SUBSCRIBER
+
+    SUBSCRIBER_TYPE = 7
+    SUBSCRIBER_FILTER_FIELDS = ('subscriber__path', 'subscriber__user__username')
+    SUBSCRIBER_SEARCH_FIELDS = ('subscriber__path', 'subscriber__user__username')
+    SUBSCRIBER_ORDERING_FIELDS = ('subscriber__path', 'subscriber__user__username')
+
     @staticmethod
     def get_filters_collection_field(type_filter):
         if type_filter == HelperFilter.COLLECTION_TYPE:
@@ -166,6 +180,19 @@ class HelperFilter:
             filter_fields = HelperFilter.PROFILE_FILTER_FIELDS
             search_fields = HelperFilter.PROFILE_SEARCH_FIELDS
             ordering_fields = HelperFilter.PROFILE_ORDERING_FIELDS
+            return filter_fields, search_fields, ordering_fields
+
+    @staticmethod
+    def get_filters_subscription_field(type_filter):
+        if type_filter == HelperFilter.GOAL_TYPE:
+            filter_fields = HelperFilter.GOAL_FILTER_FIELDS
+            search_fields = HelperFilter.GOAL_SEARCH_FIELDS
+            ordering_fields = HelperFilter.GOAL_ORDERING_FIELDS
+            return filter_fields, search_fields, ordering_fields
+        elif type_filter == HelperFilter.SUBSCRIBER_TYPE:
+            filter_fields = HelperFilter.SUBSCRIBER_FILTER_FIELDS
+            search_fields = HelperFilter.SUBSCRIBER_SEARCH_FIELDS
+            ordering_fields = HelperFilter.SUBSCRIBER_ORDERING_FIELDS
             return filter_fields, search_fields, ordering_fields
 
 

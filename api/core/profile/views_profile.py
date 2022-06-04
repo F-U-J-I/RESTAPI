@@ -200,11 +200,34 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ProfileSerializer
 
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    filter_fields = HelperFilter.SUBSCRIBER_FILTER_FIELDS
+    search_fields = HelperFilter.SUBSCRIBER_SEARCH_FIELDS
+    ordering_fields = HelperFilter.SUBSCRIBER_ORDERING_FIELDS
+
+    pagination_max_page = HelperPaginatorValue.PROFILE_MAX_PAGE
+
     def exists_path(self, path):
         return len(self.profiles.filter(path=path)) != 0
 
     def is_subscribe(self, goal, subscriber):
         return len(Subscription.objects.filter(goal=goal, subscriber=subscriber)) != 0
+
+    def swap_filters_field(self, type_filter):
+        (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_subscription_field(
+            type_filter)
+
+    def get_frame_pagination(self, request, queryset, max_page=None):
+        if max_page is None:
+            max_page = self.pagination_max_page
+        pagination = HelperPaginator(request=request, queryset=queryset, max_page=max_page)
+        return {
+            "count": pagination.get_count(),
+            "pages": pagination.get_num_pages(),
+            "next": pagination.get_link_next_page(),
+            "previous": pagination.get_link_previous_page(),
+            "results": pagination.page_obj
+        }
 
     @action(methods=['get'], detail=False)
     def get_goals_subscription_profile(self, request, path):
@@ -212,13 +235,19 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
-        profile = self.profiles.get(path=path)
-        auth = self.profiles.get(user=self.request.user)
+        auth = None
+        if type(self.request.user) != AnonymousUser:
+            auth = Profile.objects.get(user=self.request.user)
 
-        goal_list = list()
-        for goal_profile in self.queryset.filter(subscriber=profile):
-            goal_list.append(ProfileSerializer(goal_profile.goal, context={'auth': auth}).data)
-        return Response(goal_list, status=status.HTTP_200_OK)
+        profile = Profile.objects.get(path=path)
+        queryset = self.filter_queryset(self.queryset.filter(subscriber=profile))
+
+        frame_pagination = self.get_frame_pagination(request, queryset)
+        serializer_list = list()
+        for subscription in frame_pagination.get('results'):
+            serializer_list.append(ProfileSerializer(subscription.goal, context={'auth': auth}).data)
+        frame_pagination['results'] = serializer_list
+        return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=False)
     def get_subscribers_profile(self, request, path):
@@ -226,13 +255,21 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
-        profile = self.profiles.get(path=path)
-        auth = self.profiles.get(user=self.request.user)
+        auth = None
+        if type(self.request.user) != AnonymousUser:
+            auth = Profile.objects.get(user=self.request.user)
 
-        subscriber_list = list()
-        for subscriber_profile in self.queryset.filter(goal=profile):
-            subscriber_list.append(ProfileSerializer(subscriber_profile.subscriber, context={'auth': auth}).data)
-        return Response(subscriber_list, status=status.HTTP_200_OK)
+        profile = Profile.objects.get(path=path)
+        self.swap_filters_field(HelperFilter.GOAL_TYPE)
+        queryset = self.filter_queryset(self.queryset.filter(goal=profile))
+        self.swap_filters_field(HelperFilter.SUBSCRIBER_TYPE)
+
+        frame_pagination = self.get_frame_pagination(request, queryset)
+        serializer_list = list()
+        for subscriber in frame_pagination.get('results'):
+            serializer_list.append(ProfileSerializer(subscriber.subscriber, context={'auth': auth}).data)
+        frame_pagination['results'] = serializer_list
+        return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
     def create_goal_subscription(self, request, path):
