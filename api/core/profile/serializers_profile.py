@@ -1,8 +1,4 @@
-import re
-
-import django.contrib.auth.password_validation as validators
-from django.contrib.auth.models import User
-from django.core import exceptions
+from ..models import User
 from rest_framework import serializers
 
 from .models_profile import Profile, Subscription

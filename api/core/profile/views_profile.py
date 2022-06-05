@@ -17,7 +17,7 @@ class ProfileView(viewsets.ModelViewSet):
     """Profile"""
     lookup_field = 'slug'
     queryset = Profile.objects.all()
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = ProfileSerializer
 
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
@@ -43,10 +43,13 @@ class ProfileView(viewsets.ModelViewSet):
         }
 
     @action(methods=['get'], detail=False)
+    def get_profile_data(self, request):
+        auth = Profile.objects.get(user=self.request.user)
+        return Response(ProfileSerializer(auth).data, status=status.HTTP_200_OK)
+
+    @action(methods=['get'], detail=False)
     def get_list_profile(self, request):
-        auth = None
-        if type(self.request.user) != AnonymousUser:
-            auth = Profile.objects.get(user=self.request.user)
+        auth = Profile.objects.get(user=self.request.user)
 
         queryset = self.filter_queryset(self.queryset)
         frame_pagination = self.get_frame_pagination(request, queryset)

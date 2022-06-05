@@ -1,16 +1,20 @@
 from django.contrib import admin
 
+from .models import User
+
 from .profile.models_profile import Profile, Subscription
 
 from .course.models_course import CourseStatus, Course, CourseInfo, CourseMainInfo, CourseFit, CourseStars, CourseSkill, \
     Theme, Lesson, Step, \
     ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson, ProfileStepStatus, ProfileStep, \
     ProfileCourseRole, CreatorCollection, ProfileCourseCollection, ProfileActionsLogs
+
 from .collection.models_collection import Collection, ProfileCollection, CollectionStars
 
 # Register your models here.
 
 # PROFILE
+admin.site.register(User)
 admin.site.register(Profile)
 admin.site.register(Subscription)
 

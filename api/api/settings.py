@@ -28,6 +28,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["192.168.0.105", "localhost", "127.0.0.1"]
 
+AUTH_USER_MODEL = "core.User"
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -38,14 +40,21 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'rest_framework',
     'django_filters',
     'ckeditor',
     'ckeditor_uploader',
+
+    'rest_framework',
     'rest_framework.authtoken',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.openid',
 
     'core',
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -84,7 +93,11 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser'
     ),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.DjangoModelPermissions",),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.DjangoModelPermissions",
+        "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly",
+    ),
+
     "DEFAULT_FILTER_BACKENDS": ('django_filters.rest_framework.DjangoFilterBackend',),
 }
 
@@ -113,6 +126,12 @@ WSGI_APPLICATION = 'api.wsgi.application'
 
 DATABASES = {
     'default': {
+        # 'ENGINE': 'django.db.backends.mysql',
+        # 'NAME': 'fuji_rest',
+        # 'USER': 'root',
+        # 'PASSWORD': '11004326MySql',
+        # 'HOST': 'localhost',
+        # 'PORT': '3306',
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
@@ -135,6 +154,20 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+ACCOUNT_AUTHENTICATION_METHOD = "email"
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+
+AUTHENTICATION_BACKENDS = [
+    # Needed to login by username in Django admin, regardless of `allauth`
+    'django.contrib.auth.backends.ModelBackend',
+
+    # `allauth` specific authentication methods, such as login by e-mail
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
@@ -201,3 +234,4 @@ EMAIL_HOST_USER = "teamfuji@yandex.ru"
 EMAIL_HOST_PASSWORD = "okfcfamylceyvxth"
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = True
+
