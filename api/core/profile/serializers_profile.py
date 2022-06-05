@@ -1,7 +1,12 @@
+import re
+
+import django.contrib.auth.password_validation as validators
 from django.contrib.auth.models import User
+from django.core import exceptions
 from rest_framework import serializers
 
 from .models_profile import Profile, Subscription
+from ..auth.serializers_auth import RegisterSerializer
 from ..utils import Util
 
 
@@ -105,6 +110,31 @@ class ActionUserSerializer(serializers.ModelSerializer):
         instance.email = validated_data.get('email', instance.email)
         instance.save()
         return instance
+
+
+class ActionUserPasswordSerializer(serializers.ModelSerializer):
+    new_password = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('password', 'new_password')
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'new_password': {'write_only': True}
+        }
+
+    def update(self, instance, validated_data):
+        password = validated_data.get('password')
+        new_password = self.context.get('new_password')
+
+        if instance.check_password(password):
+            if not RegisterSerializer.password_is_valid(new_password):
+                raise serializers.ValidationError({"error": "Новый пароль не корректен"})
+            instance.set_password(new_password)
+            instance.save()
+            return instance
+        else:
+            raise serializers.ValidationError({"error": "Не правильный password"})
 
 
 class UserSerializer(serializers.ModelSerializer):

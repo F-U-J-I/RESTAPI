@@ -32,4 +32,5 @@ urlpatterns = [
     # PROFILE UPDATE
     path('profiles/<slug:path>/get/info/', ActionProfileView.as_view({'get': 'get_info'})),
     path('profiles/<slug:path>/update/info/', ActionProfileView.as_view({'put': 'update_info'})),
+    path('profiles/<slug:path>/update/password/', ActionProfileView.as_view({'put': 'update_password'})),
 ]

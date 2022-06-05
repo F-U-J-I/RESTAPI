@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from .models_profile import Profile, Subscription
 from .serializers_profile import ProfileSerializer, MiniProfileSerializer, HeaderProfileSerializer, \
-    ActionProfileSerializer, ActionUserSerializer
+    ActionProfileSerializer, ActionUserSerializer, ActionUserPasswordSerializer
 from ..course.models_course import ProfileCourse, ProfileCourseStatus
 from ..course.serializers_course import MiniCourseSerializer
 from ..utils import Util, HelperFilter, HelperPaginatorValue, HelperPaginator
@@ -126,13 +126,10 @@ class ActionProfileView(viewsets.ModelViewSet):
 
     @staticmethod
     def update_user(data, user):
-        serializer_profile = ActionUserSerializer(data=data, instance=user)
-        serializer_profile.is_valid(raise_exception=True)
-        try:
-            serializer_profile.save()
-        except ValueError as ex:
-            return {'error': Response({'error': str(ex)}, status=status.HTTP_400_BAD_REQUEST)}
-        return {'serializer': serializer_profile.data}
+        serializer_user = ActionUserSerializer(data=data, instance=user)
+        serializer_user.is_valid(raise_exception=True)
+        serializer_user.save()
+        return serializer_user.data
 
     @action(methods=['put'], detail=False)
     def update_info(self, request, path):
@@ -146,17 +143,27 @@ class ActionProfileView(viewsets.ModelViewSet):
             return result_profile.get('error')
         serializer_profile = result_profile.get('serializer')
 
-        result_user = self.update_user(data=request.data, user=profile.user)
-        if result_user.get('error', None) is not None:
-            return result_user.get('error')
-        serializer_user = result_user.get('serializer')
-
+        serializer_user = self.update_user(data=request.data, user=profile.user)
         return Response({
             'username': serializer_user.get('username'),
             'email': serializer_user.get('email'),
             'avatar_url': serializer_profile.get('avatar_url'),
             'path': serializer_profile.get('path'),
         }, status=status.HTTP_200_OK)
+
+    @action(methods=['put'], detail=False)
+    def update_password(self, request, path):
+        profile_dict = self.is_valid(request=request, path=path)
+        if profile_dict.get('error', None) is not None:
+            return profile_dict.get('error', None)
+        profile = profile_dict.get('profile')
+
+        print(request.data)
+        context = {'new_password': request.data.get('new_password')}
+        serializer_user = ActionUserPasswordSerializer(data=request.data, instance=profile.user, context=context)
+        serializer_user.is_valid(raise_exception=True)
+        serializer_user.save()
+        return Response({'message': "password успешно обновлен"}, status=status.HTTP_200_OK)
 
 
 class CourseProfileView(viewsets.ModelViewSet):
