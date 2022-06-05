@@ -1,3 +1,5 @@
+import re
+
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -40,6 +42,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             'password': {'write_only': True}
         }
 
+    @staticmethod
+    def password_is_valid(password):
+        reg = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,18}'
+        if re.fullmatch(reg, password):
+            return True
+        return False
+
     def create(self, validated_data):
         username = validated_data['username']
         email = validated_data['email']
@@ -50,6 +59,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'error': 'username должно быть не больше 32 символов и не меньше 3'})
         if len(User.objects.filter(email=email)) != 0:
             raise serializers.ValidationError({'error': 'Пользователь с таким email уже существует'})
+        if not self.password_is_valid(password):
+            raise serializers.ValidationError({'error': 'Некорректный пароль'})
 
         user = User(username=username, email=email)
         user.set_password(password)
