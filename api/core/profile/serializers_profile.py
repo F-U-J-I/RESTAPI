@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 
 from .models_profile import Profile, Subscription
+from ..utils import Util
 
 
 class HelperSerializer(serializers.ModelSerializer):
@@ -72,6 +73,38 @@ class HeaderProfileSerializer(serializers.ModelSerializer):
         if (auth is not None) and (auth != profile):
             return HelperSerializer.is_subscribed(goal=profile, subscriber=auth)
         return None
+
+
+class ActionProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ('avatar_url', 'path')
+
+    def update(self, instance, validated_data):
+        new_path = validated_data.get('path', -1)
+        if new_path != -1:
+            instance.path = Util.get_new_path(new_path=new_path, old_path=instance.path, model=Profile)
+
+        new_image = validated_data.get('avatar_url', -1)
+        if new_image != -1:
+            default_image = Util.DEFAULT_IMAGES.get('profile')
+            update_image = Util.get_image(old=instance.avatar_url, new=new_image, default=default_image)
+            instance.avatar_url = Util.get_update_image(old=instance.image_url, new=update_image)
+
+        instance.save()
+        return instance
+
+
+class ActionUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('username', 'email')
+
+    def update(self, instance, validated_data):
+        instance.username = validated_data.get('username', instance.username)
+        instance.email = validated_data.get('email', instance.email)
+        instance.save()
+        return instance
 
 
 class UserSerializer(serializers.ModelSerializer):

@@ -6,7 +6,8 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
 from .models_profile import Profile, Subscription
-from .serializers_profile import ProfileSerializer, MiniProfileSerializer, HeaderProfileSerializer
+from .serializers_profile import ProfileSerializer, MiniProfileSerializer, HeaderProfileSerializer, \
+    ActionProfileSerializer, ActionUserSerializer
 from ..course.models_course import ProfileCourse, ProfileCourseStatus
 from ..course.serializers_course import MiniCourseSerializer
 from ..utils import Util, HelperFilter, HelperPaginatorValue, HelperPaginator
@@ -74,6 +75,88 @@ class ProfileView(viewsets.ModelViewSet):
 
         profile = Profile.objects.get(path=path)
         return Response(HeaderProfileSerializer(profile, context={'auth': auth}).data, status=status.HTTP_200_OK)
+
+
+class ActionProfileView(viewsets.ModelViewSet):
+    """Profile"""
+    lookup_field = 'slug'
+    queryset = Profile.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ProfileSerializer
+
+    @staticmethod
+    def get_profile_or_error(path):
+        profile_list = Profile.objects.filter(path=path)
+        if len(profile_list) == 0:
+            error_text = "Такого пользователя не существует"
+            return {'error': Response({'error': error_text}, status=status.HTTP_404_NOT_FOUND), }
+        return {'profile': profile_list[0]}
+
+    def is_valid(self, request, path):
+        profile_dict = self.get_profile_or_error(path=path)
+        if profile_dict.get('error', None) is not None:
+            return profile_dict.get('error', None)
+
+        profile = profile_dict.get('profile')
+        auth = Profile.objects.get(user=self.request.user)
+        if profile != auth:
+            error_text = "У вас нет доступа для изменения данных от имени этого пользователя"
+            return Response({'error': error_text}, status=status.HTTP_200_OK)
+        return {'profile': auth}
+
+    @action(methods=['get'], detail=False)
+    def get_info(self, request, path):
+        profile_dict = self.get_profile_or_error(path=path)
+        if profile_dict.get('error', None) is not None:
+            return profile_dict.get('error', None)
+
+        profile = profile_dict.get('profile')
+        serializer = ActionProfileSerializer(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @staticmethod
+    def update_profile(data, profile):
+        serializer_profile = ActionProfileSerializer(data=data, instance=profile)
+        serializer_profile.is_valid(raise_exception=True)
+        try:
+            serializer_profile.save()
+        except ValueError as ex:
+            return {'error': Response({'error': str(ex)}, status=status.HTTP_400_BAD_REQUEST)}
+        return {'serializer': serializer_profile.data}
+
+    @staticmethod
+    def update_user(data, user):
+        serializer_profile = ActionUserSerializer(data=data, instance=user)
+        serializer_profile.is_valid(raise_exception=True)
+        try:
+            serializer_profile.save()
+        except ValueError as ex:
+            return {'error': Response({'error': str(ex)}, status=status.HTTP_400_BAD_REQUEST)}
+        return {'serializer': serializer_profile.data}
+
+    @action(methods=['put'], detail=False)
+    def update_info(self, request, path):
+        profile_dict = self.is_valid(request=request, path=path)
+        if profile_dict.get('error', None) is not None:
+            return profile_dict.get('error', None)
+        profile = profile_dict.get('profile')
+
+        result_profile = self.update_profile(data=request.data, profile=profile)
+        if result_profile.get('error', None) is not None:
+            return result_profile.get('error')
+        serializer_profile = result_profile.get('serializer')
+
+        result_user = self.update_user(data=request.data, user=profile.user)
+        if result_user.get('error', None) is not None:
+            return result_user.get('error')
+        serializer_user = result_user.get('serializer')
+
+        return Response({
+            'username': serializer_user.get('username'),
+            'email': serializer_user.get('email'),
+            'avatar_url': serializer_profile.get('avatar_url'),
+            'path': serializer_profile.get('path'),
+        }, status=status.HTTP_200_OK)
 
 
 class CourseProfileView(viewsets.ModelViewSet):

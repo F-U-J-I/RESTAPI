@@ -9,7 +9,7 @@ class Profile(models.Model):
     """Advanced User"""
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     description = models.TextField(blank=True, null=True)
-    path = models.CharField(max_length=64, unique=True)
+    path = models.CharField(max_length=64)
     avatar_url = models.ImageField(default=Util.DEFAULT_IMAGES.get('profile'))
     wrapper_url = models.ImageField(blank=True)
     is_verified = models.BooleanField(default=False)
