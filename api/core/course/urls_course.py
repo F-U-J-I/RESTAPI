@@ -30,6 +30,7 @@ urlpatterns = [
 
     # COURSE PAGE
     path('courses/creating/<slug:path>/get/page/', CoursePageView.as_view({'get': 'get_page'})),
+    path('courses/creating/<slug:path>/save/page/', CoursePageView.as_view({'put': 'save_page'})),
 
     # COURSE FIT
     path('courses/creating/<slug:path>/create/fit/', CourseFitView.as_view({'post': 'create_fit'})),

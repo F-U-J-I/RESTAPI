@@ -190,7 +190,7 @@ class PageCourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ('title', 'author', 'image_url', 'duration_in_minutes', 'rating', 'members_amount',
+        fields = ('title', 'author', 'image_url', 'price', 'duration_in_minutes', 'rating', 'members_amount',
                   'status_progress')
 
     @staticmethod
@@ -311,7 +311,7 @@ class EditPageInfoCourseSerializer(serializers.ModelSerializer):
         for skill in filter_skills:
             skills.append({
                 'pk': skill.pk,
-                'title': skill.name
+                'name': skill.name
             })
         return skills
 
@@ -348,94 +348,6 @@ class CourseSkillSerializer(serializers.ModelSerializer):
         instance.name = validated_data.get('name', instance.name)
         instance.save()
         return instance
-
-
-class ActionPageInfoCourseSerializer(serializers.ModelSerializer):
-    course_info = serializers.SerializerMethodField()
-    main_info = serializers.SerializerMethodField()
-    fits = serializers.SerializerMethodField()
-    skills = serializers.SerializerMethodField()
-    stars = serializers.SerializerMethodField()
-
-    class Meta:
-        model = CourseInfo
-        fields = ('course_info', 'main_info', 'fits', 'skills', 'stars')
-
-    def update_course(self, instance, validated_data):
-        if validated_data is None:
-            return None
-
-        instance.title = validated_data.get('title', instance.title)
-        instance.description = validated_data.get('description', instance.description)
-
-        new_image = validated_data.get('image_url', -1)
-        if new_image != -1:
-            update_image = Util.get_image(old=instance.image_url, new=new_image,
-                                          default=Util.DEFAULT_IMAGES.get('course'))
-            instance.image_url = Util.get_update_image(old=instance.image_url, new=update_image)
-
-        instance.save()
-
-    def update_main_info(self, instance, validated_data):
-        if validated_data is None:
-            return None
-
-        instance.goal_description = validated_data.get('goal_description', instance.goal_description)
-
-        new_image = validated_data.get('title_image_url', -1)
-        if new_image != -1:
-            instance.title_image_url = Util.get_update_image(old=instance.title_image_url, new=new_image)
-
-        instance.save()
-
-    def update_fits(self, fit_list, validated_data, course_info):
-        if validated_data == -1:
-            return None
-
-        if validated_data is None:
-            for fit in fit_list:
-                fit.delete()
-            return None
-
-        for fit in validated_data:
-            curr_fit = fit_list.filter(pk=fit.get('pk'))
-
-            if fit.get('title', -1) != -1:
-                curr_fit.title = fit.get('title')
-            if fit.get('description', -1) != -1:
-                curr_fit.description = fit.get('description')
-            curr_fit.save()
-
-    def update_skills(self, skill_list, validated_data, course_info):
-        if validated_data == -1:
-            return None
-
-        if validated_data is None:
-            for skill in skill_list:
-                skill.delete()
-            return None
-
-        for skill in validated_data:
-            curr_skill = skill_list.filter(pk=skill.get('pk'))
-
-            if skill.get('name', -1) != -1:
-                curr_skill.title = skill.get('name')
-            curr_skill.save()
-
-    def update(self, instance, validated_data):
-        course = instance.course
-        self.update_course(instance=course, validated_data=validated_data.get('course', None))
-
-        course_main_info = CourseMainInfo.objects.get(course_info=instance)
-        self.update_main_info(instance=course_main_info, validated_data=validated_data.get('main_info', None))
-
-        course_fit_list = CourseFit.objects.filter(course_info=instance)
-        self.update_fits(fit_list=course_fit_list, course_info=instance,
-                         validated_data=validated_data.get('fits', -1))
-
-        course_skill_list = CourseSkill.objects.filter(course_info=instance)
-        self.update_skills(skill_list=course_skill_list, course_info=instance,
-                           validated_data=validated_data.get('skills', -1))
 
 
 #####################################

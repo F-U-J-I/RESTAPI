@@ -7,7 +7,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
 from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, ProfileCourseCollection, Theme, Lesson, \
-    Step, ProfileCourseStatus, CourseFit, CourseSkill
+    Step, ProfileCourseStatus, CourseFit, CourseSkill, CourseMainInfo
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
     MiniCourseSerializer, ActionThemeSerializer, ActionLessonSerializer, ActionStepSerializer, ProfileThemeSerializer, \
     CourseTitleSerializer, ThemeTitleSerializer, ProfileLessonSerializer, ProfileStepSerializer, StepSerializer, \
@@ -232,6 +232,74 @@ class CoursePageView(viewsets.ModelViewSet):
         course_info = CourseInfo.objects.get(course=course)
         serializer = EditPageInfoCourseSerializer(course_info)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @staticmethod
+    def update_course(request, course_info):
+        course = course_info.course
+        validated_data = request.data.get('course', None)
+
+        course.title = validated_data.get('title', course.title)
+        course.description = validated_data.get('description', course.description)
+
+        new_image = validated_data.get('image_url', -1)
+        if new_image != -1:
+            update_image = Util.get_image(old=course.image_url, new=new_image,
+                                          default=Util.DEFAULT_IMAGES.get('course'))
+            course.image_url = Util.get_update_image(old=course.image_url, new=update_image)
+
+        course.save()
+        return course
+
+    @staticmethod
+    def update_main_info(request, course_info):
+        main_info = CourseMainInfo.objects.get(course_info=course_info)
+        validated_data = request.data.get('main_info', None)
+
+        main_info.goal_description = validated_data.get('goal_description', main_info.goal_description)
+
+        new_image = validated_data.get('title_image_url', -1)
+        if new_image != -1:
+            main_info.image_url = Util.get_update_image(old=main_info.title_image_url, new=new_image)
+
+        main_info.save()
+        return main_info
+
+    @staticmethod
+    def update_fits(request, course_info):
+        fit_list = CourseFit.objects.filter(course_info=course_info)
+        validated_data = request.data.get('fits', None)
+        for new_fit in validated_data:
+            curr_fit = fit_list.filter(pk=new_fit.get('pk'))[0]
+            curr_fit.title = new_fit.get('title', curr_fit.title)
+            curr_fit.description = new_fit.get('description', curr_fit.description)
+            curr_fit.save()
+        return fit_list
+
+    @staticmethod
+    def update_skills(request, course_info):
+        skill_list = CourseSkill.objects.filter(course_info=course_info)
+        validated_data = request.data.get('skills', None)
+        for new_skill in validated_data:
+            curr_skill = skill_list.filter(pk=new_skill.get('pk'))[0]
+            curr_skill.name = new_skill.get('name', curr_skill.name)
+            curr_skill.save()
+        return skill_list
+
+    @action(detail=False, methods=['put'])
+    def save_page(self, request, path):
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        course = Course.objects.get(path=path)
+        course_info = CourseInfo.objects.get(course=course)
+        self.update_course(request=request, course_info=course_info)
+        self.update_main_info(request=request, course_info=course_info)
+        self.update_fits(request=request, course_info=course_info)
+        self.update_skills(request=request, course_info=course_info)
+        return Response({
+            'message': "Успешно обновлено"
+        }, status=status.HTTP_200_OK)
 
 
 class CourseFitView(viewsets.ModelViewSet):
