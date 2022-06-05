@@ -1,4 +1,3 @@
-from django.contrib.auth.models import AnonymousUser
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, viewsets, status
 from rest_framework.decorators import action
@@ -72,10 +71,7 @@ class ProfileView(viewsets.ModelViewSet):
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
-        auth = None
-        if type(self.request.user) != AnonymousUser:
-            auth = Profile.objects.get(user=self.request.user)
-
+        auth = Profile.objects.get(user=self.request.user)
         profile = Profile.objects.get(path=path)
         return Response(HeaderProfileSerializer(profile, context={'auth': auth}).data, status=status.HTTP_200_OK)
 
@@ -172,7 +168,7 @@ class CourseProfileView(viewsets.ModelViewSet):
     """Course Profile"""
     lookup_field = 'slug'
     queryset = Profile.objects.all()
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = ProfileSerializer
 
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
@@ -207,9 +203,7 @@ class CourseProfileView(viewsets.ModelViewSet):
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
-        auth = None
-        if type(self.request.user) != AnonymousUser:
-            auth = Profile.objects.get(user=self.request.user)
+        auth = Profile.objects.get(user=self.request.user)
         profile = Profile.objects.get(path=path)
 
         self.swap_filters_field(HelperFilter.PROFILE_COURSE_TYPE)
@@ -233,9 +227,7 @@ class CourseProfileView(viewsets.ModelViewSet):
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
-        auth = None
-        if type(self.request.user) != AnonymousUser:
-            auth = Profile.objects.get(user=self.request.user)
+        auth = Profile.objects.get(user=self.request.user)
         profile = Profile.objects.get(path=path)
 
         self.swap_filters_field(HelperFilter.PROFILE_COURSE_TYPE)
@@ -327,10 +319,7 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
-        auth = None
-        if type(self.request.user) != AnonymousUser:
-            auth = Profile.objects.get(user=self.request.user)
-
+        auth = Profile.objects.get(user=self.request.user)
         profile = Profile.objects.get(path=path)
         queryset = self.filter_queryset(self.queryset.filter(subscriber=profile))
 
@@ -347,10 +336,7 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
-        auth = None
-        if type(self.request.user) != AnonymousUser:
-            auth = Profile.objects.get(user=self.request.user)
-
+        auth = Profile.objects.get(user=self.request.user)
         profile = Profile.objects.get(path=path)
         self.swap_filters_field(HelperFilter.GOAL_TYPE)
         queryset = self.filter_queryset(self.queryset.filter(goal=profile))

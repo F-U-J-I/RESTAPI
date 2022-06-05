@@ -2,7 +2,7 @@ from django.db.models import Q
 from rest_framework import serializers
 
 from .models_collection import Collection, ProfileCollection, CollectionStars
-from ..course.models_course import ProfileCourse
+from ..course.models_course import ProfileCourseCollection
 from ..course.serializers_course import MiniCourseSerializer
 from ..profile.serializers_profile import ProfileAsAuthor
 #####################################
@@ -40,7 +40,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         return collection.profile.user.username
 
     def get_courses(self, collection):
-        courses_to_collection = ProfileCourse.objects.filter(collection=collection)
+        courses_to_collection = ProfileCourseCollection.objects.filter(collection=collection)
         courses = list()
         for item in courses_to_collection:
             if item.course.status.name == Util.COURSE_STATUS_RELEASE_NAME:
@@ -73,7 +73,6 @@ class MiniCollectionSerializer(serializers.ModelSerializer):
         return collection.profile.user.username
 
     def get_is_added(self, collection):
-
         return HelperCollectionSerializer.get_is_added(collection=collection, profile=self.context.get('profile'))
 
 
@@ -92,7 +91,7 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
         return ProfileAsAuthor(collection.profile).data
 
     def get_courses(self, collection):
-        courses_to_collection = ProfileCourse.objects.filter(collection=collection)
+        courses_to_collection = ProfileCourseCollection.objects.filter(collection=collection)
         courses = list()
         for item in courses_to_collection:
             if item.course.status.name == Util.COURSE_STATUS_RELEASE_NAME:
@@ -121,11 +120,13 @@ class WindowDetailCollectionSerializer(serializers.ModelSerializer):
         instance.path = Util.get_new_path(new_path=new_path, old_path=instance.path, model=Collection)
 
         # Изменение картинок
-        instance.wallpaper = Util.get_update_image(old=instance.image_url, new=validated_data.get('wallpaper', instance.image_url))
+        instance.wallpaper = Util.get_update_image(old=instance.image_url,
+                                                   new=validated_data.get('wallpaper', instance.image_url))
 
         new_image = validated_data.get('image_url', -1)
         if new_image != -1:
-            update_image = Util.get_image(old=instance.image_url, new=new_image, default=Util.DEFAULT_IMAGES.get('lesson'))
+            update_image = Util.get_image(old=instance.image_url, new=new_image,
+                                          default=Util.DEFAULT_IMAGES.get('lesson'))
             instance.image_url = Util.get_update_image(old=instance.image_url, new=update_image)
 
         instance.save()
@@ -181,8 +182,10 @@ class GradeCollectionSerializer(serializers.ModelSerializer):
                     + stars.four_stars_count * 4 + stars.five_stars_count * 5
         count = stars.one_stars_count + stars.two_stars_count + stars.three_stars_count + stars.four_stars_count \
                 + stars.five_stars_count
-        print(sum_grade, count)
-        rating = sum_grade / count
+
+        rating = 0
+        if count != 0:
+            rating = sum_grade / count
         collection.rating = rating
         collection.save()
 

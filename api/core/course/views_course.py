@@ -1,4 +1,3 @@
-from django.contrib.auth.models import AnonymousUser
 from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, viewsets
@@ -66,7 +65,8 @@ class CourseView(viewsets.ModelViewSet):
     @action(methods=['get'], detail=False)
     def get_courses(self, request, *args, **kwargs):
         auth = Profile.objects.get(user=self.request.user)
-        queryset = self.filter_queryset(self.queryset)
+        status_release = CourseStatus.objects.get(name=Util.COURSE_STATUS_RELEASE_NAME)
+        queryset = self.filter_queryset(self.queryset.filter(status=status_release))
         frame_pagination = self.get_frame_pagination(request, queryset)
         serializer = CourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
 
@@ -76,7 +76,8 @@ class CourseView(viewsets.ModelViewSet):
     @action(methods=['get'], detail=False)
     def get_mini_courses(self, request, *args, **kwargs):
         auth = Profile.objects.get(user=self.request.user)
-        queryset = self.filter_queryset(self.queryset)
+        status_release = CourseStatus.objects.get(name=Util.COURSE_STATUS_RELEASE_NAME)
+        queryset = self.filter_queryset(self.queryset.filter(status=status_release))
         frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_MAX_PAGE)
         serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
 

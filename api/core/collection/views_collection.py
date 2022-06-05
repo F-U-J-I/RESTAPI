@@ -111,9 +111,9 @@ class CollectionView(viewsets.ModelViewSet):
                 queryset.append(item.collection)
 
         frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COLLECTION_MAX_PAGE)
-        serializer = MiniCollectionSerializer(frame_pagination.get('results'), many=True, context={'profile': auth}).data
+        serializer = MiniCollectionSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
 
-        frame_pagination['results'] = serializer
+        frame_pagination['results'] = serializer.data
         return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
