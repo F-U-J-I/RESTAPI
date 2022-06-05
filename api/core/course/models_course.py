@@ -206,6 +206,9 @@ class ProfileActionsLogs(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.SET_NULL, blank=True, null=True)
     date_action = models.DateTimeField(default=datetime.datetime.now)
 
+    def __str__(self):
+        return f"{self.profile.user.username} => {self.step.lesson.theme.course.title}: {self.step.title} [{self.date_action}]"
+
 
 class ProfileCourseRole(models.Model):
     """Role Profile to Course: Admin, User"""
@@ -298,7 +301,7 @@ class ProfileStep(models.Model):
     step = models.ForeignKey(Step, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     status = models.ForeignKey(ProfileStepStatus, blank=True, null=True, on_delete=models.SET_NULL)
-    mark = models.IntegerField(default=0)
+    progress = models.IntegerField(default=0)
 
     def __str__(self):
         return f"\"{self.profile.user.username}\" to \"{self.step.lesson.theme.course.title}: {self.step.lesson.theme.title}: {self.step.lesson.title}: {self.step.title}\""
@@ -308,8 +311,7 @@ def create_profile_to_course(sender, **kwargs):
     """When a ProfileStep is created, autofill fields"""
     if kwargs['created']:
         profile_step = kwargs['instance']
-        profile_step_status = ProfileStepStatus.objects.filter(name=Util.PROFILE_COURSE_STATUS_STUDYING_NAME)[0]
-        profile_step.status = profile_step_status
+        profile_step.status = ProfileStepStatus.objects.filter(name=Util.PROFILE_COURSE_STATUS_STUDYING_NAME)[0]
         profile_step.save()
 
 

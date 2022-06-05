@@ -48,14 +48,17 @@ urlpatterns = [
          CourseCompletionPageView.as_view({'get': 'get_title_course'})),
     path('courses/learn/<slug:path_course>/themes/',
          CourseCompletionPageView.as_view({'get': 'get_themes'})),
-    path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/title/',
+    path('courses/learn/<slug:path_course>/themes/<slug:path_theme>/title/',
          CourseCompletionPageView.as_view({'get': 'get_title_theme'})),
-    path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/lessons/',
+    path('courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/',
          CourseCompletionPageView.as_view({'get': 'get_lessons'})),
-    path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/steps/<slug:path_step>/list/',
+    path('courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/<slug:path_lesson>/steps/<slug:path_step>/list/',
          CourseCompletionPageView.as_view({'get': 'get_steps'})),
-    path('courses/learn/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/steps/<slug:path_step>/',
+    path('courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/<slug:path_lesson>/steps/<slug:path_step>/',
          CourseCompletionPageView.as_view({'get': 'get_detail_step'})),
+
+    path('courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/<slug:path_lesson>/steps/<slug:path_step>/complete',
+         CourseCompletionPageView.as_view({'put': 'complete_step'})),
 
     # THEME
     path('courses/creating/<slug:path>/create/theme/',

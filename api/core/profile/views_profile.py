@@ -158,7 +158,6 @@ class ActionProfileView(viewsets.ModelViewSet):
             return profile_dict.get('error', None)
         profile = profile_dict.get('profile')
 
-        print(request.data)
         context = {'new_password': request.data.get('new_password')}
         serializer_user = ActionUserPasswordSerializer(data=request.data, instance=profile.user, context=context)
         serializer_user.is_valid(raise_exception=True)

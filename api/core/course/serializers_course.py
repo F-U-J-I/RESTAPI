@@ -26,40 +26,6 @@ class HelperCourseSerializer:
                 return status.name
         return None
 
-    @staticmethod
-    def get_progress(course, profile):
-        if HelperCourseSerializer.get_status_progress(course, profile) is None:
-            return None
-
-        max_progress = 0
-        progress = 0
-        for theme in Theme.objects.filter(course=course):
-            for lesson in Lesson.objects.filter(theme=theme):
-                for step in Step.objects.filter(lesson=lesson):
-                    profile_step = ProfileStep.objects.filter(step=step, profile=profile)
-                    if profile_step:
-                        max_progress += step.max_progress
-                        progress += profile_step.mark
-        return {
-            'max_progress': max_progress,
-            'progress': progress
-        }
-
-    @staticmethod
-    def get_progress_theme(theme, profile):
-        max_progress = 0
-        progress = 0
-        for lesson in Lesson.objects.filter(theme=theme):
-            for step in Step.objects.filter(lesson=lesson):
-                profile_step = ProfileStep.objects.filter(step=step, profile=profile)
-                if profile_step:
-                    progress += profile_step.mark
-                max_progress += step.max_progress
-        return {
-            'max_progress': max_progress,
-            'progress': progress
-        }
-
 
 class MaxProgressUpdater:
     @staticmethod
@@ -109,6 +75,58 @@ class MaxProgressUpdater:
     def update_max_progress_step(step, diff_max_progress):
         step.max_progress += diff_max_progress
         step.save()
+
+
+class ProgressUpdater:
+    @staticmethod
+    def update_progress(old, new, profile_step=None, profile_lesson=None, profile_theme=None, profile_course=None):
+        diff_progress = new - old
+
+        generate_lesson = None
+        if profile_step is not None:
+            ProgressUpdater.update_progress_step(profile_step=profile_step, diff_progress=diff_progress)
+            generate_lesson = ProfileLesson.objects.get(lesson=profile_step.step.lesson, profile=profile_step.profile)
+
+        generate_theme = None
+        if profile_lesson is None:
+            profile_lesson = generate_lesson
+        if profile_lesson is not None:
+            ProgressUpdater.update_progress_lesson(profile_lesson=profile_lesson, diff_progress=diff_progress)
+            generate_theme = ProfileTheme.objects.get(theme=profile_step.step.lesson.theme,
+                                                      profile=profile_step.profile)
+
+        generate_course = None
+        if profile_theme is None:
+            profile_theme = generate_theme
+        if profile_theme is not None:
+            ProgressUpdater.update_progress_theme(profile_theme=profile_theme, diff_progress=diff_progress)
+            generate_course = ProfileCourse.objects.get(course=profile_step.step.lesson.theme.course,
+                                                        profile=profile_step.profile)
+
+        if profile_course is None:
+            profile_course = generate_course
+        if profile_course is not None:
+            ProgressUpdater.update_progress_course(profile_course=profile_course, diff_progress=diff_progress)
+
+    @staticmethod
+    def update_progress_course(profile_course, diff_progress):
+        profile_course.progress += diff_progress
+        profile_course.save()
+
+    @staticmethod
+    def update_progress_theme(profile_theme, diff_progress):
+        profile_theme.progress += diff_progress
+        profile_theme.save()
+
+    @staticmethod
+    def update_progress_lesson(profile_lesson, diff_progress):
+        profile_lesson.progress += diff_progress
+        profile_lesson.save()
+
+    @staticmethod
+    def update_progress_step(profile_step, diff_progress):
+        profile_step.progress += diff_progress
+        profile_step.save()
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -454,20 +472,24 @@ class ProfileLessonSerializer(serializers.ModelSerializer):
             return True
         return False
 
+    def get_link(self):
+        link_old = self.context.get('request').build_absolute_uri()
+        return "/".join(link_old.split('/')[:-1])
+
     def get_current_step(self, lesson):
         step_list = Step.objects.filter(lesson=lesson)
         if len(step_list) == 0:
             return None
         logs = ProfileActionsLogs.objects.filter(step__in=step_list)
         if len(logs) == 0:
-            return step_list[0].path
+            return f"{self.get_link()}/{lesson.path}/steps/{step_list[0].path}"
         current_step = logs[0]
         last_date = current_step.date_action
         for log in logs:
             if log.date_action > last_date:
                 last_date = log.date_action
                 current_step = log
-        return current_step.path
+        return f"{self.get_link()}/{lesson.path}/steps/{current_step.step.path}"
 
 
 class ActionLessonSerializer(serializers.ModelSerializer):
@@ -497,7 +519,7 @@ class ActionLessonSerializer(serializers.ModelSerializer):
 
 
 # PAGE STEPS
-class ProfileStepSerializer(serializers.ModelSerializer):
+class GetStepSerializer(serializers.ModelSerializer):
     is_active = serializers.SerializerMethodField(default=False)
     is_complete = serializers.SerializerMethodField(default=False)
 
@@ -517,6 +539,56 @@ class ProfileStepSerializer(serializers.ModelSerializer):
         if profile_step_list[0].status.name == Util.PROFILE_COURSE_STATUS_STUDIED_NAME:
             return True
         return False
+
+    def update(self, instance, validated_data):
+        print(validated_data)
+        print(self.context)
+        new_status = self.context.get('status', None)
+        new_progress = self.context.get('progress', None)
+
+        if (new_status is not None) and (instance.status != new_status):
+            instance.status = new_status
+            if new_status.name == Util.PROFILE_COURSE_STATUS_STUDIED_NAME:
+                new_progress = instance.step.max_progress
+
+        if (new_progress is not None) and (new_progress != instance.progress):
+            ProgressUpdater.update_progress(old=instance.progress, new=new_progress, profile_step=instance)
+
+        instance.save()
+        return instance
+
+
+class ProfileStepSerializer(serializers.ModelSerializer):
+    path_step = serializers.SerializerMethodField()
+    path_profile = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProfileStep
+        fields = ('path_step', 'path_profile', 'status', 'progress')
+
+    @staticmethod
+    def get_path_step(profile_step):
+        return profile_step.step.path
+
+    @staticmethod
+    def get_path_profile(profile_step):
+        return profile_step.profile.path
+
+    def update(self, instance, validated_data):
+        new_status = self.context.get('status', None)
+        new_progress = self.context.get('progress', None)
+
+        if (new_status is not None) and (instance.status != new_status):
+            instance.status = new_status
+            if new_status.name == Util.PROFILE_COURSE_STATUS_STUDIED_NAME:
+                new_progress = instance.step.max_progress
+
+        if (new_progress is not None) and (new_progress != instance.progress):
+            ProgressUpdater.update_progress(old=instance.progress, new=new_progress, profile_step=instance)
+
+        instance.save()
+        return instance
+
 
 
 class StepSerializer(serializers.ModelSerializer):
@@ -576,7 +648,7 @@ class ActionStepSerializer(serializers.ModelSerializer):
         instance.content = validated_data.get('content', instance.content)
 
         new_max_progress = validated_data.get('max_progress', None)
-        if (new_max_progress is not None) and (new_max_progress != instance.max_number):
+        if (new_max_progress is not None) and (new_max_progress != instance.max_progress):
             MaxProgressUpdater.update_max_progress(old=instance.max_progress, new=new_max_progress, step=instance)
 
         instance.save()
