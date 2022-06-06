@@ -78,6 +78,14 @@ class MaxProgressUpdater:
 
 
 class ProgressUpdater:
+
+    @staticmethod
+    def get_or_create(model, validation_data):
+        queryset = model.objects.filter(**validation_data)
+        if len(queryset) == 0:
+            return model.objects.create(**validation_data)
+        return queryset[0]
+
     @staticmethod
     def update_progress(old, new, profile_step=None, profile_lesson=None, profile_theme=None, profile_course=None):
         diff_progress = new - old
@@ -85,23 +93,24 @@ class ProgressUpdater:
         generate_lesson = None
         if profile_step is not None:
             ProgressUpdater.update_progress_step(profile_step=profile_step, diff_progress=diff_progress)
-            generate_lesson = ProfileLesson.objects.get(lesson=profile_step.step.lesson, profile=profile_step.profile)
+            data = {'lesson': profile_step.step.lesson, 'profile': profile_step.profile}
+            generate_lesson = ProgressUpdater.get_or_create(model=ProfileLesson, validation_data=data)
 
         generate_theme = None
         if profile_lesson is None:
             profile_lesson = generate_lesson
         if profile_lesson is not None:
             ProgressUpdater.update_progress_lesson(profile_lesson=profile_lesson, diff_progress=diff_progress)
-            generate_theme = ProfileTheme.objects.get(theme=profile_step.step.lesson.theme,
-                                                      profile=profile_step.profile)
+            data = {'theme': profile_step.step.lesson.theme, 'profile': profile_step.profile}
+            generate_theme = ProgressUpdater.get_or_create(model=ProfileTheme, validation_data=data)
 
         generate_course = None
         if profile_theme is None:
             profile_theme = generate_theme
         if profile_theme is not None:
             ProgressUpdater.update_progress_theme(profile_theme=profile_theme, diff_progress=diff_progress)
-            generate_course = ProfileCourse.objects.get(course=profile_step.step.lesson.theme.course,
-                                                        profile=profile_step.profile)
+            data = {'course': profile_step.step.lesson.theme.course, 'profile': profile_step.profile}
+            generate_course = ProgressUpdater.get_or_create(model=ProfileCourse, validation_data=data)
 
         if profile_course is None:
             profile_course = generate_course
@@ -574,11 +583,15 @@ class ProfileStepSerializer(serializers.ModelSerializer):
     def get_path_profile(profile_step):
         return profile_step.profile.path
 
+    @staticmethod
+    def get_status(profile_step):
+        return profile_step.status.name
+
     def update(self, instance, validated_data):
         new_status = self.context.get('status', None)
         new_progress = self.context.get('progress', None)
 
-        if (new_status is not None) and (instance.status != new_status):
+        if (new_status is not None) and (new_status != instance.status):
             instance.status = new_status
             if new_status.name == Util.PROFILE_COURSE_STATUS_STUDIED_NAME:
                 new_progress = instance.step.max_progress

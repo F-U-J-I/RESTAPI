@@ -29,6 +29,7 @@ class Course(models.Model):
     rating = models.FloatField(default=0)
     members_amount = models.IntegerField(default=0)
     max_progress = models.IntegerField(default=0)
+    progress = models.IntegerField(default=0)
     status = models.ForeignKey(CourseStatus, blank=True, null=True, on_delete=models.SET_NULL)
     date_create = models.DateField(default=datetime.date.today)
     path = models.CharField(max_length=64, blank=True, unique=True)
@@ -132,6 +133,7 @@ class Theme(models.Model):
     title = models.CharField(max_length=64)
     image_url = models.ImageField(blank=True, null=True, default=Util.DEFAULT_IMAGES.get('theme'))
     max_progress = models.IntegerField(default=0)
+    progress = models.IntegerField(default=0)
     path = models.CharField(max_length=64, blank=True, null=True)
 
     def __str__(self):
@@ -155,6 +157,7 @@ class Lesson(models.Model):
     title = models.CharField(max_length=64)
     image_url = models.ImageField(blank=True, null=True, default=Util.DEFAULT_IMAGES.get('lesson'))
     max_progress = models.IntegerField(default=0)
+    progress = models.IntegerField(default=0)
     path = models.CharField(max_length=64, blank=True, null=True)
 
     def __str__(self):

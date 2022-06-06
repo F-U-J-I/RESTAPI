@@ -2,10 +2,10 @@ import os
 
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.files.images import ImageFile
+# from django.core.mail import send_mail
 from django.core.mail import EmailMessage
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.urls import reverse
-
 from rest_framework.utils.urls import replace_query_param
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -44,6 +44,13 @@ class Util:
             from_email=data['from_email'],
         )
         email.send()
+        # send_mail(
+        #     subject=data['email_subject'],
+        #     message=data['email_body'],
+        #     from_email=data['from_email'],
+        #     recipient_list=[data['to_email']],
+        #     fail_silently=False,
+        # )
 
     @staticmethod
     def get_absolute_url_token(request, to, user):
