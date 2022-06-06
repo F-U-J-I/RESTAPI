@@ -167,7 +167,7 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
@@ -227,6 +227,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #####################################
 #   ##  EMAIL CONFIGURATION ##
 #####################################
+
 
 EMAIL_HOST = 'smtp.yandex.ru'
 EMAIL_PORT = 465
