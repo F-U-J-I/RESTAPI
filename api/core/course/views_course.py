@@ -210,6 +210,38 @@ class ActionCourseView(viewsets.ModelViewSet):
             'message': "Курс успешно удален"
         }, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['post'])
+    def publish_course(self, request, path):
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        course = self.queryset.get(path=path)
+        course.status = CourseStatus.objects.get(name=Util.COURSE_STATUS_RELEASE_NAME)
+        course.save()
+        return Response({
+            'path': course.path,
+            'title': course.title,
+            'status': course.status.name,
+            'message': "Курс успешно опубликован"
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'])
+    def development_course(self, request, path):
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        course = self.queryset.get(path=path)
+        course.status = CourseStatus.objects.get(name=Util.COURSE_STATUS_DEV_NAME)
+        course.save()
+        return Response({
+            'path': course.path,
+            'title': course.title,
+            'status': course.status.name,
+            'message': "Курс успешно отправлен в разработку"
+        }, status=status.HTTP_200_OK)
+
 
 class CoursePageView(viewsets.ModelViewSet):
     lookup_field = 'slug'
@@ -586,8 +618,9 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
         course = Course.objects.get(path=path)
         profile_course_list = ProfileCourse.objects.filter(course=course, profile=auth)
         if len(profile_course_list) == 0:
-            profile_course_list = ProfileCourse.objects.create(course=course, profile=auth)
-        profile_course = profile_course_list[0]
+            profile_course = ProfileCourse.objects.create(course=course, profile=auth)
+        else:
+            profile_course = profile_course_list[0]
         profile_course.status = ProfileCourseStatus.objects.get(name=Util.PROFILE_COURSE_STATUS_STUDYING_NAME)
         profile_course.save()
 
@@ -801,7 +834,7 @@ class StepView(viewsets.ModelViewSet):
 
         lesson = Lesson.objects.get(path=path_lesson)
         step = self.queryset.get(path=path_step)
-        serializer = StepSerializer(step, context={'lesson': lesson})
+        serializer = StepSerializer(step, context={'lesson': lesson, 'request': request})
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1000,15 +1033,16 @@ class PathValidator:
 
     @staticmethod
     def is_valid(user=None, path_course=None, path_theme=None, path_lesson=None, path_step=None):
+        exists = PathValidator.exists(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
+                                      path_step=path_step)
+        if exists.get('error', None) is not None:
+            return exists
+
         if user is not None:
             is_access = PathValidator.is_access(user=user, path_course=path_course)
             if is_access.get('error', None) is not None:
                 return is_access
 
-        exists = PathValidator.exists(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
-                                      path_step=path_step)
-        if exists.get('error', None) is not None:
-            return exists
         return {'valid': True}
 
     @staticmethod

@@ -22,8 +22,13 @@ urlpatterns = [
     path('courses/update/grade/<slug:path>/', GradeCourseView.as_view({'put': 'update_grade'})),
     path('courses/delete/grade/<slug:path>/', GradeCourseView.as_view({'delete': 'delete_grade'})),
 
-    # COURSE
+    # COURSE ACTION
     path('courses/create/', ActionCourseView.as_view({'post': 'create_course'})),
+    path('courses/delete/<slug:path>/', ActionCourseView.as_view({'delete': 'delete_course'})),
+
+    path('courses/publish/<slug:path>/', ActionCourseView.as_view({'post': 'publish_course'})),
+    path('courses/development/<slug:path>/', ActionCourseView.as_view({'post': 'development_course'})),
+
     path('courses/start-learn/<slug:path>/', CourseCompletionPageView.as_view({'post': 'start_learn_course'})),
     path('courses/complete-learn/<slug:path>/', CourseCompletionPageView.as_view({'post': 'complete_learn_course'})),
 
@@ -84,13 +89,13 @@ urlpatterns = [
     path('courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/create/step/',
          StepView.as_view({'post': 'create_step'})),
     path(
-        'courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/get-update/step/<slug:path_step>',
+        'courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/get-update/step/<slug:path_step>/',
         StepView.as_view({'get': 'get_update_info'})),
     path(
-        'courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/update/step/<slug:path_step>',
+        'courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/update/step/<slug:path_step>/',
         StepView.as_view({'put': 'update_step'})),
     path(
-        'courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/delete/step/<slug:path_step>',
+        'courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/delete/step/<slug:path_step>/',
         StepView.as_view({'delete': 'delete_step'})),
 
     # COURSE ADD/POP

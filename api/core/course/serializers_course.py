@@ -590,7 +590,6 @@ class ProfileStepSerializer(serializers.ModelSerializer):
         return instance
 
 
-
 class StepSerializer(serializers.ModelSerializer):
     is_complete = serializers.SerializerMethodField(default=False)
     prev = serializers.SerializerMethodField()
@@ -619,7 +618,7 @@ class StepSerializer(serializers.ModelSerializer):
         return f"{self.get_link()}/{step_prev.path}"
 
     def get_next(self, step):
-        if step.number == Step.objects.filter(lesson=step.lesson):
+        if step.number == len(Step.objects.filter(lesson=step.lesson)):
             return None
         step_next = Step.objects.get(number=step.number + 1)
         return f"{self.get_link()}/{step_next.path}"
