@@ -191,9 +191,9 @@ class MiniCourseSerializer(serializers.ModelSerializer):
         return HelperCourseSerializer.get_status_progress(course=course, profile=self.context.get('profile'))
 
     def get_progress(self, course):
-        if self.context.get('auth', None) is None:
+        if self.context.get('profile', None) is None:
             return None
-        profile_course_list = ProfileCourse.objects.filter(course=course, profile=self.context.get('auth'))
+        profile_course_list = ProfileCourse.objects.filter(course=course, profile=self.context.get('profile'))
         if len(profile_course_list) == 0:
             return None
         return {

@@ -895,9 +895,10 @@ class ActionProfileCourseView(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def added_courses(self, request, path):
         collection_path = request.data.get('collection_path')
-        if self.exists_course(path=path):
+        print(path)
+        if not self.exists_course(path=path):
             return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
-        if self.exists_collection(path=collection_path):
+        if not self.exists_collection(path=collection_path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 
         auth = Profile.objects.get(user=self.request.user)

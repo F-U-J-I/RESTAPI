@@ -32,7 +32,6 @@ urlpatterns = [
     path('courses/start-learn/<slug:path>/', CourseCompletionPageView.as_view({'post': 'start_learn_course'})),
     path('courses/complete-learn/<slug:path>/', CourseCompletionPageView.as_view({'post': 'complete_learn_course'})),
 
-
     # COURSE PAGE
     path('courses/creating/<slug:path>/get/page/', CoursePageView.as_view({'get': 'get_page'})),
     path('courses/creating/<slug:path>/save/page/', CoursePageView.as_view({'put': 'save_page'})),
@@ -47,7 +46,6 @@ urlpatterns = [
     path('courses/creating/<slug:path>/update/skill/', CourseSkillView.as_view({'put': 'update_skill'})),
     path('courses/creating/<slug:path>/delete/skill/', CourseSkillView.as_view({'delete': 'delete_skill'})),
 
-
     # COURSE completion
     path('courses/learn/<slug:path_course>/title/',
          CourseCompletionPageView.as_view({'get': 'get_title_course'})),
@@ -57,13 +55,11 @@ urlpatterns = [
          CourseCompletionPageView.as_view({'get': 'get_title_theme'})),
     path('courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/',
          CourseCompletionPageView.as_view({'get': 'get_lessons'})),
-    path('courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/<slug:path_lesson>/steps/<slug:path_step>/list/',
-         CourseCompletionPageView.as_view({'get': 'get_steps'})),
+    path(
+        'courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/<slug:path_lesson>/steps/<slug:path_step>/list/',
+        CourseCompletionPageView.as_view({'get': 'get_steps'})),
     path('courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/<slug:path_lesson>/steps/<slug:path_step>/',
          CourseCompletionPageView.as_view({'get': 'get_detail_step'})),
-
-    path('courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/<slug:path_lesson>/steps/<slug:path_step>/complete',
-         CourseCompletionPageView.as_view({'put': 'complete_step'})),
 
     # THEME
     path('courses/creating/<slug:path>/create/theme/',
@@ -97,6 +93,9 @@ urlpatterns = [
     path(
         'courses/creating/<slug:path_course>/theme/<slug:path_theme>/lesson/<slug:path_lesson>/delete/step/<slug:path_step>/',
         StepView.as_view({'delete': 'delete_step'})),
+    path(
+        'courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/<slug:path_lesson>/steps/<slug:path_step>/complete/',
+        CourseCompletionPageView.as_view({'put': 'complete_step'})),
 
     # COURSE ADD/POP
     path('courses/add/<slug:path>/', ActionProfileCourseView.as_view({'post': 'added_courses'})),
