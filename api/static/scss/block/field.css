@@ -1,0 +1,39 @@
+.fields-item {
+  display: flex;
+  flex-direction: column;
+  margin-top: 35px; }
+  .fields-item-label {
+    font-family: "Gotham-Bold", sans-serif;
+    font-size: 18px;
+    margin-right: auto; }
+  .fields-item-input-wrapper {
+    position: relative; }
+  .fields-item-input {
+    margin-top: 5px;
+    width: 420px;
+    background: none;
+    border-radius: 10px;
+    border: 1.5px solid #BFBFBF;
+    font-family: "Gotham-Medium", sans-serif;
+    font-size: 18px;
+    padding: 15px 16px 15px 48px; }
+    .fields-item-input-img {
+      width: 22px;
+      height: 22px;
+      position: absolute;
+      top: 20px;
+      left: 16px;
+      background-repeat: no-repeat;
+      background-size: cover; }
+    .fields-item-input:focus {
+      outline: none;
+      border: 1.5px solid #7B61FF;
+      box-shadow: 0 0 0 0.5px #7B61FF; }
+  .fields-item .input-img-user {
+    background-image: url(../../img/user-gray.svg); }
+  .fields-item .input-img-email {
+    background-image: url(../../img/email-gray.svg); }
+  .fields-item .input-img-password {
+    background-image: url(../../img/lock-gray.svg); }
+
+/*# sourceMappingURL=field.css.map */

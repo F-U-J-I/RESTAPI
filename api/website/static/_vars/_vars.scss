@@ -1,0 +1,72 @@
+// ========== Font ==========
+
+// Font style
+$f-default: 'Gotham-Medium', sans-serif;
+$f-heading: 'Gotham-Bold', sans-serif;
+
+// Font size
+$fs-h1: 36px;
+$fs-h2: 32px;
+$fs-h3: 24px;
+$fs-h4: 20px;
+
+$fs-md: 18px;
+//$fs-rg: 16px;
+$fs-sm: 14px;
+//$fs-esm: 12px;
+
+// Font size [Course]
+$fs-course-h1: 72px;
+$fs-course-h2: 64px;
+$fs-course-h3: 48px;
+
+// Font size [Course-Detail]
+$fs-course-detail-title: 48px;
+$fs-course-detail-h1: 40px;
+$fs-course-detail-h2: 32px;
+
+$fs-course-detail-p: 24px;
+
+
+// Font size paragraph
+// [Large, SemiLarge, Medium, Regular, Small, ExtraSmall]
+
+// 72, 64, 48, 36, 32, 24, 20, 18, 16, 14, 12
+
+//$fs-lg: 24px;
+//$fs-slg: 20px;
+//$fs-md: 18px;
+//$fs-rg: 16px;
+//$fs-sm: 14px;
+//$fs-esm: 12px;
+
+// Font size link
+//$fs-a: $fs-md;
+
+
+// ========== COLOR ==========
+
+$white: #FFFFFF;
+
+$black-light-1: #1A1A1A;
+$black-light-2: #1F1F1F;
+$black-light-3: #282828;
+$black-light-4: #404040;
+
+$gray-1: #BFBFBF;
+$gray-2: #969696;
+
+$purple: #7B61FF;
+$dark-purple: #593BF3;
+$purple_20: rgba(123, 97, 255, 0.8);
+$red: #FF5252;
+
+// ========== Width ==========
+
+// Max width
+$max-width: 1160px;
+
+// ========== box-shadow ==========
+//$box-shadow-purple: rgba(159, 139, 238, 0.25);
+//$box-shadow-dark-light: rgba(0, 0, 0, 0.1);
+//$box-shadow-dark: rgba(0, 0, 0, 0.15);

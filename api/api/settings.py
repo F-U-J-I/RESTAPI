@@ -24,9 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-xphk**i(rnfdg^4ma1_k_!#@#&&pl%f-rr41mq_1oi6tjn(7)b'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ["192.168.0.105", "localhost", "127.0.0.1"]
+# ALLOWED_HOSTS = ["192.168.0.105", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ['*']
 
 AUTH_USER_MODEL = "core.User"
 
@@ -52,6 +53,12 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.openid',
 
     'core',
+
+    'sass_processor',
+    'compressor',
+    'django_sass',
+
+    'website',
 ]
 
 SITE_ID = 1
@@ -126,14 +133,14 @@ WSGI_APPLICATION = 'api.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'fuji',
-        'USER': 'root',
-        'PASSWORD': '11004326MySql',
-        'HOST': 'localhost',
-        'PORT': '3306',
-        # 'ENGINE': 'django.db.backends.sqlite3',
-        # 'NAME': BASE_DIR / 'db.sqlite3',
+        # 'ENGINE': 'django.db.backends.mysql',
+        # 'NAME': 'fuji',
+        # 'USER': 'root',
+        # 'PASSWORD': '11004326MySql',
+        # 'HOST': 'localhost',
+        # 'PORT': '3306',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -183,7 +190,28 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'compressor.finders.CompressorFinder',
+    'sass_processor.finders.CssFinder',
+]
+
+COMPRESS_OFFLINE = True
+LIBSASS_OUTPUT_STYLE = 'compressed'
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+COMPRESS_PRECOMPILERS = (
+    ('text/x-scss', 'django_libsass.SassCompiler'),
+)
+
+SASS_PROCESSOR_INCLUDE_DIRs = (
+    os.path.join(BASE_DIR, 'static')
+)
+
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+# Django Sass
+SASS_PROCESSOR_ROOT = STATIC_ROOT
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

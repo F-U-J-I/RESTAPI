@@ -5,7 +5,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+    path('', include('website.urls')),
     path('api/', include('core.urls')),
+
     path('admin/', admin.site.urls),
     path('api/token/', TokenObtainPairView.as_view(), name="token"),
     # path('api/auth/', include('rest_auth.urls')),

@@ -1,0 +1,5 @@
+@import "../_mixins/font-face";
+
+@include font('Gotham-Bold', '../fonts/Gotham/Gotham-Bold.ttf');
+
+@include font('Gotham-Medium', '../fonts/Gotham/Gotham-Medium.ttf');

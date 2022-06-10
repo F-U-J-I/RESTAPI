@@ -146,7 +146,7 @@ class ProfileAsAuthor(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ('username', 'avatar_url')
+        fields = ('path', 'username', 'avatar_url')
 
     def get_username(self, profile):
         return profile.user.username

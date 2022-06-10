@@ -1,0 +1,65 @@
+{% extends './base.html' %}
+{% load sass_tags %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block body %}
+<div class="wrapper">
+    <img src="../static/img/logo.svg" alt="Logo" class="logo"/>
+    <div class="block">
+        <div class="content">
+            <h2 class="content-title">Регистрация</h2>
+
+            <form action="" class="content-fields">
+                <div class="content-fields-item fields-item">
+                    <label for="name" class="fields-item-label">Как к вам обращаться</label>
+                    <div class="fields-item-input-wrapper input-image">
+                        <div class="fields-item-input-img input-img-user"></div>
+                        <input type="text" class="fields-item-input" placeholder="Олег Монгол" id="name"
+                            required/>
+                    </div>
+                </div>
+                <div class="content-fields-item fields-item">
+                    <label for="email" class="fields-item-label">Ваш адрес электронной почты
+                        (Email)</label>
+                    <div class="fields-item-input-wrapper input-image">
+                        <div class="fields-item-input-img input-img-email"></div>
+                        <input type="email" class="fields-item-input" placeholder="fuji@yandex.ru" id="email"
+                        required/>
+                    </div>
+                </div>
+                <div class="content-fields-item fields-item">
+                    <label for="password" class="fields-item-label">Придумайте пароль</label>
+                    <div class="fields-item-input-wrapper input-image">
+                        <div class="fields-item-input-img input-img-password"></div>
+                        <input type="password" class="fields-item-input" placeholder="Пароль" id="password"
+                        required/>
+                    </div>
+                </div>
+                <div class="content-fields-item fields-item">
+                    <label for="repeat-password" class="fields-item-label">Повторите пароль</label>
+                    <div class="fields-item-input-wrapper input-image">
+                        <div class="fields-item-input-img input-img-password"></div>
+                        <input type="password" class="fields-item-input" placeholder="Повторите пароль"
+                        id="repeat-password" required/>
+                    </div>
+                </div>
+            </form>
+
+            <div class="content-navigation">
+                <a href="#" class="content-navigation-sign-up sign-up">Зарегистрироваться</a>
+                <div class="content-navigation-exists-user exists-user">
+                    <p class="exists-user-test">Уже есть аккаунт?</p>
+                    <a href="#" class="exists-user-link">Войти</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scss %}
+<link type="text/css" href="{% sass_src 'scss/block/field.scss' %}" rel="stylesheet" media="screen">
+<link type="text/css" href="{% sass_src 'scss/signup.scss' %}" rel="stylesheet" media="screen">
+{% endblock %}

@@ -1,0 +1,59 @@
+@import "../../_vars/_vars";
+
+.fields-item {
+    display: flex;
+    flex-direction: column;
+    margin-top: 35px;
+  
+    &-label {
+      font-family: $f-heading;
+      font-size: $fs-md;
+      margin-right: auto;
+    }
+  
+    &-input-wrapper {
+      position: relative;
+    }
+  
+    &-input {
+      margin-top: 5px;
+      width: 420px;
+  
+      background: none;
+      border-radius: 10px;
+      border: 1.5px solid $gray-1;
+  
+      font-family: $f-default;
+      font-size: $fs-md;
+  
+      padding: 15px 16px 15px 48px;
+  
+      &-img {
+        width: 22px;
+        height: 22px;
+        position: absolute;
+        top: 20px;
+        left: 16px;
+        background-repeat: no-repeat; 
+        background-size: cover;
+      }
+  
+      &:focus {
+        outline: none;
+        border: 1.5px solid $purple;
+        box-shadow: 0 0 0 0.5px $purple;
+      }
+    }
+  
+    .input-img-user {
+      background-image: url(../../img/user-gray.svg);
+    }
+  
+    .input-img-email {
+      background-image: url(../../img/email-gray.svg);
+    }
+  
+    .input-img-password {
+      background-image: url(../../img/lock-gray.svg);
+    }
+  }

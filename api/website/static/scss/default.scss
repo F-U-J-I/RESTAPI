@@ -1,0 +1,111 @@
+@import "_fonts/fonts";
+@import "_vars/vars";
+
+/*  ----------------------------------------------------------------
+/*  >>> TABLE OF CONTENTS:
+/*  ----------------------------------------------------------------
+/*  1. Null
+/*  2. Body
+/*  3. Container
+/*  4. Text
+/*  --------------------------------------------------------------*/
+
+/*  ----------------------------------------------------------------
+/*  1. Null
+/*  --------------------------------------------------------------*/
+
+*, *::before, *::after{
+  margin: 0;
+  padding: 0;
+}
+
+a { text-decoration: none; }
+
+/*  ----------------------------------------------------------------
+/*  2. Body, scrollbar
+/*  --------------------------------------------------------------*/
+
+body {
+  font-family: $f-default;
+  overflow-x: hidden;
+  color: $white;
+}
+
+a {
+  color: $purple;
+}
+
+input {
+  color: $white;
+}
+
+
+
+
+//
+//::-webkit-scrollbar {
+//  width: 7px;
+//  background-color: #f9f9fd;
+//  //background-color: $bgc-dark-purple;
+//}
+//
+//::-webkit-scrollbar:hover {
+//  //width: 10px;
+//}
+//
+//::-webkit-scrollbar-track {
+//
+//  //-webkit-box-shadow: 5px 5px 5px -5px rgba(34, 60, 80, 0.2) inset;
+//  //background-color: #f9f9fd;
+//  //border-radius: 10px;
+//}
+//
+//::-webkit-scrollbar-thumb {
+//  //border-radius: 7px;
+//  //background: linear-gradient(180deg, #00c6fb, #005bea);
+//  //background: linear-gradient(180deg, $bgc-purple, #005bea);
+//  //background: linear-gradient(180deg, #00c6fb, #005bea);
+//  background: $bgc-red;
+//}
+//
+///*  ----------------------------------------------------------------
+///*  3. Container
+///*  --------------------------------------------------------------*/
+//
+//.fixed-container {
+//  max-width: $max-width;
+//  margin: 0 auto;
+//}
+//
+//.fixed-container-big {
+//  display: flex;
+//  margin: 0 200px;
+//}
+
+
+///*  ----------------------------------------------------------------
+///*  4. Text
+///*  --------------------------------------------------------------*/
+//
+//h1, h2, h3, h4, h5, h6 {font-family: $f-heading}
+//
+//h1 {font-size: $fs-h1;}
+//h2 {font-size: $fs-h2;}
+//h3 {font-size: $fs-h3;}
+//h4 {font-size: $fs-h4;}
+//h5 {font-size: $fs-h5;}
+//h6 {font-size: $fs-h6;}
+//
+//p {font-size: $fs-md;}
+//
+//a {font-size: $fs-a;}
+//
+//a.logo {
+//  letter-spacing: 0.6em;
+//  font-family: $f-heading;
+//}
+//
+//*::selection {
+//  background: $bgc-red;
+//  color: $fc-white;
+//}

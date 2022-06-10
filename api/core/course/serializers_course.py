@@ -2,7 +2,8 @@ from rest_framework import serializers
 
 from .models_course import Course, ProfileCourse, Theme, Lesson, \
     Step, ProfileStep, \
-    CourseInfo, CourseMainInfo, CourseFit, CourseSkill, CourseStars, ProfileTheme, ProfileLesson, ProfileActionsLogs
+    CourseInfo, CourseMainInfo, CourseFit, CourseSkill, CourseStars, ProfileTheme, ProfileLesson, ProfileActionsLogs, \
+    ProfileCourseCollection
 #####################################
 #         ##  COURSE ##
 #####################################
@@ -159,7 +160,7 @@ class CourseSerializer(serializers.ModelSerializer):
     def get_quantity_in_collection(self, course):
         if self.context.get('profile', None) is None:
             return None
-        return len(ProfileCourse.objects.filter(course=course, profile=self.context.get('profile')))
+        return len(ProfileCourseCollection.objects.filter(course=course, profile=self.context.get('profile')))
 
     def get_status_progress(self, course):
         if self.context.get('profile', None) is None:

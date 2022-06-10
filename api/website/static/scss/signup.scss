@@ -1,0 +1,65 @@
+@import "../_vars/_vars";
+
+
+body {
+  background-color: $black-light-1;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.wrapper .logo {
+  width: 150px;
+  margin: 45px auto 45px;
+}
+
+.block {
+  display: flex;
+  justify-content: center;
+  border-radius: 35px;
+  margin: 0 auto;
+  background-color: $black-light-2;
+  padding: 50px 65px 80px;
+}
+
+.content-title {
+    font-size: $fs-h2;
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.content-navigation {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  &-sign-up {
+    margin: auto;
+    margin-top: 35px;
+    display: inline-block;
+    text-align: center;
+    padding: 20px 62px;
+    background-color: $purple;
+    border-radius: 40px;
+    color: $white;
+    transition: .15s;
+
+    &:hover {
+      background-color: $dark-purple;
+      transition: .15s;
+    }
+  }
+
+  &-exists-user {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+  
+    &-link {
+      margin-left: 5px;
+      text-decoration: none;
+    }
+  }
+}
