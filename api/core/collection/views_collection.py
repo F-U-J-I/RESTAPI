@@ -167,6 +167,7 @@ class ActionCollectionView(viewsets.ModelViewSet):
         return Response({
             'title': serializer.data['title'],
             'path': serializer.data['path'],
+            'image_url': serializer.data['image_url'],
             "message": "Подборка успешно создана",
         }, status=status.HTTP_200_OK)
 

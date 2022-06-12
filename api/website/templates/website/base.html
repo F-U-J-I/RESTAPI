@@ -6,14 +6,11 @@
     <meta charset="UTF-8">
     <title>{% block title %}{% endblock %}</title>
     <link type="text/css" href="{% sass_src  'scss/default.scss' %}" rel="stylesheet" media="screen">
+    {% block scss %} {% endblock %}
 </head>
 <body>
 
 {% block body %}{% endblock %}
-
-
-{% block scss %}
-{% endblock %}
 
 </body>
 </html>

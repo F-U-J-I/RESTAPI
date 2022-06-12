@@ -1,0 +1,85 @@
+@import "../_vars/_vars";
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  background-color: $black-light-1;
+  min-height: 100vh;
+}
+
+.wrapper .logo {
+  width: 150px;
+  margin: 50px auto 40px;
+}
+
+
+.block {
+  display: flex;
+  justify-content: center;
+  border-radius: 35px;
+  margin: 50px auto;
+  background-color: $black-light-2;
+  padding: 50px 65px 80px;
+}
+
+.content-title {
+  font-size: $fs-h2;
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.wrapper-reset-password {
+  margin-top: 10px;
+
+  &-link {
+    margin-top: 10px;
+    font-size: $fs-sm;
+    transition: .1s;
+
+    &:hover {
+      border-bottom: 1px solid $purple;
+      transition: .1s;
+    }
+  }
+}
+
+.content-navigation {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  &-sign-in {
+    margin: 35px auto auto;
+    display: inline-block;
+    text-align: center;
+    padding: 20px 100px;
+    background-color: $purple;
+    border-radius: 40px;
+    color: $white;
+    transition: .15s;
+
+    &:hover {
+      background-color: $dark-purple;
+      transition: .15s;
+    }
+  }
+
+  &-exists-user {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+    font-size: $fs-sm;
+
+    .exists-user-button {
+      margin-left: 10px;
+      text-decoration: none;
+      transition: .15s;
+
+      &:hover {
+        border-bottom: 1px solid $purple;
+        transition: .1s;
+      }
+    }
+  }
+}
+

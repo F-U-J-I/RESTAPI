@@ -1,0 +1,48 @@
+@font-face {
+  font-family: "Gotham-Bold";
+  src: url("../fonts/Gotham/Gotham-Bold.ttf");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham-Medium";
+  src: url("../fonts/Gotham/Gotham-Medium.ttf");
+  font-display: swap;
+}
+/*  ----------------------------------------------------------------
+/*  >>> TABLE OF CONTENTS:
+/*  ----------------------------------------------------------------
+/*  1. Null
+/*  2. Body
+/*  3. Container
+/*  4. Text
+/*  --------------------------------------------------------------*/
+/*  ----------------------------------------------------------------
+/*  1. Null
+/*  --------------------------------------------------------------*/
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  text-decoration: none;
+}
+
+/*  ----------------------------------------------------------------
+/*  2. Body, scrollbar
+/*  --------------------------------------------------------------*/
+body {
+  font-family: "Gotham-Medium", sans-serif;
+  overflow-x: hidden;
+  color: #FFFFFF;
+}
+
+a {
+  color: #7B61FF;
+}
+
+input {
+  color: #FFFFFF;
+}
+
+/*# sourceMappingURL=default.css.map */

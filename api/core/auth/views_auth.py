@@ -36,6 +36,15 @@ class LoginView(generics.GenericAPIView):
         return Response({'error': "Не правильная почта или пароль"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
+class AuthView(generics.GenericAPIView):
+    serializer_class = LoginSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        return Response(RegisterSerializer(user, context=self.get_serializer_context()).data, status=status.HTTP_200_OK)
+
+
 # Create your views here.
 class RegisterView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]

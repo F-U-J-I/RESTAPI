@@ -115,7 +115,7 @@ class HelperFilter:
     COLLECTION_TYPE = 1
     COLLECTION_FILTER_FIELDS = ('title', 'profile__user__username')
     COLLECTION_SEARCH_FIELDS = ('title', 'profile__user__username')
-    COLLECTION_ORDERING_FIELDS = ('rating', 'title')
+    COLLECTION_ORDERING_FIELDS = ('rating', 'title', 'date_create')
 
     PROFILE_COLLECTION_TYPE = 2
     PROFILE_COLLECTION_FILTER_FIELDS = ('collection__title', 'collection__profile__user__username')

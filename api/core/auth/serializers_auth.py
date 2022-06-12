@@ -1,12 +1,11 @@
 import re
 
-from django.contrib.auth import authenticate
+
 from ..models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 
 from ..profile.models_profile import Profile
 
@@ -47,7 +46,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         password = validated_data['password']
 
         len_username = len(username)
-        if 3 > len_username or len_username > 32:
+        if 1 > len_username or len_username > 32:
             raise serializers.ValidationError({'error': 'username должно быть не больше 32 символов и не меньше 3'})
         if len(User.objects.filter(email=email)) != 0:
             raise serializers.ValidationError({'error': 'Пользователь с таким email уже существует'})

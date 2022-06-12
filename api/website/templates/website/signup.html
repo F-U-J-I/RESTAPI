@@ -10,13 +10,15 @@
         <div class="content">
             <h2 class="content-title">Регистрация</h2>
 
-            <form action="" class="content-fields">
+            <form class="content-fields" method="post" action="{% url 'signup' %}">
+                {% csrf_token %}
                 <div class="content-fields-item fields-item">
                     <label for="name" class="fields-item-label">Как к вам обращаться</label>
                     <div class="fields-item-input-wrapper input-image">
                         <div class="fields-item-input-img input-img-user"></div>
-                        <input type="text" class="fields-item-input" placeholder="Олег Монгол" id="name"
-                            required/>
+<!--                        <input type="text" class="fields-item-input" placeholder="Олег Монгол" id="name"-->
+<!--                            required/>-->
+                        {{ form.username }}
                     </div>
                 </div>
                 <div class="content-fields-item fields-item">
@@ -24,24 +26,27 @@
                         (Email)</label>
                     <div class="fields-item-input-wrapper input-image">
                         <div class="fields-item-input-img input-img-email"></div>
-                        <input type="email" class="fields-item-input" placeholder="fuji@yandex.ru" id="email"
-                        required/>
+<!--                        <input type="email" class="fields-item-input" placeholder="fuji@yandex.ru" id="email"-->
+<!--                        required/>-->
+                        {{ form.email }}
                     </div>
                 </div>
                 <div class="content-fields-item fields-item">
                     <label for="password" class="fields-item-label">Придумайте пароль</label>
                     <div class="fields-item-input-wrapper input-image">
                         <div class="fields-item-input-img input-img-password"></div>
-                        <input type="password" class="fields-item-input" placeholder="Пароль" id="password"
-                        required/>
+<!--                        <input type="password" class="fields-item-input" placeholder="Пароль" id="password"-->
+<!--                        required/>-->
+                        {{ form.password }}
                     </div>
                 </div>
                 <div class="content-fields-item fields-item">
                     <label for="repeat-password" class="fields-item-label">Повторите пароль</label>
                     <div class="fields-item-input-wrapper input-image">
                         <div class="fields-item-input-img input-img-password"></div>
-                        <input type="password" class="fields-item-input" placeholder="Повторите пароль"
-                        id="repeat-password" required/>
+<!--                        <input type="password" class="fields-item-input" placeholder="Повторите пароль"-->
+<!--                        id="repeat-password" required/>-->
+                        {{ form.repeat_password }}
                     </div>
                 </div>
             </form>
@@ -60,6 +65,6 @@
 {% endblock %}
 
 {% block scss %}
-<link type="text/css" href="{% sass_src 'scss/block/field.scss' %}" rel="stylesheet" media="screen">
-<link type="text/css" href="{% sass_src 'scss/signup.scss' %}" rel="stylesheet" media="screen">
+    <link type="text/css" href="{% sass_src 'scss/block/field.scss' %}" rel="stylesheet" media="screen">
+    <link type="text/css" href="{% sass_src 'scss/signup.scss' %}" rel="stylesheet" media="screen">
 {% endblock %}
