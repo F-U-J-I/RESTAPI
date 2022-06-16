@@ -407,7 +407,7 @@ class CourseFitSerializer(serializers.ModelSerializer):
 
 
 class CourseSkillSerializer(serializers.ModelSerializer):
-    """SERIALIZER. Навык"""
+    """SERIALIZER. Навык """
 
     class Meta:
         model = CourseSkill
