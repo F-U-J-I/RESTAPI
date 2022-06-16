@@ -12,7 +12,7 @@ from ..utils import Util
 
 class Collection(models.Model):
     """Collection"""
-    title = models.CharField(max_length=64)
+    title = models.CharField(max_length=40)
     description = models.TextField(max_length=512, blank=True)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     image_url = models.ImageField(validators=[validate_image_file_extension], blank=True, null=True,

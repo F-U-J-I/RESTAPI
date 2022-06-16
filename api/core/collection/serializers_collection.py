@@ -12,10 +12,11 @@ from ..utils import Util
 
 
 class HelperCollectionSerializer:
+    """SERIALIZER. Помощник при сериализации"""
     @staticmethod
     def get_is_added(collection, profile):
         profile_to_collection = ProfileCollection.objects.filter(collection=collection, profile=profile)
-        if profile_to_collection:
+        if len(profile_to_collection) == 1:
             return True
         return False
 
@@ -37,9 +38,11 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_author(collection):
+        """Вернет автора подборки"""
         return ProfileAsAuthor(collection.profile).data
 
     def get_courses(self, collection):
+        """Вернет первые 5 курсов которые есть в подборке"""
         courses_to_collection = ProfileCourseCollection.objects.filter(collection=collection)
         courses = list()
         for item in courses_to_collection:
@@ -49,9 +52,11 @@ class CollectionSerializer(serializers.ModelSerializer):
         return courses
 
     def get_is_added(self, collection):
+        """Добавлена ли эта подборка"""
         return HelperCollectionSerializer.get_is_added(collection=collection, profile=self.context.get('profile'))
 
     def get_added_number(self, collection):
+        """Сколько людей добавило эту подборку"""
         queryset = ProfileCollection.objects.filter(collection=collection, )
         return len(queryset.filter(~Q(profile=self.context.get('profile'))))
 
@@ -70,13 +75,16 @@ class MiniCollectionSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_author(collection):
+        """Вернет автора подборки"""
         return collection.profile.user.username
 
     def get_is_added(self, collection):
+        """Добавлена ли подборка"""
         return HelperCollectionSerializer.get_is_added(collection=collection, profile=self.context.get('profile'))
 
 
 class DetailCollectionSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Дательная страница подборки"""
     author = serializers.SerializerMethodField()
     courses = serializers.SerializerMethodField()
     is_added = serializers.SerializerMethodField(default=False)
@@ -88,9 +96,11 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_author(collection):
+        """Вернет автора"""
         return ProfileAsAuthor(collection.profile).data
 
     def get_courses(self, collection):
+        """Вернет все курсы"""
         courses_to_collection = ProfileCourseCollection.objects.filter(collection=collection)
         courses = list()
         for item in courses_to_collection:
@@ -99,18 +109,23 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
         return courses
 
     def get_is_added(self, collection):
+        """Добавлена ли подборка"""
         return HelperCollectionSerializer.get_is_added(collection=collection, profile=self.context.get('profile'))
 
 
 class WindowDetailCollectionSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Окно изменения данных подборки"""
+
     class Meta:
         model = Collection
         fields = ('title', 'description', 'wallpaper', 'image_url', 'path')
 
     def create(self, validated_data):
+        """Создание"""
         return Collection.objects.create(**validated_data, profile=self.context.get('profile'))
 
     def update(self, instance, validated_data):
+        """Обновление"""
         instance.title = validated_data.get('title', instance.title)
         instance.description = validated_data.get('description', instance.description)
 
@@ -140,12 +155,15 @@ class WindowDetailCollectionSerializer(serializers.ModelSerializer):
 # #########################################
 
 class GradeCollectionSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Оценка подборки"""
+
     class Meta:
         model = ProfileCollection
         fields = ('grade',)
 
     @staticmethod
     def add_collection_star(collection, grade):
+        """Добавить оценку"""
         stars = CollectionStars.objects.get(collection=collection)
         if grade == 1:
             stars.one_stars_count += 1
@@ -161,6 +179,7 @@ class GradeCollectionSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def difference_collection_star(collection, grade):
+        """Убрать оценку"""
         stars = CollectionStars.objects.get(collection=collection)
         if grade == 1:
             stars.one_stars_count -= 1
@@ -176,6 +195,7 @@ class GradeCollectionSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def update_rating_collection(collection):
+        """Обновить оценку"""
         stars = CollectionStars.objects.get(collection=collection)
 
         sum_grade = stars.one_stars_count + stars.two_stars_count * 2 + stars.three_stars_count * 3 \
@@ -190,6 +210,7 @@ class GradeCollectionSerializer(serializers.ModelSerializer):
         collection.save()
 
     def create(self, validated_data):
+        """Создание оценки"""
         profile_collection = ProfileCollection.objects.get(profile=self.context.get('profile'),
                                                            collection=self.context.get('collection'))
         if profile_collection.grade is not None:
@@ -202,6 +223,7 @@ class GradeCollectionSerializer(serializers.ModelSerializer):
         return profile_collection
 
     def update(self, instance, validated_data):
+        """Обновление оценки"""
         grade_list = (1, 2, 3, 4, 5)
         new_grade = validated_data.get('grade')
         if (type(new_grade) == int) and (new_grade in grade_list) and (instance.grade != new_grade):
@@ -213,6 +235,7 @@ class GradeCollectionSerializer(serializers.ModelSerializer):
         return instance
 
     def delete_grade(self):
+        """Удаление оценки"""
         profile_collection = self.context.get('profile_collection')
         if profile_collection.grade is not None:
             self.difference_collection_star(collection=profile_collection.collection, grade=profile_collection.grade)

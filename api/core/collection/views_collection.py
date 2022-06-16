@@ -16,7 +16,7 @@ from ..utils import HelperFilter, HelperPaginatorValue, HelperPaginator
 
 
 class CollectionView(viewsets.ModelViewSet):
-    """Коллекция"""
+    """VIEW. Коллекция"""
     lookup_field = 'slug'
     queryset = Collection.objects.all()
     serializer_class = CollectionSerializer
@@ -30,16 +30,20 @@ class CollectionView(viewsets.ModelViewSet):
     pagination_max_page = HelperPaginatorValue.COLLECTION_MAX_PAGE
 
     def exists_course_path(self, path):
+        """Существует ли такой путь к курсу"""
         return len(self.queryset.filter(path=path)) != 0
 
     @staticmethod
     def exists_profile_path(path):
+        """Существует ли такой путь к профилю"""
         return len(Profile.objects.filter(path=path)) != 0
 
     def swap_filters_field(self, type_filter):
+        """Смена типа фильтраций"""
         (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_collection_field(type_filter)
 
     def get_frame_pagination(self, request, queryset, max_page=None):
+        """Вернет каркас пагинации"""
         if max_page is None:
             max_page = self.pagination_max_page
         pagination = HelperPaginator(request=request, queryset=queryset, max_page=max_page)
@@ -53,6 +57,7 @@ class CollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_collections(self, request, *args, **kwargs):
+        """GET. Вернет все подборки"""
         queryset = self.filter_queryset(self.queryset)
         frame_pagination = self.get_frame_pagination(request, queryset)
 
@@ -64,6 +69,7 @@ class CollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_mini_collections(self, request, *args, **kwargs):
+        """GET. Вернет все подборки в мини-формах"""
         auth = Profile.objects.get(user=self.request.user)
         queryset = self.filter_queryset(self.queryset)
         frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COLLECTION_MAX_PAGE)
@@ -71,9 +77,42 @@ class CollectionView(viewsets.ModelViewSet):
         frame_pagination['results'] = serializer.data
         return Response(frame_pagination, status=status.HTTP_200_OK)
 
+    @staticmethod
+    def get_not_profile_collections(profile):
+        """GET. Вернет все подборки, которые пользователь не добавлял себе и не создавал"""
+        data = dict()
+        for item in ProfileCollection.objects.all():
+            collection = item.collection
+            if data.get(collection, None) is None:
+                data[collection] = list()
+            data[collection].append(item.profile)
+
+        collection_list = list()
+        for key, value in data.items():
+            if profile not in value:
+                collection_list.append(key)
+        return ProfileCollection.objects.filter(collection__in=collection_list)
+
+    @action(detail=False, methods=['get'])
+    def get_catalog_collections(self, request, *args, **kwargs):
+        """GET. Подборки которые неизвестны пользователю по path"""
+        auth = Profile.objects.get(user=self.request.user)
+
+        self.swap_filters_field(HelperFilter.PROFILE_COLLECTION_TYPE)
+        queryset = self.filter_queryset(self.get_not_profile_collections(profile=auth))
+        self.swap_filters_field(HelperFilter.COLLECTION_TYPE)
+
+        frame_pagination = self.get_frame_pagination(request, queryset)
+        serializer_list = list()
+        for profile_collection in frame_pagination.get('results'):
+            serializer_list.append(CollectionSerializer(profile_collection.collection, context={'profile': auth}).data)
+
+        frame_pagination['results'] = serializer_list
+        return Response(frame_pagination, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=['get'])
     def get_all_profile_collections(self, request, path, *args, **kwargs):
-        """Добавленные и созданные подборки пользователем по path"""
+        """GET. Добавленные и созданные подборки пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
         profile = Profile.objects.get(path=path)
@@ -94,7 +133,7 @@ class CollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_added_collections(self, request, path, *args, **kwargs):
-        """Добавленные подборки пользователем по path"""
+        """GET. Добавленные подборки пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
         profile = Profile.objects.get(path=path)
@@ -118,7 +157,7 @@ class CollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_created_collections(self, request, path, *args, **kwargs):
-        """Созданные подборки пользователем по path"""
+        """GET. Созданные подборки пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -133,7 +172,7 @@ class CollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_detail_collection(self, request, path=None, *args, **kwargs):
-        """Детальная страница подборки"""
+        """GET. Детальная страница подборки"""
         if not self.exists_course_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -148,16 +187,18 @@ class CollectionView(viewsets.ModelViewSet):
 # #########################################
 
 class ActionCollectionView(viewsets.ModelViewSet):
-    """Коллекция"""
+    """VIEW. Действия над подборками"""
     lookup_field = 'slug'
     queryset = Collection.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     def exists_path(self, path):
+        """Существует ли такой путь"""
         return len(self.queryset.filter(path=path)) != 0
 
     @action(detail=False, methods=['post'])
     def create_collection(self, request):
+        """POST. Создание подборки"""
         profile = Profile.objects.get(user=self.request.user)
         number_new_collection = len(ProfileCollection.objects.filter(profile=profile)) + 1
         serializer = WindowDetailCollectionSerializer(data={'title': f"Подборка #{number_new_collection}"},
@@ -173,6 +214,7 @@ class ActionCollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_update_info(self, request, path=None, *args, **kwargs):
+        """GET. Вернет информацию для обновления данных в подборке"""
         if not self.exists_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
         collection = self.queryset.get(path=path)
@@ -184,6 +226,7 @@ class ActionCollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def update_info(self, request, path=None, *args, **kwargs):
+        """PUT. Обновление информации о подборке"""
         if not self.exists_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -203,6 +246,7 @@ class ActionCollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def delete_collection(self, request, path):
+        """DELETE. Удаление подборки"""
         if not self.exists_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -226,16 +270,18 @@ class ActionCollectionView(viewsets.ModelViewSet):
 # #########################################
 
 class ActionProfileCollectionView(viewsets.ModelViewSet):
-    """Коллекция"""
+    """VIEW. Действия между профилем и подборками"""
     lookup_field = 'slug'
     queryset = Collection.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     def exists_path(self, path):
+        """Существует ли такой путь"""
         return len(self.queryset.filter(path=path)) != 0
 
     @action(detail=False, methods=['post'])
     def added_collections(self, request, path):
+        """POST. Добавить подборку"""
         if not self.exists_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -255,6 +301,7 @@ class ActionProfileCollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def popped_collections(self, request, path):
+        """DELETE. Удалить подборку из своей коллекции подборок"""
         if not self.exists_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -278,16 +325,18 @@ class ActionProfileCollectionView(viewsets.ModelViewSet):
 # #########################################
 
 class GradeCollectionView(viewsets.ModelViewSet):
-    """Коллекция"""
+    """VIEW. Оценка подборки"""
     lookup_field = 'slug'
     queryset = Collection.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     def exists_path(self, path):
+        """Существует ли такой путь"""
         return len(self.queryset.filter(path=path)) != 0
 
     @action(detail=False, methods=['post'])
     def set_grade(self, request, path):
+        """POST. Установить оценку"""
         if not self.exists_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -305,6 +354,7 @@ class GradeCollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def update_grade(self, request, path):
+        """PUT. Обновление оценки"""
         if not self.exists_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -323,6 +373,7 @@ class GradeCollectionView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def delete_grade(self, request, path):
+        """DELETE. Убрать оценку"""
         if not self.exists_path(path):
             return Response({'error': "Такой подборки не существует"}, status=status.HTTP_404_NOT_FOUND)
 

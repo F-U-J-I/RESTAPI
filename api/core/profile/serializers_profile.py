@@ -7,6 +7,8 @@ from ..utils import Util
 
 
 class HelperSerializer(serializers.ModelSerializer):
+    """Serializer. Помощник сериализаций"""
+
     @staticmethod
     def is_subscribed(goal, subscriber):
         """
@@ -21,7 +23,7 @@ class HelperSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    """Profile"""
+    """Serializer. Профиль"""
     username = serializers.SerializerMethodField()
     is_subscribed = serializers.SerializerMethodField()
 
@@ -30,9 +32,11 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = ('path', 'username', 'avatar_url', 'description', 'is_subscribed')
 
     def get_username(self, profile):
+        """Вернет имя профиля"""
         return profile.user.username
 
     def get_is_subscribed(self, profile):
+        """Вернет подписан ли пользователь на профиль"""
         auth = self.context.get('auth')
         if auth != profile:
             return HelperSerializer.is_subscribed(goal=profile, subscriber=auth)
@@ -40,18 +44,21 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class MiniProfileSerializer(serializers.ModelSerializer):
-    """Mini Profile"""
+    """Serializer. Форма мини профиля"""
     username = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
         fields = ('path', 'username', 'avatar_url')
 
-    def get_username(self, profile):
+    @staticmethod
+    def get_username(profile):
+        """Вернет имя пользователя"""
         return profile.user.username
 
 
 class HeaderProfileSerializer(serializers.ModelSerializer):
+    """Serializer. Шапка профиля"""
     username = serializers.SerializerMethodField()
     communications = serializers.SerializerMethodField(default=None)
     is_subscribed = serializers.SerializerMethodField()
@@ -60,16 +67,21 @@ class HeaderProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ('username', 'avatar_url', 'wrapper_url', 'communications', 'is_subscribed')
 
-    def get_username(self, profile):
+    @staticmethod
+    def get_username(profile):
+        """Вернет имя пользователя"""
         return profile.user.username
 
-    def get_communications(self, profile):
+    @staticmethod
+    def get_communications(profile):
+        """Вернет количество подписчиков и подписок"""
         return {
             'goal_quantity': len(Subscription.objects.filter(subscriber=profile)),
             'subscribers_quantity': len(Subscription.objects.filter(goal=profile)),
         }
 
     def get_is_subscribed(self, profile):
+        """Подписаны ли вы на этот профиль"""
         auth = self.context.get('auth', None)
         if (auth is not None) and (auth != profile):
             return HelperSerializer.is_subscribed(goal=profile, subscriber=auth)
@@ -77,11 +89,14 @@ class HeaderProfileSerializer(serializers.ModelSerializer):
 
 
 class ActionProfileSerializer(serializers.ModelSerializer):
+    """Serializer. Действия над профилем"""
+
     class Meta:
         model = Profile
         fields = ('avatar_url', 'path')
 
     def update(self, instance, validated_data):
+        """Обновление данных"""
         new_path = validated_data.get('path', -1)
         if new_path != -1:
             instance.path = Util.get_new_path(new_path=new_path, old_path=instance.path, model=Profile)
@@ -97,11 +112,14 @@ class ActionProfileSerializer(serializers.ModelSerializer):
 
 
 class ActionUserSerializer(serializers.ModelSerializer):
+    """Serializer. Действия над пользователем"""
+
     class Meta:
         model = User
         fields = ('username', 'email')
 
     def update(self, instance, validated_data):
+        """Обновление"""
         instance.username = validated_data.get('username', instance.username)
         instance.email = validated_data.get('email', instance.email)
         instance.save()
@@ -109,6 +127,8 @@ class ActionUserSerializer(serializers.ModelSerializer):
 
 
 class ActionUserPasswordSerializer(serializers.ModelSerializer):
+    """Serializer. Действия над паролем пользователя"""
+
     new_password = serializers.SerializerMethodField()
 
     class Meta:
@@ -120,6 +140,7 @@ class ActionUserPasswordSerializer(serializers.ModelSerializer):
         }
 
     def update(self, instance, validated_data):
+        """Обновление"""
         password = validated_data.get('password')
         new_password = self.context.get('new_password')
 
@@ -134,7 +155,7 @@ class ActionUserPasswordSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """User"""
+    """Serializer. Пользователь"""
 
     class Meta:
         model = User
@@ -142,11 +163,15 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileAsAuthor(serializers.ModelSerializer):
+    """Serializer. Профиль как автор"""
+
     username = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
         fields = ('path', 'username', 'avatar_url')
 
-    def get_username(self, profile):
+    @staticmethod
+    def get_username(profile):
+        """Вернет имя пользователя"""
         return profile.user.username

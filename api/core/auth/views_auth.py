@@ -12,45 +12,51 @@ from rest_framework.response import Response
 from .serializers_auth import RegisterSerializer, RequestPasswordResetEmailSerializer, SetNewPasswordSerializer, \
     LoginSerializer
 from ..profile.models_profile import Profile
-from ..profile.serializers_profile import UserSerializer
+from ..profile.serializers_profile import UserSerializer, ProfileSerializer
 from ..utils import Util
 
 
-class LoginView(generics.GenericAPIView):
-    permission_classes = [permissions.AllowAny]
-    serializer_class = LoginSerializer
-
-    def post(self, request, *args, **kwargs):
-        email = request.data.get('email', None)
-        password = request.data.get('password', None)
-        user = authenticate(email=email, password=password)
-
-        if user:
-            serializer = self.serializer_class(user)
-            return Response({
-                'path': serializer.data.get('path'),
-                'username': serializer.data.get('username'),
-                'email': serializer.data.get('email'),
-                'access': serializer.data.get('token'),
-            }, status=status.HTTP_200_OK)
-        return Response({'error': "Не правильная почта или пароль"}, status=status.HTTP_401_UNAUTHORIZED)
+# class LoginView(generics.GenericAPIView):
+#     """"""
+#     permission_classes = [permissions.AllowAny]
+#     serializer_class = LoginSerializer
+#
+#     def post(self, request, *args, **kwargs):
+#         email = request.data.get('email', None)
+#         password = request.data.get('password', None)
+#         user = authenticate(email=email, password=password)
+#
+#         if user:
+#             serializer = self.serializer_class(user)
+#             return Response({
+#                 'path': serializer.data.get('path'),
+#                 'username': serializer.data.get('username'),
+#                 'email': serializer.data.get('email'),
+#                 'access': serializer.data.get('token'),
+#             }, status=status.HTTP_200_OK)
+#         return Response({'error': "Не правильная почта или пароль"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class AuthView(generics.GenericAPIView):
-    serializer_class = LoginSerializer
+    """Получение данных пользователя"""
+    serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
+        """Вернет данные пользователя"""
         user = request.user
-        return Response(RegisterSerializer(user, context=self.get_serializer_context()).data, status=status.HTTP_200_OK)
+        profile = Profile.objects.get(user=user)
+        return Response(ProfileSerializer(profile, context=self.get_serializer_context()).data, status=status.HTTP_200_OK)
 
 
 # Create your views here.
 class RegisterView(generics.GenericAPIView):
+    """View. Регистрация"""
     permission_classes = [permissions.AllowAny]
     serializer_class = RegisterSerializer
 
     def post(self, request):
+        """POST запрос на регистрацию пользователя"""
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -81,9 +87,11 @@ class RegisterView(generics.GenericAPIView):
 
 
 class VerifyEmailView(generics.GenericAPIView):
+    """View. Верификация пользователя"""
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        """GET. Активация аккаунта"""
         token = request.GET.get('token')
         try:
             payload = jwt.decode(token, settings.SECRET_KEY)
@@ -110,6 +118,7 @@ class RequestPasswordResetEmailView(generics.GenericAPIView):
     serializer_class = RequestPasswordResetEmailSerializer
 
     def post(self, request):
+        """POST. Cброс пароля по email"""
         attrs = request.data
         email = attrs.get('email', '')
         users = User.objects.filter(email=email)
@@ -149,6 +158,7 @@ class PasswordTokenCheckAPI(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, uidb64, token):
+        """GET. Вернёт валиден ли токен на сброс пароля"""
         try:
             user_pk = smart_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=user_pk)
@@ -169,6 +179,7 @@ class PasswordTokenCheckAPI(generics.GenericAPIView):
 
     @staticmethod
     def request_error():
+        """Запрос с ошибкой"""
         return Response({
             'message': 'Token is not valid, please request a new one',
         },
@@ -182,6 +193,7 @@ class SetNewPasswordAPIView(generics.GenericAPIView):
     serializer_class = SetNewPasswordSerializer
 
     def patch(self, request):
+        """PATCH. Обновление пароля"""
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response({

@@ -11,8 +11,10 @@ from ..utils import Util
 
 
 class HelperCourseSerializer:
+    """Помощник сериализации """
     @staticmethod
     def get_is_added(course, profile):
+        """Добавлен ли"""
         profile_to_course = ProfileCourse.objects.filter(course=course, profile=profile)
         if profile_to_course:
             return True
@@ -20,6 +22,7 @@ class HelperCourseSerializer:
 
     @staticmethod
     def get_status_progress(course, profile):
+        """Вернуть статус курса"""
         profile_to_course = ProfileCourse.objects.filter(course=course, profile=profile)
         if len(profile_to_course) != 0:
             status = profile_to_course[0].status
@@ -29,8 +32,11 @@ class HelperCourseSerializer:
 
 
 class MaxProgressUpdater:
+    """Обновитель максимального прогресса"""
+
     @staticmethod
     def update_max_progress(old, new, step=None, lesson=None, theme=None, course=None):
+        """Обновить максимальный прогресс"""
         diff_max_progress = new - old
 
         generate_lesson = None
@@ -59,29 +65,35 @@ class MaxProgressUpdater:
 
     @staticmethod
     def update_max_progress_course(course, diff_max_progress):
+        """Обновить максимальный прогресс курса"""
         course.max_progress += diff_max_progress
         course.save()
 
     @staticmethod
     def update_max_progress_theme(theme, diff_max_progress):
+        """Обновить максимальный прогресс темы"""
         theme.max_progress += diff_max_progress
         theme.save()
 
     @staticmethod
     def update_max_progress_lesson(lesson, diff_max_progress):
+        """Обновить максимальный урока"""
         lesson.max_progress += diff_max_progress
         lesson.save()
 
     @staticmethod
     def update_max_progress_step(step, diff_max_progress):
+        """Обновить максимальный прогресс шага"""
         step.max_progress += diff_max_progress
         step.save()
 
 
 class ProgressUpdater:
+    """Обновитель прогресса"""
 
     @staticmethod
     def get_or_create(model, validation_data):
+        """Вернуть или создать"""
         queryset = model.objects.filter(**validation_data)
         if len(queryset) == 0:
             return model.objects.create(**validation_data)
@@ -89,6 +101,7 @@ class ProgressUpdater:
 
     @staticmethod
     def update_progress(old, new, profile_step=None, profile_lesson=None, profile_theme=None, profile_course=None):
+        """Обновить прогресс"""
         diff_progress = new - old
 
         generate_lesson = None
@@ -120,27 +133,31 @@ class ProgressUpdater:
 
     @staticmethod
     def update_progress_course(profile_course, diff_progress):
+        """Обновить прогресс курса"""
         profile_course.progress += diff_progress
         profile_course.save()
 
     @staticmethod
     def update_progress_theme(profile_theme, diff_progress):
+        """Обновить прогресс темы"""
         profile_theme.progress += diff_progress
         profile_theme.save()
 
     @staticmethod
     def update_progress_lesson(profile_lesson, diff_progress):
+        """Обновить прогресс урока"""
         profile_lesson.progress += diff_progress
         profile_lesson.save()
 
     @staticmethod
     def update_progress_step(profile_step, diff_progress):
+        """Обновить прогресс шага"""
         profile_step.progress += diff_progress
         profile_step.save()
 
 
 class CourseSerializer(serializers.ModelSerializer):
-    """курс"""
+    """SERIALIZER. Курс"""
     author = serializers.SerializerMethodField()
     quantity_in_collection = serializers.SerializerMethodField()
 
@@ -155,19 +172,23 @@ class CourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_author(course):
+        """Вернуть автора"""
         return course.profile.user.username
 
     def get_quantity_in_collection(self, course):
+        """Вернуть количество добавлений курса в подборки"""
         if self.context.get('profile', None) is None:
             return None
         return len(ProfileCourseCollection.objects.filter(course=course, profile=self.context.get('profile')))
 
     def get_status_progress(self, course):
+        """Вернуть статус прогресса"""
         if self.context.get('profile', None) is None:
             return None
         return HelperCourseSerializer.get_status_progress(course=course, profile=self.context.get('profile'))
 
     def get_progress(self, course):
+        """Вернуть прогресс"""
         if self.context.get('profile', None) is None:
             return None
         profile_course_list = ProfileCourse.objects.filter(course=course, profile=self.context.get('profile'))
@@ -180,7 +201,7 @@ class CourseSerializer(serializers.ModelSerializer):
 
 
 class MiniCourseSerializer(serializers.ModelSerializer):
-    """Мини курс"""
+    """SERIALIZER. Мини курс"""
     author = serializers.SerializerMethodField()
     status_progress = serializers.SerializerMethodField(default=None)
     progress = serializers.SerializerMethodField(default=None)
@@ -193,14 +214,17 @@ class MiniCourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_author(course):
+        """Вернуть автора"""
         return course.profile.user.username
 
     def get_status_progress(self, course):
+        """Вернуть статус прогресса"""
         if self.context.get('profile', None) is None:
             return None
         return HelperCourseSerializer.get_status_progress(course=course, profile=self.context.get('profile'))
 
     def get_progress(self, course):
+        """Вернуть прогресс"""
         if self.context.get('profile', None) is None:
             return None
         profile_course_list = ProfileCourse.objects.filter(course=course, profile=self.context.get('profile'))
@@ -213,6 +237,8 @@ class MiniCourseSerializer(serializers.ModelSerializer):
 
 
 class PageCourseSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Детальная страница курса"""
+
     author = serializers.SerializerMethodField()
     status_progress = serializers.SerializerMethodField(default=None)
 
@@ -223,13 +249,17 @@ class PageCourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_author(course):
+        """Вернуть автора"""
         return course.profile.user.username
 
     def get_status_progress(self, course):
+        """Вернуть статус прогресса"""
         return HelperCourseSerializer.get_status_progress(course=course, profile=self.context.get('profile'))
 
 
 class PageInfoCourseSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Страница курса """
+
     main_info = serializers.SerializerMethodField()
     fits = serializers.SerializerMethodField()
     skills = serializers.SerializerMethodField()
@@ -241,6 +271,7 @@ class PageInfoCourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_main_info(course_info):
+        """Вернуть главную информацию"""
         main_info_list = CourseMainInfo.objects.filter(course_info=course_info)
         if len(main_info_list) == 0:
             return None
@@ -255,6 +286,7 @@ class PageInfoCourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_fits(course_info):
+        """Вернуть представителей"""
         filter_fits = CourseFit.objects.filter(course_info=course_info)
         fits = list()
         for fit in filter_fits:
@@ -266,6 +298,7 @@ class PageInfoCourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_skills(course_info):
+        """Вернуть навыки"""
         filter_skills = CourseSkill.objects.filter(course_info=course_info)
         skills = list()
         for skill in filter_skills:
@@ -274,6 +307,7 @@ class PageInfoCourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_stars(course_info):
+        """Вернуть рейтинг"""
         stars = CourseStars.objects.get(course=course_info.course)
         stars_dict = {
             'five': stars.five_stars_count,
@@ -287,12 +321,15 @@ class PageInfoCourseSerializer(serializers.ModelSerializer):
 
 
 class CourseEditSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Окно изменения курса"""
     class Meta:
         model = Course
         fields = ('title', 'image_url', 'description')
 
 
 class EditPageInfoCourseSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Изменение страницы курса"""
+
     course = serializers.SerializerMethodField()
     main_info = serializers.SerializerMethodField()
     fits = serializers.SerializerMethodField()
@@ -304,10 +341,12 @@ class EditPageInfoCourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_course(course_info):
+        """Вернет курс"""
         return CourseEditSerializer(course_info.course).data
 
     @staticmethod
     def get_main_info(course_info):
+        """Вернуть главную информацию"""
         main_info_list = CourseMainInfo.objects.filter(course_info=course_info)
         if len(main_info_list) == 0:
             return None
@@ -322,6 +361,7 @@ class EditPageInfoCourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_fits(course_info):
+        """Вернуть представителей"""
         filter_fits = CourseFit.objects.filter(course_info=course_info)
         fits = list()
         for fit in filter_fits:
@@ -334,6 +374,7 @@ class EditPageInfoCourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_skills(course_info):
+        """Вернуть навыки"""
         filter_skills = CourseSkill.objects.filter(course_info=course_info)
         skills = list()
         for skill in filter_skills:
@@ -345,17 +386,20 @@ class EditPageInfoCourseSerializer(serializers.ModelSerializer):
 
 
 class CourseFitSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Представитля"""
     class Meta:
         model = CourseFit
         fields = ('pk', 'title', 'description')
 
     def create(self, validated_data):
+        """Создание представителя"""
         course_info = self.context.get('course_info')
         title = validated_data.get('title', None)
         description = validated_data.get('description', None)
         return CourseFit.objects.create(course_info=course_info, title=title, description=description)
 
     def update(self, instance, validated_data):
+        """Обновление представителя"""
         instance.title = validated_data.get('title', instance.title)
         instance.description = validated_data.get('description', instance.description)
         instance.save()
@@ -363,16 +407,20 @@ class CourseFitSerializer(serializers.ModelSerializer):
 
 
 class CourseSkillSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Навык"""
+
     class Meta:
         model = CourseSkill
         fields = ('pk', 'name')
 
     def create(self, validated_data):
+        """Создание навыка"""
         course_info = self.context.get('course_info')
         name = validated_data.get('name', None)
         return self.Meta.model.objects.create(course_info=course_info, name=name)
 
     def update(self, instance, validated_data):
+        """Обновление навыка"""
         instance.name = validated_data.get('name', instance.name)
         instance.save()
         return instance
@@ -388,12 +436,14 @@ class CourseSkillSerializer(serializers.ModelSerializer):
 
 # PAGE THEMES
 class CourseTitleSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Титульник курса"""
     class Meta:
         model = Theme
         fields = ('path', 'title', 'image_url')
 
 
 class ProfileThemeSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Профиль к теме"""
     count_lesson = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
     is_complete = serializers.SerializerMethodField(default=False)
@@ -402,10 +452,13 @@ class ProfileThemeSerializer(serializers.ModelSerializer):
         model = Theme
         fields = ('path', 'title', 'image_url', 'count_lesson', 'progress', 'is_complete')
 
-    def get_count_lesson(self, theme):
+    @staticmethod
+    def get_count_lesson(theme):
+        """Вернуть количество уроков в теме"""
         return len(Lesson.objects.filter(theme=theme))
 
     def get_progress(self, theme):
+        """Вернуть прогресс над темой"""
         profile_theme_list = ProfileTheme.objects.filter(theme=theme, profile=self.context.get('profile'))
         if len(profile_theme_list) == 0:
             return None
@@ -415,6 +468,7 @@ class ProfileThemeSerializer(serializers.ModelSerializer):
         }
 
     def get_is_complete(self, theme):
+        """Завершена ли тема"""
         progress = self.get_progress(theme=theme)
         if (progress is not None) and (progress.get('progress') == progress.get('max_progress')):
             return True
@@ -422,14 +476,17 @@ class ProfileThemeSerializer(serializers.ModelSerializer):
 
 
 class ActionThemeSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Действие над темой"""
     class Meta:
         model = Theme
         fields = ('title', 'image_url', 'max_progress', 'path')
 
     def create(self, validated_data):
+        """Создать действие над темой"""
         return Theme.objects.create(**validated_data, course=self.context.get('course'))
 
     def update(self, instance, validated_data):
+        """Обновить действие над темой"""
         instance.title = validated_data.get('title', instance.title)
 
         new_path = validated_data.get('path', None)
@@ -449,12 +506,14 @@ class ActionThemeSerializer(serializers.ModelSerializer):
 
 # PAGE LESSONS
 class ThemeTitleSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Титульник темы"""
     class Meta:
         model = Theme
         fields = ('path', 'title', 'image_url')
 
 
 class ProfileLessonSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Профиль к уроку"""
     count_step = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
     is_complete = serializers.SerializerMethodField(default=False)
@@ -464,10 +523,13 @@ class ProfileLessonSerializer(serializers.ModelSerializer):
         model = Lesson
         fields = ('path', 'title', 'image_url', 'current_step', 'count_step', 'progress', 'is_complete')
 
-    def get_count_step(self, lesson):
+    @staticmethod
+    def get_count_step(lesson):
+        """Вернуть количество шагов в уроке"""
         return len(Step.objects.filter(lesson=lesson))
 
     def get_progress(self, lesson):
+        """Вернуть прогресс"""
         profile_lesson_list = ProfileLesson.objects.filter(lesson=lesson, profile=self.context.get('profile'))
         if len(profile_lesson_list) == 0:
             return None
@@ -477,16 +539,19 @@ class ProfileLessonSerializer(serializers.ModelSerializer):
         }
 
     def get_is_complete(self, lesson):
+        """Завершен ли урок"""
         progress = self.get_progress(lesson=lesson)
         if (progress is not None) and (progress.get('progress') == progress.get('max_progress')):
             return True
         return False
 
     def get_link(self):
+        """Вернуть ссылку на урок"""
         link_old = self.context.get('request').build_absolute_uri()
         return "/".join(link_old.split('/')[:-1])
 
     def get_current_step(self, lesson):
+        """Текуший шаг"""
         step_list = Step.objects.filter(lesson=lesson)
         if len(step_list) == 0:
             return None
@@ -503,6 +568,7 @@ class ProfileLessonSerializer(serializers.ModelSerializer):
 
 
 class ActionLessonSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Действия над уроком"""
     count_step = serializers.SerializerMethodField()
 
     class Meta:
@@ -510,12 +576,15 @@ class ActionLessonSerializer(serializers.ModelSerializer):
         fields = ('title', 'image_url', 'max_progress', 'count_step', 'path')
 
     def get_count_step(self, lesson):
+        """Вернуть количество шагов в уроке"""
         return len(Step.objects.filter(lesson=lesson))
 
     def create(self, validated_data):
+        """Создать урок"""
         return Lesson.objects.create(**validated_data, theme=self.context.get('theme'))
 
     def update(self, instance, validated_data):
+        """Обновить урок"""
         instance.title = validated_data.get('title', instance.title)
 
         new_image = validated_data.get('image_url', -1)
@@ -530,6 +599,7 @@ class ActionLessonSerializer(serializers.ModelSerializer):
 
 # PAGE STEPS
 class GetStepSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Шаг"""
     is_active = serializers.SerializerMethodField(default=False)
     is_complete = serializers.SerializerMethodField(default=False)
 
@@ -538,11 +608,13 @@ class GetStepSerializer(serializers.ModelSerializer):
         fields = ('path', 'is_active', 'is_complete')
 
     def get_is_active(self, step):
+        """Текущий шаг"""
         if step == self.context.get('current_step'):
             return True
         return False
 
     def get_is_complete(self, step):
+        """Завешен ли шаг"""
         profile_step_list = ProfileStep.objects.filter(step=step, profile=self.context.get('profile'))
         if len(profile_step_list) == 0:
             return False
@@ -551,8 +623,7 @@ class GetStepSerializer(serializers.ModelSerializer):
         return False
 
     def update(self, instance, validated_data):
-        print(validated_data)
-        print(self.context)
+        """Обновить страницу с шагом"""
         new_status = self.context.get('status', None)
         new_progress = self.context.get('progress', None)
 
@@ -569,6 +640,7 @@ class GetStepSerializer(serializers.ModelSerializer):
 
 
 class ProfileStepSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Профиль к шагу"""
     path_step = serializers.SerializerMethodField()
     path_profile = serializers.SerializerMethodField()
 
@@ -578,17 +650,21 @@ class ProfileStepSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_path_step(profile_step):
+        """Вернуть путь к шагу"""
         return profile_step.step.path
 
     @staticmethod
     def get_path_profile(profile_step):
+        """Вернуть путь к профилю"""
         return profile_step.profile.path
 
     @staticmethod
     def get_status(profile_step):
+        """Вернуть статус"""
         return profile_step.status.name
 
     def update(self, instance, validated_data):
+        """Обновить шаг к профилю"""
         new_status = self.context.get('status', None)
         new_progress = self.context.get('progress', None)
 
@@ -605,6 +681,7 @@ class ProfileStepSerializer(serializers.ModelSerializer):
 
 
 class StepSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Шаг"""
     is_complete = serializers.SerializerMethodField(default=False)
     prev = serializers.SerializerMethodField()
     next = serializers.SerializerMethodField()
@@ -614,6 +691,7 @@ class StepSerializer(serializers.ModelSerializer):
         fields = ('path', 'title', 'content', 'is_complete', 'prev', 'next')
 
     def get_is_complete(self, step):
+        """Заверешен ли курс"""
         profile_step_list = ProfileStep.objects.filter(step=step, profile=self.context.get('profile'))
         if len(profile_step_list) == 0:
             return False
@@ -622,16 +700,19 @@ class StepSerializer(serializers.ModelSerializer):
         return False
 
     def get_link(self):
+        """Вернуть ссылку"""
         link_old = self.context.get('request').build_absolute_uri()
         return "/".join(link_old.split('/')[:-2])
 
     def get_prev(self, step):
+        """Вернуть ссылку на предыдущий шаг"""
         if step.number == 1:
             return None
         step_prev = Step.objects.get(number=step.number - 1)
         return f"{self.get_link()}/{step_prev.path}"
 
     def get_next(self, step):
+        """Вернуть ссылку на следующий шаг"""
         if step.number == len(Step.objects.filter(lesson=step.lesson)):
             return None
         step_next = Step.objects.get(number=step.number + 1)
@@ -639,17 +720,20 @@ class StepSerializer(serializers.ModelSerializer):
 
 
 class ActionStepSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Действия над шагом"""
     class Meta:
         model = Step
         fields = ('title', 'content', 'max_progress', 'path')
 
     @staticmethod
     def update_numbers(step_list):
+        """Обновить номер шага"""
         for i in range(len(step_list)):
             step_list[i].number = i + 1
             step_list[i].save()
 
     def create(self, validated_data):
+        """Создание шага"""
         lesson = self.context.get('lesson')
         number = self.context.get('number')
         step = Step.objects.create(**validated_data, lesson=lesson, number=number)
@@ -657,6 +741,7 @@ class ActionStepSerializer(serializers.ModelSerializer):
         return step
 
     def update(self, instance, validated_data):
+        """Обновить шаг"""
         instance.title = validated_data.get('title', instance.title)
         instance.content = validated_data.get('content', instance.content)
 
@@ -673,12 +758,14 @@ class ActionStepSerializer(serializers.ModelSerializer):
 # #########################################
 
 class GradeCourseSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Оценки курса"""
     class Meta:
         model = ProfileCourse
         fields = ('grade',)
 
     @staticmethod
     def add_course_star(course, grade):
+        """Добавить оценку курсу"""
         stars = CourseStars.objects.get(course=course)
         if grade == 1:
             stars.one_stars_count += 1
@@ -694,6 +781,7 @@ class GradeCourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def difference_course_star(course, grade):
+        """Убрать оценку у курса"""
         stars = CourseStars.objects.get(course=course)
         if grade == 1:
             stars.one_stars_count -= 1
@@ -709,6 +797,7 @@ class GradeCourseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def update_rating_course(course):
+        """Обновить рейтинг курса"""
         stars = CourseStars.objects.get(course=course)
 
         sum_grade = stars.one_stars_count + stars.two_stars_count * 2 + stars.three_stars_count * 3 \
@@ -723,6 +812,7 @@ class GradeCourseSerializer(serializers.ModelSerializer):
         course.save()
 
     def create(self, validated_data):
+        """Создание оценки"""
         profile_course = ProfileCourse.objects.get(profile=self.context.get('profile'),
                                                    course=self.context.get('course'))
         if profile_course.grade is not None:
@@ -735,6 +825,7 @@ class GradeCourseSerializer(serializers.ModelSerializer):
         return profile_course
 
     def update(self, instance, validated_data):
+        """Обновление оценки"""
         grade_list = (1, 2, 3, 4, 5)
         new_grade = validated_data.get('grade')
         if (type(new_grade) == int) and (new_grade in grade_list) and (instance.grade != new_grade):
@@ -746,6 +837,7 @@ class GradeCourseSerializer(serializers.ModelSerializer):
         return instance
 
     def delete_grade(self):
+        """Удаление оценки"""
         profile_course = self.context.get('profile_course')
         if profile_course.grade is not None:
             self.difference_course_star(course=profile_course.course, grade=profile_course.grade)

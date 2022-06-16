@@ -205,20 +205,13 @@ post_save.connect(create_step, sender=Step)
 
 
 class ProfileActionsLogs(models.Model):
+    """Logs to Step"""
     step = models.ForeignKey(Step, on_delete=models.SET_NULL, blank=True, null=True)
     profile = models.ForeignKey(Profile, on_delete=models.SET_NULL, blank=True, null=True)
     date_action = models.DateTimeField(default=datetime.datetime.now)
 
     def __str__(self):
         return f"{self.profile.user.username} => {self.step.lesson.theme.course.title}: {self.step.title} [{self.date_action}]"
-
-
-class ProfileCourseRole(models.Model):
-    """Role Profile to Course: Admin, User"""
-    name = models.CharField(max_length=64)
-
-    def __str__(self):
-        return f"{self.name} [Role Profile to Course]"
 
 
 class ProfileCourseStatus(models.Model):
@@ -258,7 +251,7 @@ post_save.connect(create_profile_to_course, sender=ProfileCourse)
 
 
 class ProfileCourseCollection(models.Model):
-    """Добавление курса в подборки"""
+    """Добавление курсы в подборки"""
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE, blank=True, null=True)

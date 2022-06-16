@@ -7,7 +7,7 @@ from .profile.models_profile import Profile, Subscription
 from .course.models_course import CourseStatus, Course, CourseInfo, CourseMainInfo, CourseFit, CourseStars, CourseSkill, \
     Theme, Lesson, Step, \
     ProfileCourseStatus, ProfileCourse, ProfileTheme, ProfileLesson, ProfileStepStatus, ProfileStep, \
-    ProfileCourseRole, CreatorCollection, ProfileCourseCollection, ProfileActionsLogs
+    CreatorCollection, ProfileCourseCollection, ProfileActionsLogs
 
 from .collection.models_collection import Collection, ProfileCollection, CollectionStars
 
@@ -37,7 +37,6 @@ admin.site.register(Step)
 
 # Profile to Course START
 admin.site.register(ProfileActionsLogs)
-admin.site.register(ProfileCourseRole)
 admin.site.register(ProfileCourseStatus)
 admin.site.register(ProfileCourse)
 admin.site.register(ProfileCourseCollection)

@@ -13,7 +13,7 @@ from ..utils import Util, HelperFilter, HelperPaginatorValue, HelperPaginator
 
 
 class ProfileView(viewsets.ModelViewSet):
-    """Profile"""
+    """View. Геттеры на модель Profile"""
     lookup_field = 'slug'
     queryset = Profile.objects.all()
     permission_classes = [permissions.IsAuthenticated]
@@ -27,9 +27,11 @@ class ProfileView(viewsets.ModelViewSet):
     pagination_max_page = HelperPaginatorValue.PROFILE_MAX_PAGE
 
     def exists_path(self, path):
+        """Существует ли такой путь к странице"""
         return len(self.queryset.filter(path=path)) != 0
 
     def get_frame_pagination(self, request, queryset, max_page=None):
+        """GET. Вернет форму для пагинации"""
         if max_page is None:
             max_page = self.pagination_max_page
         pagination = HelperPaginator(request=request, queryset=queryset, max_page=max_page)
@@ -43,11 +45,13 @@ class ProfileView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_profile_data(self, request):
+        """GET. Вернёт страницу профиля"""
         auth = Profile.objects.get(user=self.request.user)
         return Response(ProfileSerializer(auth).data, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=False)
     def get_list_profile(self, request):
+        """GET. Вернёт все профили"""
         auth = Profile.objects.get(user=self.request.user)
 
         queryset = self.filter_queryset(self.queryset)
@@ -58,6 +62,7 @@ class ProfileView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_list_mini_profile(self, request):
+        """GET. Вернёт все профили в мини-формах"""
         queryset = self.filter_queryset(self.queryset)
         frame_pagination = self.get_frame_pagination(request, queryset,
                                                      max_page=HelperPaginatorValue.MINI_PROFILE_MAX_PAGE)
@@ -67,7 +72,7 @@ class ProfileView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_header_profile(self, request, path):
-        """Верхняя информация на странице любого пользователя"""
+        """GET. Верхняя информация на странице любого пользователя"""
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -77,7 +82,7 @@ class ProfileView(viewsets.ModelViewSet):
 
 
 class ActionProfileView(viewsets.ModelViewSet):
-    """Profile"""
+    """View. Действия над моделью профиля"""
     lookup_field = 'slug'
     queryset = Profile.objects.all()
     permission_classes = [permissions.IsAuthenticated]
@@ -85,6 +90,7 @@ class ActionProfileView(viewsets.ModelViewSet):
 
     @staticmethod
     def get_profile_or_error(path):
+        """GET. Вернёт профиль или ошибку"""
         profile_list = Profile.objects.filter(path=path)
         if len(profile_list) == 0:
             error_text = "Такого пользователя не существует"
@@ -92,6 +98,7 @@ class ActionProfileView(viewsets.ModelViewSet):
         return {'profile': profile_list[0]}
 
     def is_valid(self, request, path):
+        """Проверка на валидность"""
         profile_dict = self.get_profile_or_error(path=path)
         if profile_dict.get('error', None) is not None:
             return profile_dict.get('error', None)
@@ -105,6 +112,7 @@ class ActionProfileView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_info(self, request, path):
+        """GET. Вернет информацию по пользователю для обновления"""
         profile_dict = self.get_profile_or_error(path=path)
         if profile_dict.get('error', None) is not None:
             return profile_dict.get('error', None)
@@ -115,6 +123,7 @@ class ActionProfileView(viewsets.ModelViewSet):
 
     @staticmethod
     def update_profile(data, profile):
+        """Обновление профиля"""
         serializer_profile = ActionProfileSerializer(data=data, instance=profile)
         serializer_profile.is_valid(raise_exception=True)
         try:
@@ -125,6 +134,7 @@ class ActionProfileView(viewsets.ModelViewSet):
 
     @staticmethod
     def update_user(data, user):
+        """Обновление пользователя"""
         serializer_user = ActionUserSerializer(data=data, instance=user)
         serializer_user.is_valid(raise_exception=True)
         serializer_user.save()
@@ -132,6 +142,7 @@ class ActionProfileView(viewsets.ModelViewSet):
 
     @action(methods=['put'], detail=False)
     def update_info(self, request, path):
+        """PUT. Обновление информации о пользователе"""
         profile_dict = self.is_valid(request=request, path=path)
         if profile_dict.get('error', None) is not None:
             return profile_dict.get('error', None)
@@ -152,6 +163,7 @@ class ActionProfileView(viewsets.ModelViewSet):
 
     @action(methods=['put'], detail=False)
     def update_password(self, request, path):
+        """PUT. Обновление пароля"""
         profile_dict = self.is_valid(request=request, path=path)
         if profile_dict.get('error', None) is not None:
             return profile_dict.get('error', None)
@@ -165,7 +177,7 @@ class ActionProfileView(viewsets.ModelViewSet):
 
 
 class CourseProfileView(viewsets.ModelViewSet):
-    """Course Profile"""
+    """View. Связь профиля к курсу"""
     lookup_field = 'slug'
     queryset = Profile.objects.all()
     permission_classes = [permissions.IsAuthenticated]
@@ -179,13 +191,16 @@ class CourseProfileView(viewsets.ModelViewSet):
     pagination_max_page = HelperPaginatorValue.PROFILE_MAX_PAGE
 
     def exists_path(self, path):
+        """Существует ли такой путь"""
         return len(self.queryset.filter(path=path)) != 0
 
     def swap_filters_field(self, type_filter):
+        """Смена типов фильтрации"""
         (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_course_field(
             type_filter)
 
     def get_frame_pagination(self, request, queryset, max_page=None):
+        """Вернет каркас для пагинации"""
         if max_page is None:
             max_page = self.pagination_max_page
         pagination = HelperPaginator(request=request, queryset=queryset, max_page=max_page)
@@ -199,7 +214,7 @@ class CourseProfileView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_studying_courses(self, request, path):
-        """Какие курсы ИЗУЧАЕТ студент"""
+        """GET. Какие курсы ИЗУЧАЕТ студент"""
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -223,7 +238,7 @@ class CourseProfileView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_studied_courses(self, request, path):
-        """Какие курсы ИЗУЧИЛ студент"""
+        """GET. Какие курсы ИЗУЧИЛ студент"""
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -248,7 +263,7 @@ class CourseProfileView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_statistic_study_courses(self, request, path):
-        """Статистика по студенту по изученным курсам"""
+        """GET. Статистика по студенту по изученным курсам"""
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -277,7 +292,7 @@ class CourseProfileView(viewsets.ModelViewSet):
 
 
 class SubscriptionProfileView(viewsets.ModelViewSet):
-    """Profile"""
+    """VIEW. Подписчики к профилю"""
     lookup_field = 'slug'
     profiles = Profile.objects.all()
     queryset = Subscription.objects.all()
@@ -292,16 +307,20 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
     pagination_max_page = HelperPaginatorValue.PROFILE_MAX_PAGE
 
     def exists_path(self, path):
+        """Существует ли такой путь"""
         return len(self.profiles.filter(path=path)) != 0
 
     def is_subscribe(self, goal, subscriber):
+        """Подписан ли пользователь"""
         return len(Subscription.objects.filter(goal=goal, subscriber=subscriber)) != 0
 
     def swap_filters_field(self, type_filter):
+        """Смена типов фильтраций"""
         (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_subscription_field(
             type_filter)
 
     def get_frame_pagination(self, request, queryset, max_page=None):
+        """Вернет каркас для пагинации"""
         if max_page is None:
             max_page = self.pagination_max_page
         pagination = HelperPaginator(request=request, queryset=queryset, max_page=max_page)
@@ -315,7 +334,7 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_goals_subscription_profile(self, request, path):
-        """На кого подписан"""
+        """GET. На кого подписан"""
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -332,7 +351,7 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_subscribers_profile(self, request, path):
-        """Кто подписан на профиль"""
+        """GET. Кто подписан на профиль"""
         if not self.exists_path(path):
             return Response({'path': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -351,6 +370,7 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def create_goal_subscription(self, request, path):
+        """POST. Подписаться на профиль"""
         if not self.exists_path(path):
             return Response({'error': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -371,6 +391,7 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def delete_goal_subscription(self, request, path):
+        """DELETE. Удалить подписку на профиль"""
         if not self.exists_path(path):
             return Response({'error': "Пути к такому пользователю не существует"}, status=status.HTTP_404_NOT_FOUND)
 

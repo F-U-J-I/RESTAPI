@@ -11,6 +11,7 @@ from ..profile.models_profile import Profile
 
 
 class LoginSerializer(serializers.ModelSerializer):
+    """Сериализация. Login'a"""
     path = serializers.SerializerMethodField()
     password = serializers.CharField(max_length=128, min_length=8, write_only=True)
 
@@ -20,10 +21,12 @@ class LoginSerializer(serializers.ModelSerializer):
         read_only_fields = ('token',)
 
     def get_path(self, user):
+        """Вернет путь до пользователя"""
         return Profile.objects.get(user=user).path
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    """Сериализация. Регистрация пользователя"""
     password = serializers.CharField(max_length=128, min_length=8, write_only=True)
 
     class Meta:
@@ -35,12 +38,14 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def password_is_valid(password):
+        """Проверка пароля на валидность"""
         reg = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,}'
         if re.fullmatch(reg, password):
             return True
         return False
 
     def create(self, validated_data):
+        """Создание пользователя"""
         username = validated_data['username']
         email = validated_data['email']
         password = validated_data['password']
@@ -80,6 +85,7 @@ class SetNewPasswordSerializer(serializers.ModelSerializer):
         fields = ('password', 'repeat_password', 'token', 'uidb64')
 
     def validate(self, attrs):
+        """Проверка на валидность токена"""
         try:
             password = attrs.get('password')
             repeat_password = attrs.get('repeat_password')

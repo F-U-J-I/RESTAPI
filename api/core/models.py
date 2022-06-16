@@ -34,11 +34,13 @@ class MyUserManager(UserManager):
         return user
 
     def create_user(self, username, email=None, password=None, **extra_fields):
+        """Создание пользователя"""
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
         return self._create_user(username, email, password, **extra_fields)
 
     def create_superuser(self, username, email=None, password=None, **extra_fields):
+        """Создание админа"""
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
 
@@ -51,6 +53,7 @@ class MyUserManager(UserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin, TrackingModel):
+    """Модель пользователя"""
     username_validator = UnicodeUsernameValidator()
 
     username = models.CharField(
@@ -82,19 +85,20 @@ class User(AbstractBaseUser, PermissionsMixin, TrackingModel):
 
     objects = MyUserManager()
 
-    email_verified = models.BooleanField(
-        _("email_verified"),
-        default=True,
-        help_text=_(
-            "Designates whether this user email is verified"
-        ),
-    )
+    # email_verified = models.BooleanField(
+    #     _("email_verified"),
+    #     default=False,
+    #     help_text=_(
+    #         "Designates whether this user email is verified"
+    #     ),
+    # )
     EMAIL_FIELD = "email"
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
     @property
     def token(self):
+        """Выдача токена"""
         token = jwt.encode({
             'username': self.username,
             'email': self.email,

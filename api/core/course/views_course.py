@@ -19,7 +19,7 @@ from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
 
 
 class CourseView(viewsets.ModelViewSet):
-    """Курсы"""
+    """VIEW. Курсы"""
     lookup_field = 'slug'
     queryset = Course.objects.all()
     permission_classes = [permissions.IsAuthenticated]
@@ -33,6 +33,7 @@ class CourseView(viewsets.ModelViewSet):
 
     @staticmethod
     def exists_access_page(course, profile):
+        """Есть ли доступ к данной странице"""
         status_development = CourseStatus.objects.get(name=Util.COURSE_STATUS_DEV_NAME)
         status_released = CourseStatus.objects.get(name=Util.COURSE_STATUS_RELEASE_NAME)
         if (course.status == status_released) or (course.status == status_development and profile == course.profile):
@@ -40,13 +41,16 @@ class CourseView(viewsets.ModelViewSet):
         return False
 
     def exists_path(self, path):
+        """Существует ли такой путь"""
         return len(self.queryset.filter(path=path)) != 0
 
     @staticmethod
     def exists_profile_path(path):
+        """Существует ли такой путь к профилю"""
         return len(Profile.objects.filter(path=path)) != 0
 
     def get_frame_pagination(self, request, queryset, max_page=None):
+        """Вернет каркас к пагинации"""
         if max_page is None:
             max_page = self.pagination_max_page
         pagination = HelperPaginator(request=request, queryset=queryset, max_page=max_page)
@@ -59,11 +63,13 @@ class CourseView(viewsets.ModelViewSet):
         }
 
     def swap_filters_field(self, type_filter):
+        """Смена типа фильтрации"""
         (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_course_field(
             type_filter)
 
     @action(methods=['get'], detail=False)
     def get_courses(self, request, *args, **kwargs):
+        """GET. Вернет все курсы"""
         auth = Profile.objects.get(user=self.request.user)
         status_release = CourseStatus.objects.get(name=Util.COURSE_STATUS_RELEASE_NAME)
         queryset = self.filter_queryset(self.queryset.filter(status=status_release))
@@ -75,6 +81,7 @@ class CourseView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_mini_courses(self, request, *args, **kwargs):
+        """GET. Вернет все мини-курсы"""
         auth = Profile.objects.get(user=self.request.user)
         status_release = CourseStatus.objects.get(name=Util.COURSE_STATUS_RELEASE_NAME)
         queryset = self.filter_queryset(self.queryset.filter(status=status_release))
@@ -86,7 +93,7 @@ class CourseView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_all_profile_courses(self, request, path, *args, **kwargs):
-        """Добавленные и созданные курсы пользователем по path"""
+        """GET. Добавленные и созданные курсы пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -111,7 +118,7 @@ class CourseView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_added_courses(self, request, path, *args, **kwargs):
-        """Добавленные курсы пользователем по path"""
+        """GET. Добавленные курсы пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -124,15 +131,14 @@ class CourseView(viewsets.ModelViewSet):
 
         queryset = [item.course for item in profile_queryset]
         frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_MAX_PAGE)
-        serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True,
-                                          context={'profile': auth})
+        serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
 
         frame_pagination['results'] = serializer.data
         return Response(frame_pagination, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def get_created_courses(self, request, path, *args, **kwargs):
-        """Созданные курсы пользователем по path"""
+        """GET. Созданные курсы пользователем по path"""
         if not self.exists_profile_path(path):
             return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -147,7 +153,7 @@ class CourseView(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=True)
     def get_page_course(self, request, path, *args, **kwargs):
-        """Страница с информацией о курсе"""
+        """GET. Страница с информацией о курсе"""
         if not self.exists_path(path):
             return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -170,16 +176,18 @@ class CourseView(viewsets.ModelViewSet):
 # #########################################
 
 class ActionCourseView(viewsets.ModelViewSet):
-    """Коллекция"""
+    """VIEW. Действия над подборками"""
     lookup_field = 'slug'
     queryset = Course.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     def exists_path(self, path):
+        """Существует ли такой путь"""
         return len(self.queryset.filter(path=path)) != 0
 
     @action(detail=False, methods=['post'])
     def create_course(self, request):
+        """POST. Cоздание курса"""
         course_title = request.data.get('title', None)
         if course_title is None:
             return Response({
@@ -197,6 +205,7 @@ class ActionCourseView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def delete_course(self, request, path):
+        """DELETE. Удаление курса"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -212,6 +221,7 @@ class ActionCourseView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def publish_course(self, request, path):
+        """POST. Опубликовать курс"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -228,6 +238,7 @@ class ActionCourseView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def development_course(self, request, path):
+        """POST. Перевести курс в разработку"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -244,11 +255,14 @@ class ActionCourseView(viewsets.ModelViewSet):
 
 
 class CoursePageView(viewsets.ModelViewSet):
+    """VIEW. Страница курса"""
+
     lookup_field = 'slug'
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['get'])
     def get_page(self, request, path):
+        """GET. Вернет страницу курса"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -260,6 +274,7 @@ class CoursePageView(viewsets.ModelViewSet):
 
     @staticmethod
     def update_course(request, course_info):
+        """Обновит курс"""
         course = course_info.course
         validated_data = request.data.get('course', None)
 
@@ -277,6 +292,7 @@ class CoursePageView(viewsets.ModelViewSet):
 
     @staticmethod
     def update_main_info(request, course_info):
+        """Обновит главную информацию о курсе"""
         main_info = CourseMainInfo.objects.get(course_info=course_info)
         validated_data = request.data.get('main_info', None)
 
@@ -291,6 +307,7 @@ class CoursePageView(viewsets.ModelViewSet):
 
     @staticmethod
     def update_fits(request, course_info):
+        """Обновит сообщество"""
         fit_list = CourseFit.objects.filter(course_info=course_info)
         validated_data = request.data.get('fits', None)
         for new_fit in validated_data:
@@ -302,6 +319,7 @@ class CoursePageView(viewsets.ModelViewSet):
 
     @staticmethod
     def update_skills(request, course_info):
+        """Обновит навыки"""
         skill_list = CourseSkill.objects.filter(course_info=course_info)
         validated_data = request.data.get('skills', None)
         for new_skill in validated_data:
@@ -312,6 +330,7 @@ class CoursePageView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def save_page(self, request, path):
+        """PUT. Сохранение страницы"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -328,17 +347,21 @@ class CoursePageView(viewsets.ModelViewSet):
 
 
 class CourseFitView(viewsets.ModelViewSet):
+    """VIEW. Курс к представителю"""
+
     lookup_field = 'slug'
     queryset = CourseFit.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     @staticmethod
     def exists(pk):
+        """Существует ли такой представитель"""
         return PathValidator.get_exists(data={'pk': pk}, model=CourseFit,
                                         error_text="Такого представителя не существует")
 
     @action(detail=False, methods=['post'])
     def create_fit(self, request, path):
+        """POST. Создать представителя"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -363,6 +386,7 @@ class CourseFitView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def update_fit(self, request, path):
+        """PUT. Обновление представителя"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -385,6 +409,7 @@ class CourseFitView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def delete_fit(self, request, path):
+        """DELETE. Удалить представителя"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -404,17 +429,21 @@ class CourseFitView(viewsets.ModelViewSet):
 
 
 class CourseSkillView(viewsets.ModelViewSet):
+    """VIEW. Курс к навыку"""
+
     lookup_field = 'slug'
     queryset = CourseSkill.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     @staticmethod
     def exists(pk):
+        """Существует ли такой навык"""
         return PathValidator.get_exists(data={'pk': pk}, model=CourseSkill,
                                         error_text="Такого представителя не существует")
 
     @action(detail=False, methods=['post'])
     def create_skill(self, request, path):
+        """POST. Создать навык"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -435,6 +464,7 @@ class CourseSkillView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def update_skill(self, request, path):
+        """PUT. Обновить подборку"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -456,6 +486,7 @@ class CourseSkillView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def delete_skill(self, request, path):
+        """DELETE. Удалить подборку"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -474,12 +505,15 @@ class CourseSkillView(viewsets.ModelViewSet):
 
 
 class CourseCompletionPageView(viewsets.ModelViewSet):
+    """VIEW. Страница мастерской"""
+
     lookup_field = 'slug'
     permission_classes = [permissions.IsAuthenticated]
 
     # PAGE THEMES
     @action(detail=False, methods=['get'])
     def get_title_course(self, request, path_course):
+        """GET. Вернет название курса"""
         exists = PathValidator.exists(path_course=path_course)
         if exists.get('error', None) is not None:
             return exists.get('error')
@@ -490,6 +524,7 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_themes(self, request, path_course):
+        """GET. Вернет темы курса"""
         exists = PathValidator.exists(path_course=path_course)
         if exists.get('error', None) is not None:
             return exists.get('error')
@@ -506,6 +541,7 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
     # PAGE LESSONS
     @action(detail=False, methods=['get'])
     def get_title_theme(self, request, path_course, path_theme):
+        """GET. Вернет название темы"""
         exists = PathValidator.exists(path_course=path_course, path_theme=path_theme)
         if exists.get('error', None) is not None:
             return exists.get('error')
@@ -516,6 +552,7 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_lessons(self, request, path_course, path_theme):
+        """GET. Вернет уроки темы"""
         exists = PathValidator.exists(path_course=path_course, path_theme=path_theme)
         if exists.get('error', None) is not None:
             return exists.get('error')
@@ -531,6 +568,7 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
     # PAGE STEPS
     @action(detail=False, methods=['get'])
     def get_steps(self, request, path_course, path_theme, path_lesson, path_step):
+        """GET. Вернет шаги урока"""
         exists = PathValidator.exists(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
                                       path_step=path_step)
         if exists.get('error', None) is not None:
@@ -547,6 +585,7 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
 
     @staticmethod
     def add_profile_action_logs(profile, step):
+        """ЛОГИ по изучению курса"""
         if len(ProfileCourse.objects.filter(profile=profile, course=step.lesson.theme.course)) != 0:
             if len(ProfileStep.objects.filter(profile=profile, step=step)) != 0:
                 if len(ProfileActionsLogs.objects.filter(profile=profile, step=step)) == 0:
@@ -557,6 +596,7 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
 
     @staticmethod
     def add_profile_step(profile, step):
+        """Добавить связь профиля с шагом"""
         profile_step_list = ProfileStep.objects.filter(profile=profile, step=step)
         if len(profile_step_list) == 0:
             profile_step = ProfileStep.objects.create(profile=profile, step=step)
@@ -565,6 +605,7 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_detail_step(self, request, path_course, path_theme, path_lesson, path_step):
+        """GET. Вернет детальную страницу шага"""
         exists = PathValidator.exists(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
                                       path_step=path_step)
         if exists.get('error', None) is not None:
@@ -580,6 +621,7 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
 
     @staticmethod
     def exists_profile_step(profile, step):
+        """Изучали ли вы данный шаг"""
         profile_step_list = ProfileStep.objects.filter(profile=profile, step=step)
         if len(profile_step_list) == 0:
             raise ValidationError({'error': 'Вы не изучаете данный шаг'})
@@ -587,6 +629,7 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def complete_step(self, request, path_course, path_theme, path_lesson, path_step):
+        """PUT. Завершить шаг"""
         exists = PathValidator.exists(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
                                       path_step=path_step)
         if exists.get('error', None) is not None:
@@ -609,6 +652,7 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
     # COMPLETE COURSE
     @action(detail=False, methods=['post'])
     def start_learn_course(self, request, path):
+        """POST. Начать изучение курса"""
         exists = PathValidator.exists(path_course=path)
         if exists.get('error', None) is not None:
             return exists.get('error')
@@ -631,6 +675,7 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def complete_learn_course(self, request, path):
+        """POST. Завершить изучение курса"""
         exists = PathValidator.exists(path_course=path)
         if exists.get('error', None) is not None:
             return exists.get('error')
@@ -655,13 +700,14 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
 
 
 class ThemeView(viewsets.ModelViewSet):
-    """Тема"""
+    """VIEW. Тема курса"""
     lookup_field = 'slug'
     queryset = Theme.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['post'])
     def create_theme(self, request, path):
+        """POST. Создание темы"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -679,6 +725,7 @@ class ThemeView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_update_info(self, request, path_course, path_theme):
+        """GET. Вернуть данные для обновления"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -691,6 +738,7 @@ class ThemeView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def update_theme(self, request, path_course, path_theme):
+        """PUT. Обновить тему"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -707,6 +755,7 @@ class ThemeView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def delete_theme(self, request, path_course, path_theme):
+        """DELETE. Удалить тему"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -722,13 +771,14 @@ class ThemeView(viewsets.ModelViewSet):
 
 
 class LessonView(viewsets.ModelViewSet):
-    """Тема"""
+    """VIEW. Урок"""
     lookup_field = 'slug'
     queryset = Lesson.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['post'])
     def create_lesson(self, request, path_course, path_theme):
+        """POST. Создание урока"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -752,6 +802,7 @@ class LessonView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_update_info(self, request, path_course, path_theme, path_lesson):
+        """GET. Вернуть данные для обновления"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
                                           path_lesson=path_lesson)
         if is_valid.get('error', None) is not None:
@@ -765,6 +816,7 @@ class LessonView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def update_lesson(self, request, path_course, path_theme, path_lesson):
+        """PUT. Обновить урок"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -781,6 +833,7 @@ class LessonView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def delete_lesson(self, request, path_course, path_theme, path_lesson):
+        """DELETE. Удалить урок"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
@@ -796,13 +849,14 @@ class LessonView(viewsets.ModelViewSet):
 
 
 class StepView(viewsets.ModelViewSet):
-    """Шаг"""
+    """VIEW. Шаг"""
     lookup_field = 'slug'
     queryset = Step.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['post'])
     def create_step(self, request, path_course, path_theme, path_lesson):
+        """POST. Создание шага"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
                                           path_lesson=path_lesson)
         if is_valid.get('error', None) is not None:
@@ -826,6 +880,7 @@ class StepView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_update_info(self, request, path_course, path_theme, path_lesson, path_step):
+        """GET. Вернуть данные для обновления"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
                                           path_lesson=path_lesson, path_step=path_step)
         if is_valid.get('error', None) is not None:
@@ -839,6 +894,7 @@ class StepView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def update_step(self, request, path_course, path_theme, path_lesson, path_step):
+        """PUT. Обновить шаг"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
                                           path_lesson=path_lesson, path_step=path_step)
         if is_valid.get('error', None) is not None:
@@ -852,6 +908,7 @@ class StepView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def delete_step(self, request, path_course, path_theme, path_lesson, path_step):
+        """DELETE. Удалить шаг"""
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme,
                                           path_lesson=path_lesson, path_step=path_step)
         if is_valid.get('error', None) is not None:
@@ -873,19 +930,22 @@ class StepView(viewsets.ModelViewSet):
 # #########################################
 
 class ActionProfileCourseView(viewsets.ModelViewSet):
-    """Коллекция"""
+    """VIEW. Действия профиля к курсу"""
     lookup_field = 'slug'
     queryset = Course.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     def exists_course(self, path):
+        """Cуществует ли такой курс"""
         return len(self.queryset.filter(path=path)) != 0
 
     @staticmethod
     def exists_collection(path):
+        """Cуществует ли такая подборка"""
         return len(Collection.objects.filter(path=path)) != 0
 
     def get_course(self, path):
+        """Вернет курс"""
         course_list = self.queryset.filter(path=path)
         if len(course_list) == 0:
             raise Http404("Такого курса не существует")
@@ -893,6 +953,7 @@ class ActionProfileCourseView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def added_courses(self, request, path):
+        """POST. Добавить курс"""
         collection_path = request.data.get('collection_path', None)
         if not self.exists_course(path=path):
             return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
@@ -923,6 +984,7 @@ class ActionProfileCourseView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def popped_courses(self, request, path):
+        """DELETE. Выкинуть подборку"""
         collection_path = request.data.get('collection_path', None)
         if not self.exists_course(path=path):
             return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
@@ -956,7 +1018,7 @@ class ActionProfileCourseView(viewsets.ModelViewSet):
 # #########################################
 
 class GradeCourseView(viewsets.ModelViewSet):
-    """Курсы"""
+    """VIEW. Оценка курса"""
     lookup_field = 'slug'
     queryset = Course.objects.all()
     permission_classes = [permissions.IsAuthenticated]
@@ -966,6 +1028,7 @@ class GradeCourseView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def set_grade(self, request, path):
+        """POST.Установить оценку """
         if not self.exists_path(path):
             return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -982,6 +1045,7 @@ class GradeCourseView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def update_grade(self, request, path):
+        """PUT. Обновить оценку"""
         if not self.exists_path(path):
             return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -1000,6 +1064,7 @@ class GradeCourseView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def delete_grade(self, request, path):
+        """DELETE. Удалить оценку"""
         if not self.exists_path(path):
             return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -1022,9 +1087,11 @@ class GradeCourseView(viewsets.ModelViewSet):
 
 
 class PathValidator:
+    """Валидатор путей и доступа"""
 
     @staticmethod
     def get_exists(data, model, error_text):
+        """Существет ли"""
         if data is not None:
             if not Util.exists_path(model, validated_data=data):
                 return {
@@ -1035,6 +1102,7 @@ class PathValidator:
 
     @staticmethod
     def is_valid(user=None, path_course=None, path_theme=None, path_lesson=None, path_step=None):
+        """Валиден ли"""
         exists = PathValidator.exists(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
                                       path_step=path_step)
         if exists.get('error', None) is not None:
@@ -1049,6 +1117,7 @@ class PathValidator:
 
     @staticmethod
     def exists(path_course=None, path_theme=None, path_lesson=None, path_step=None):
+        """Все поля существуют?"""
         if path_course is not None:
             exists_course = PathValidator.exists_course(path_course=path_course)
             if exists_course.get('error', None) is not None:
@@ -1073,24 +1142,29 @@ class PathValidator:
 
     @staticmethod
     def exists_course(path_course):
+        """Существует ли курс"""
         return PathValidator.get_exists(data={'path': path_course}, model=Course,
                                         error_text="Такого курса не существует")
 
     @staticmethod
     def exists_theme(path_theme):
+        """Существует ли тема"""
         return PathValidator.get_exists(data={'path': path_theme}, model=Theme, error_text="Такой темы не существует")
 
     @staticmethod
     def exists_lesson(path_lesson):
+        """Существует ли урок"""
         return PathValidator.get_exists(data={'path': path_lesson}, model=Lesson,
                                         error_text="Такого урока не существует")
 
     @staticmethod
     def exists_step(path_step):
+        """Существует ли шаг"""
         return PathValidator.get_exists(data={'path': path_step}, model=Step, error_text="Такого шага не существует")
 
     @staticmethod
     def is_access(user, path_course):
+        """Есть ли доступ"""
         auth = Profile.objects.get(user=user)
         course = Course.objects.get(path=path_course)
         if course.profile != auth:
