@@ -33,7 +33,7 @@ class CourseView(viewsets.ModelViewSet):
 
     @staticmethod
     def exists_access_page(course, profile):
-        """Есть ли доступ к данной странице"""
+        """Есть ли доступ к данной странице у текущего пользователя"""
         status_development = CourseStatus.objects.get(name=Util.COURSE_STATUS_DEV_NAME)
         status_released = CourseStatus.objects.get(name=Util.COURSE_STATUS_RELEASE_NAME)
         if (course.status == status_released) or (course.status == status_development and profile == course.profile):
@@ -41,7 +41,7 @@ class CourseView(viewsets.ModelViewSet):
         return False
 
     def exists_path(self, path):
-        """Существует ли такой путь"""
+        """Существует ли такой путь к странице"""
         return len(self.queryset.filter(path=path)) != 0
 
     @staticmethod
@@ -50,7 +50,7 @@ class CourseView(viewsets.ModelViewSet):
         return len(Profile.objects.filter(path=path)) != 0
 
     def get_frame_pagination(self, request, queryset, max_page=None):
-        """Вернет каркас к пагинации"""
+        """Возвращает каркас к пагинации"""
         if max_page is None:
             max_page = self.pagination_max_page
         pagination = HelperPaginator(request=request, queryset=queryset, max_page=max_page)
@@ -307,7 +307,7 @@ class CoursePageView(viewsets.ModelViewSet):
 
     @staticmethod
     def update_fits(request, course_info):
-        """Обновит сообщество"""
+        """Обновит представителей"""
         fit_list = CourseFit.objects.filter(course_info=course_info)
         validated_data = request.data.get('fits', None)
         for new_fit in validated_data:
@@ -585,7 +585,7 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
 
     @staticmethod
     def add_profile_action_logs(profile, step):
-        """ЛОГИ по изучению курса"""
+        """Ведение логов по изучению курса"""
         if len(ProfileCourse.objects.filter(profile=profile, course=step.lesson.theme.course)) != 0:
             if len(ProfileStep.objects.filter(profile=profile, step=step)) != 0:
                 if len(ProfileActionsLogs.objects.filter(profile=profile, step=step)) == 0:
