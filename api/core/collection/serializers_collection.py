@@ -91,7 +91,7 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = ('title', 'author', 'description', 'wallpaper', 'image_url', 'members_amount', 'rating', 'courses',
+        fields = ('path', 'title', 'author', 'description', 'wallpaper', 'image_url', 'members_amount', 'rating', 'courses',
                   'is_added')
 
     @staticmethod

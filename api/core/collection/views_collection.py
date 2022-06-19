@@ -7,8 +7,9 @@ from rest_framework.response import Response
 from .models_collection import Profile, Collection, ProfileCollection
 from .serializers_collection import DetailCollectionSerializer, CollectionSerializer, WindowDetailCollectionSerializer, \
     GradeCollectionSerializer, MiniCollectionSerializer
-
+from ..course.models_course import ProfileCourseCollection
 from ..utils import HelperFilter, HelperPaginatorValue, HelperPaginator
+
 
 # #########################################
 #        ######## GET ########
@@ -40,7 +41,8 @@ class CollectionView(viewsets.ModelViewSet):
 
     def swap_filters_field(self, type_filter):
         """Смена типа фильтраций"""
-        (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_collection_field(type_filter)
+        (self.filter_fields, self.search_fields, self.ordering_fields) = HelperFilter.get_filters_collection_field(
+            type_filter)
 
     def get_frame_pagination(self, request, queryset, max_page=None):
         """Вернет каркас пагинации"""
@@ -79,7 +81,7 @@ class CollectionView(viewsets.ModelViewSet):
 
     @staticmethod
     def get_not_profile_collections(profile):
-        """GET. Вернет все подборки, которые пользователь не добавлял себе и не создавал"""
+        """GET. Вернет все подборки, которые пользователь не добавлял себе и не создавал. Также не возвращает пустые"""
         data = dict()
         for item in ProfileCollection.objects.all():
             collection = item.collection
@@ -88,9 +90,11 @@ class CollectionView(viewsets.ModelViewSet):
             data[collection].append(item.profile)
 
         collection_list = list()
+        queryset_course = ProfileCourseCollection.objects.all()
         for key, value in data.items():
-            if profile not in value:
+            if (profile not in value) and (len(queryset_course.filter(collection=key)) != 0):
                 collection_list.append(key)
+
         return ProfileCollection.objects.filter(collection__in=collection_list)
 
     @action(detail=False, methods=['get'])

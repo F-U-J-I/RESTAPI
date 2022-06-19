@@ -12,6 +12,7 @@ from ..utils import Util
 
 class HelperCourseSerializer:
     """Помощник сериализации """
+
     @staticmethod
     def get_is_added(course, profile):
         """Добавлен ли"""
@@ -168,7 +169,7 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = (
             'path', 'title', 'description', 'author', 'image_url', 'duration_in_minutes', 'rating', 'members_amount',
-            'quantity_in_collection', 'status_progress', 'progress')
+            'price', 'quantity_in_collection', 'status_progress', 'progress')
 
     @staticmethod
     def get_author(course):
@@ -210,7 +211,7 @@ class MiniCourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = (
             'path', 'title', 'description', 'author', 'image_url', 'duration_in_minutes', 'rating', 'members_amount',
-            'status_progress', 'progress')
+            'price', 'status_progress', 'progress')
 
     @staticmethod
     def get_author(course):
@@ -322,6 +323,7 @@ class PageInfoCourseSerializer(serializers.ModelSerializer):
 
 class CourseEditSerializer(serializers.ModelSerializer):
     """SERIALIZER. Окно изменения курса"""
+
     class Meta:
         model = Course
         fields = ('title', 'image_url', 'description')
@@ -387,6 +389,7 @@ class EditPageInfoCourseSerializer(serializers.ModelSerializer):
 
 class CourseFitSerializer(serializers.ModelSerializer):
     """SERIALIZER. Представитля"""
+
     class Meta:
         model = CourseFit
         fields = ('pk', 'title', 'description')
@@ -437,6 +440,7 @@ class CourseSkillSerializer(serializers.ModelSerializer):
 # PAGE THEMES
 class CourseTitleSerializer(serializers.ModelSerializer):
     """SERIALIZER. Титульник курса"""
+
     class Meta:
         model = Theme
         fields = ('path', 'title', 'image_url')
@@ -477,6 +481,7 @@ class ProfileThemeSerializer(serializers.ModelSerializer):
 
 class ActionThemeSerializer(serializers.ModelSerializer):
     """SERIALIZER. Действие над темой"""
+
     class Meta:
         model = Theme
         fields = ('title', 'image_url', 'max_progress', 'path')
@@ -507,6 +512,7 @@ class ActionThemeSerializer(serializers.ModelSerializer):
 # PAGE LESSONS
 class ThemeTitleSerializer(serializers.ModelSerializer):
     """SERIALIZER. Титульник темы"""
+
     class Meta:
         model = Theme
         fields = ('path', 'title', 'image_url')
@@ -721,6 +727,7 @@ class StepSerializer(serializers.ModelSerializer):
 
 class ActionStepSerializer(serializers.ModelSerializer):
     """SERIALIZER. Действия над шагом"""
+
     class Meta:
         model = Step
         fields = ('title', 'content', 'max_progress', 'path')
@@ -759,6 +766,7 @@ class ActionStepSerializer(serializers.ModelSerializer):
 
 class GradeCourseSerializer(serializers.ModelSerializer):
     """SERIALIZER. Оценки курса"""
+
     class Meta:
         model = ProfileCourse
         fields = ('grade',)
