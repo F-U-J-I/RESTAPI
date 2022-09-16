@@ -1,3 +1,14 @@
+import os
+# import urllib.request
+from urllib.parse import urljoin
+
+import requests
+
+# from urlparse import urljoin
+import requests
+from django.core.files import File
+from django.core.files.base import ContentFile
+from django.core.files.images import ImageFile
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -54,6 +65,7 @@ class CollectionView(viewsets.ModelViewSet):
             "pages": pagination.get_num_pages(),
             "next": pagination.get_link_next_page(),
             "previous": pagination.get_link_previous_page(),
+            "current_page": pagination.current_page_num,
             "results": pagination.page_obj
         }
 
@@ -245,7 +257,7 @@ class ActionCollectionView(viewsets.ModelViewSet):
         try:
             serializer.save()
         except ValueError as ex:
-            return Response({'error': str(ex)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': str(ex)}, status=status.HTTP_404_NOT_FOUND)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['delete'])
@@ -299,7 +311,9 @@ class ActionProfileCollectionView(viewsets.ModelViewSet):
         profile_collection.save()
 
         return Response({
-            'collection': collection.title,
+            'title': collection.title,
+            'path': collection.path,
+            'image_url': collection.image_url.url,
             'message': "Подборка добавлена"
         }, status=status.HTTP_200_OK)
 
@@ -319,7 +333,9 @@ class ActionProfileCollectionView(viewsets.ModelViewSet):
         profile_collection.delete()
 
         return Response({
-            'collection': collection.title,
+            'title': collection.title,
+            'path': collection.path,
+            'image_url': collection.image_url.url,
             'message': "Подборка удалена"
         }, status=status.HTTP_200_OK)
 

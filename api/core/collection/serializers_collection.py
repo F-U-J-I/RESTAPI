@@ -76,7 +76,7 @@ class MiniCollectionSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_author(collection):
         """Вернет автора подборки"""
-        return collection.profile.user.username
+        return ProfileAsAuthor(collection.profile).data
 
     def get_is_added(self, collection):
         """Добавлена ли подборка"""
@@ -126,23 +126,24 @@ class WindowDetailCollectionSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Обновление"""
+        print(instance)
         instance.title = validated_data.get('title', instance.title)
+        print(instance)
         instance.description = validated_data.get('description', instance.description)
 
-        new_path = validated_data.get('path', None)
-        if new_path is not None:
-            new_path = Util.get_update_path(new_path=new_path)
-        instance.path = Util.get_new_path(new_path=new_path, old_path=instance.path, model=Collection)
+        print(instance)
 
         # Изменение картинок
-        instance.wallpaper = Util.get_update_image(old=instance.image_url,
-                                                   new=validated_data.get('wallpaper', instance.image_url))
+        instance.wallpaper = validated_data.get('wallpaper', instance.wallpaper)
 
+        print(instance)
         new_image = validated_data.get('image_url', -1)
         if new_image != -1:
             update_image = Util.get_image(old=instance.image_url, new=new_image,
-                                          default=Util.DEFAULT_IMAGES.get('lesson'))
+                                          default=Util.DEFAULT_IMAGES.get('collection'))
             instance.image_url = Util.get_update_image(old=instance.image_url, new=update_image)
+
+        print(instance)
 
         instance.save()
         return instance

@@ -46,7 +46,10 @@ class AuthView(generics.GenericAPIView):
         """Вернет данные пользователя"""
         user = request.user
         profile = Profile.objects.get(user=user)
-        return Response(ProfileSerializer(profile, context=self.get_serializer_context()).data, status=status.HTTP_200_OK)
+        return Response(
+            ProfileSerializer(profile, context=self.get_serializer_context()).data,
+            status=status.HTTP_200_OK
+        )
 
 
 # Create your views here.
@@ -99,8 +102,8 @@ class VerifyEmailView(generics.GenericAPIView):
             if not profile.is_verified:
                 profile.is_verified = True
                 profile.save()
-                return Response({'email': "Аккаунт успешно активирован"}, status=status.HTTP_200_OK)
-            return Response({'email': "Ваш аккаунт уже активирован"}, status=status.HTTP_200_OK)
+                return Response({'error': "Аккаунт успешно активирован"}, status=status.HTTP_200_OK)
+            return Response({'error': "Ваш аккаунт уже активирован"}, status=status.HTTP_400_BAD_REQUEST)
 
         except jwt.ExpiredSignatureError as ex:
             return Response({'error': "Не удалось активировать аккаунт"}, status=status.HTTP_400_BAD_REQUEST)
@@ -181,7 +184,7 @@ class PasswordTokenCheckAPI(generics.GenericAPIView):
     def request_error():
         """Запрос с ошибкой"""
         return Response({
-            'message': 'Token is not valid, please request a new one',
+            'error': 'Token is not valid, please request a new one',
         },
             status=status.HTTP_400_BAD_REQUEST
         )

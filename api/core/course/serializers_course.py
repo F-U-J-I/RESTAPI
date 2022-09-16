@@ -7,6 +7,7 @@ from .models_course import Course, ProfileCourse, Theme, Lesson, \
 #####################################
 #         ##  COURSE ##
 #####################################
+from ..profile.serializers_profile import ProfileAsAuthor
 from ..utils import Util
 
 
@@ -174,7 +175,7 @@ class CourseSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_author(course):
         """Вернуть автора"""
-        return course.profile.user.username
+        return ProfileAsAuthor(course.profile).data
 
     def get_quantity_in_collection(self, course):
         """Вернуть количество добавлений курса в подборки"""
@@ -216,7 +217,7 @@ class MiniCourseSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_author(course):
         """Вернуть автора"""
-        return course.profile.user.username
+        return ProfileAsAuthor(course.profile).data
 
     def get_status_progress(self, course):
         """Вернуть статус прогресса"""
@@ -241,17 +242,27 @@ class PageCourseSerializer(serializers.ModelSerializer):
     """SERIALIZER. Детальная страница курса"""
 
     author = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
     status_progress = serializers.SerializerMethodField(default=None)
 
     class Meta:
         model = Course
-        fields = ('title', 'author', 'image_url', 'price', 'duration_in_minutes', 'rating', 'members_amount',
+        fields = ('path', 'title', 'author', 'image_url', 'price', 'duration_in_minutes', 'rating', 'members_amount',
                   'status_progress')
 
     @staticmethod
     def get_author(course):
         """Вернуть автора"""
-        return course.profile.user.username
+        return ProfileAsAuthor(course.profile).data
+
+    @staticmethod
+    def get_rating(course):
+        stars = CourseStars.objects.get(course=course)
+        reviews_count = stars.one_stars_count + stars.two_stars_count + stars.three_stars_count + stars.four_stars_count + stars.five_stars_count
+        return {
+            'value': course.rating,
+            'reviews_count': reviews_count,
+        }
 
     def get_status_progress(self, course):
         """Вернуть статус прогресса"""
@@ -695,6 +706,45 @@ class StepSerializer(serializers.ModelSerializer):
     class Meta:
         model = Step
         fields = ('path', 'title', 'content', 'is_complete', 'prev', 'next')
+
+    def get_is_complete(self, step):
+        """Заверешен ли курс"""
+        profile_step_list = ProfileStep.objects.filter(step=step, profile=self.context.get('profile'))
+        if len(profile_step_list) == 0:
+            return False
+        if profile_step_list[0].status.name == Util.PROFILE_COURSE_STATUS_STUDIED_NAME:
+            return True
+        return False
+
+    def get_link(self):
+        """Вернуть ссылку"""
+        link_old = self.context.get('request').build_absolute_uri()
+        return "/".join(link_old.split('/')[:-2])
+
+    def get_prev(self, step):
+        """Вернуть ссылку на предыдущий шаг"""
+        if step.number == 1:
+            return None
+        step_prev = Step.objects.get(number=step.number - 1)
+        return f"{self.get_link()}/{step_prev.path}"
+
+    def get_next(self, step):
+        """Вернуть ссылку на следующий шаг"""
+        if step.number == len(Step.objects.filter(lesson=step.lesson)):
+            return None
+        step_next = Step.objects.get(number=step.number + 1)
+        return f"{self.get_link()}/{step_next.path}"
+
+
+class AndroidStepSerializer(serializers.ModelSerializer):
+    """SERIALIZER. Шаг"""
+    is_complete = serializers.SerializerMethodField(default=False)
+    prev = serializers.SerializerMethodField()
+    next = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Step
+        fields = ('path', 'title', 'content_json', 'is_complete', 'prev', 'next')
 
     def get_is_complete(self, step):
         """Заверешен ли курс"""

@@ -63,13 +63,19 @@ class Util:
     @staticmethod
     def get_image(old, new, default):
         """Вернет новое изображение"""
+        print('get_image')
         try:
             if new is None or len(new) == 0:
+                print('true')
                 path_image = "\\".join(old.path.split('\\')[:-1]) + "\\" + str(default)
+                print(path_image)
                 new = ImageFile(open(path_image, "rb"))
         except FileNotFoundError:
+            print('false')
             path_image = "\\".join(old.path.split('\\')[:-1]) + "\\" + str(default)
+            print(path_image)
             new = ImageFile(open(path_image, "rb"))
+        print('/////////////////////')
         return new
 
     @staticmethod
@@ -230,14 +236,14 @@ class HelperPaginator:
 
     def __init__(self, request, queryset, max_page):
         self.paginator = Paginator(queryset, max_page)
+        self.request = request
         self.link = request.build_absolute_uri()
-        self.current_page_num = self.get_current_page_num(request=request)
+        self.current_page_num = self.get_current_page_num()
         self.page_obj = self.get_page()
 
-    @staticmethod
-    def get_current_page_num(request):
+    def get_current_page_num(self):
         """Вернет текущий номер пагинации"""
-        return request.GET.get('page', 1)
+        return int(self.request.GET.get('page', 1))
 
     def get_page(self):
         """Вернет страницу"""

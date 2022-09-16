@@ -12,7 +12,8 @@ from .models_course import Course, CourseInfo, ProfileCourse, CourseStatus, Prof
 from .serializers_course import GradeCourseSerializer, PageCourseSerializer, PageInfoCourseSerializer, CourseSerializer, \
     MiniCourseSerializer, ActionThemeSerializer, ActionLessonSerializer, ActionStepSerializer, ProfileThemeSerializer, \
     CourseTitleSerializer, ThemeTitleSerializer, ProfileLessonSerializer, GetStepSerializer, StepSerializer, \
-    MaxProgressUpdater, CourseFitSerializer, CourseSkillSerializer, EditPageInfoCourseSerializer, ProfileStepSerializer
+    MaxProgressUpdater, CourseFitSerializer, CourseSkillSerializer, EditPageInfoCourseSerializer, ProfileStepSerializer, \
+    AndroidStepSerializer
 from ..collection.models_collection import Collection
 from ..profile.models_profile import Profile
 from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
@@ -59,6 +60,7 @@ class CourseView(viewsets.ModelViewSet):
             "pages": pagination.get_num_pages(),
             "next": pagination.get_link_next_page(),
             "previous": pagination.get_link_previous_page(),
+            "current_page": pagination.current_page_num,
             "results": pagination.page_obj
         }
 
@@ -169,6 +171,20 @@ class CourseView(viewsets.ModelViewSet):
             'course': serializer_course.data,
             'info': serializer_course_info.data
         }, status=status.HTTP_200_OK)
+
+    @action(methods=['get'], detail=True)
+    def get_added_collection_course(self, request, path):
+        """GET. Подборки с курсом"""
+        if not self.exists_path(path):
+            return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        course = self.queryset.get(path=path)
+        profile = Profile.objects.get(user=request.user)
+
+        collection_path_list = list()
+        for item in ProfileCourseCollection.objects.filter(course=course, profile=profile):
+            collection_path_list.append(item.collection.path)
+        return Response(collection_path_list, status=status.HTTP_200_OK)
 
 
 # #########################################
@@ -619,6 +635,22 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'])
+    def get_detail_step_android(self, request, path_course, path_theme, path_lesson, path_step):
+        """GET. Вернет детальную страницу шага"""
+        exists = PathValidator.exists(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
+                                      path_step=path_step)
+        if exists.get('error', None) is not None:
+            return exists.get('error')
+
+        auth = Profile.objects.get(user=self.request.user)
+        step = Step.objects.get(path=path_step)
+        serializer = AndroidStepSerializer(step, context={'profile': auth, 'request': request})
+
+        self.add_profile_step(profile=auth, step=step)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @staticmethod
     def exists_profile_step(profile, step):
         """Изучали ли вы данный шаг"""
@@ -662,6 +694,8 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
         profile_course_list = ProfileCourse.objects.filter(course=course, profile=auth)
         if len(profile_course_list) == 0:
             profile_course = ProfileCourse.objects.create(course=course, profile=auth)
+            course.members_amount += 1
+            course.save()
         else:
             profile_course = profile_course_list[0]
         profile_course.status = ProfileCourseStatus.objects.get(name=Util.PROFILE_COURSE_STATUS_STUDYING_NAME)

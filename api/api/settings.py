@@ -26,8 +26,11 @@ SECRET_KEY = 'django-insecure-xphk**i(rnfdg^4ma1_k_!#@#&&pl%f-rr41mq_1oi6tjn(7)b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# ALLOWED_HOSTS = ["192.168.0.105", "localhost", "127.0.0.1"]
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['dmakger.beget.tech']
+# ALLOWED_HOSTS = ['*']
+
+if DEBUG:
+    ALLOWED_HOSTS += ['127.0.0.1', 'localhost', '192.168.0.105']
 
 AUTH_USER_MODEL = "core.User"
 
@@ -82,7 +85,13 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=2),
 }
 
-CORS_ORIGIN_WHITELIST = ["http://localhost:3000", "http://127.0.0.1:3000"]
+CORS_ORIGIN_WHITELIST = ["http://localhost", "http://127.0.0.1"]
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
 # конец настроек JWT токена
 
 

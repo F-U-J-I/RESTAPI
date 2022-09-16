@@ -40,6 +40,7 @@ class ProfileView(viewsets.ModelViewSet):
             "pages": pagination.get_num_pages(),
             "next": pagination.get_link_next_page(),
             "previous": pagination.get_link_previous_page(),
+            "current_page": pagination.current_page_num,
             "results": pagination.page_obj
         }
 
@@ -209,6 +210,7 @@ class CourseProfileView(viewsets.ModelViewSet):
             "pages": pagination.get_num_pages(),
             "next": pagination.get_link_next_page(),
             "previous": pagination.get_link_previous_page(),
+            "current_page": pagination.current_page_num,
             "results": pagination.page_obj
         }
 
@@ -329,6 +331,7 @@ class SubscriptionProfileView(viewsets.ModelViewSet):
             "pages": pagination.get_num_pages(),
             "next": pagination.get_link_next_page(),
             "previous": pagination.get_link_previous_page(),
+            "current_page": pagination.current_page_num,
             "results": pagination.page_obj
         }
 

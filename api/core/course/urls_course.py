@@ -16,6 +16,7 @@ urlpatterns = [
     path('courses/added/<slug:path>/', CourseView.as_view({'get': 'get_added_courses'})),
     path('courses/created/<slug:path>/', CourseView.as_view({'get': 'get_created_courses'})),
     path('courses/page/<slug:path>/', CourseView.as_view({'get': 'get_page_course'})),
+    path('courses/added-collection/<slug:path>/', CourseView.as_view({'get': 'get_added_collection_course'})),
 
     # GRADE
     path('courses/create/grade/<slug:path>/', GradeCourseView.as_view({'post': 'set_grade'})),
@@ -60,6 +61,8 @@ urlpatterns = [
         CourseCompletionPageView.as_view({'get': 'get_steps'})),
     path('courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/<slug:path_lesson>/steps/<slug:path_step>/',
          CourseCompletionPageView.as_view({'get': 'get_detail_step'})),
+    path('courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/<slug:path_lesson>/steps-android/<slug:path_step>/',
+         CourseCompletionPageView.as_view({'get': 'get_detail_step_android'})),
 
     # THEME
     path('courses/creating/<slug:path>/create/theme/',

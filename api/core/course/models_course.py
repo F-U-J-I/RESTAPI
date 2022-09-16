@@ -180,6 +180,7 @@ class Step(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
     content = RichTextUploadingField(blank=True)
+    content_json = models.JSONField(blank=True, null=True)
     max_progress = models.IntegerField(default=0)
     number = models.IntegerField(default=0)
     path = models.CharField(max_length=64, blank=True, null=True)
