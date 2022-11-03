@@ -13,11 +13,18 @@ from ..utils import Util
 
 class HelperCollectionSerializer:
     """SERIALIZER. Помощник при сериализации"""
+
     @staticmethod
     def get_is_added(collection, profile):
-        profile_to_collection = ProfileCollection.objects.filter(collection=collection, profile=profile)
-        if len(profile_to_collection) == 1:
-            return True
+        queryset = ProfileCollection.objects.filter(collection=collection, profile=profile)
+        # print('-----')
+        # print('get_is_added')
+        # print(collection.title, queryset)
+
+        for item in queryset:
+            # print(collection.title, item.date_added)
+            if item.date_added:
+                return True
         return False
 
 
@@ -31,10 +38,12 @@ class CollectionSerializer(serializers.ModelSerializer):
     courses = serializers.SerializerMethodField()
     is_added = serializers.SerializerMethodField(default=False)
     added_number = serializers.SerializerMethodField()
+    count_ratings = serializers.SerializerMethodField()
 
     class Meta:
         model = Collection
-        fields = ('path', 'title', 'author', 'image_url', 'rating', 'courses', 'is_added', 'added_number')
+        fields = (
+            'path', 'title', 'author', 'image_url', 'rating', 'courses', 'is_added', 'added_number', 'count_ratings')
 
     @staticmethod
     def get_author(collection):
@@ -59,6 +68,11 @@ class CollectionSerializer(serializers.ModelSerializer):
         """Сколько людей добавило эту подборку"""
         queryset = ProfileCollection.objects.filter(collection=collection, )
         return len(queryset.filter(~Q(profile=self.context.get('profile'))))
+
+    @staticmethod
+    def get_count_ratings(collection):
+        """Количество оценок подборки"""
+        return GradeCollectionSerializer.get_count_star(collection=collection)
 
 
 class MiniCollectionSerializer(serializers.ModelSerializer):
@@ -88,11 +102,14 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     courses = serializers.SerializerMethodField()
     is_added = serializers.SerializerMethodField(default=False)
+    count_ratings = serializers.SerializerMethodField()
+    grade = serializers.SerializerMethodField()
 
     class Meta:
         model = Collection
-        fields = ('path', 'title', 'author', 'description', 'wallpaper', 'image_url', 'members_amount', 'rating', 'courses',
-                  'is_added')
+        fields = (
+            'path', 'title', 'author', 'description', 'wallpaper', 'image_url', 'members_amount', 'rating', 'courses',
+            'is_added', 'count_ratings', 'grade')
 
     @staticmethod
     def get_author(collection):
@@ -111,6 +128,18 @@ class DetailCollectionSerializer(serializers.ModelSerializer):
     def get_is_added(self, collection):
         """Добавлена ли подборка"""
         return HelperCollectionSerializer.get_is_added(collection=collection, profile=self.context.get('profile'))
+
+    @staticmethod
+    def get_count_ratings(collection):
+        """Количество оценок подборки"""
+        return GradeCollectionSerializer.get_count_star(collection=collection)
+
+    def get_grade(self, collection):
+        profile_collection_queryset = ProfileCollection.objects.filter(collection=collection,
+                                                                       profile=self.context.get('profile'))
+        if len(profile_collection_queryset) == 0:
+            return None
+        return profile_collection_queryset[0].grade
 
 
 class WindowDetailCollectionSerializer(serializers.ModelSerializer):
@@ -134,6 +163,7 @@ class WindowDetailCollectionSerializer(serializers.ModelSerializer):
         print(instance)
 
         # Изменение картинок
+        print(validated_data.get('wallpaper'))
         instance.wallpaper = validated_data.get('wallpaper', instance.wallpaper)
 
         print(instance)
@@ -143,7 +173,7 @@ class WindowDetailCollectionSerializer(serializers.ModelSerializer):
                                           default=Util.DEFAULT_IMAGES.get('collection'))
             instance.image_url = Util.get_update_image(old=instance.image_url, new=update_image)
 
-        print(instance)
+        print(instance.wallpaper)
 
         instance.save()
         return instance
@@ -161,6 +191,12 @@ class GradeCollectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProfileCollection
         fields = ('grade',)
+
+    @staticmethod
+    def get_count_star(collection):
+        """Количество оценок"""
+        stars = CollectionStars.objects.get(collection=collection)
+        return stars.one_stars_count + stars.two_stars_count + stars.three_stars_count + stars.four_stars_count + stars.five_stars_count
 
     @staticmethod
     def add_collection_star(collection, grade):
@@ -210,10 +246,25 @@ class GradeCollectionSerializer(serializers.ModelSerializer):
         collection.rating = rating
         collection.save()
 
+    @staticmethod
+    def has_grade(collection, profile):
+        profile_collection_queryset = ProfileCollection.objects.filter(profile=profile, collection=collection)
+        has_grade_local = False
+        if len(profile_collection_queryset):
+            has_grade_local = profile_collection_queryset[0].grade is not None
+        return has_grade_local
+
     def create(self, validated_data):
         """Создание оценки"""
-        profile_collection = ProfileCollection.objects.get(profile=self.context.get('profile'),
-                                                           collection=self.context.get('collection'))
+
+        profile_collection_queryset = ProfileCollection.objects.filter(profile=self.context.get('profile'),
+                                                                       collection=self.context.get('collection'))
+        if not len(profile_collection_queryset):
+            profile_collection = ProfileCollection.objects.create(profile=self.context.get('profile'),
+                                                                  collection=self.context.get('collection'),
+                                                                  date_added=None)
+        else:
+            profile_collection = profile_collection_queryset[0]
         if profile_collection.grade is not None:
             raise serializers.ValidationError({'grade': 'Вы уже оценивали подборку'})
 

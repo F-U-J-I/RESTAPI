@@ -4,7 +4,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.core.files.images import ImageFile
 # from django.core.mail import send_mail
 from django.core.mail import EmailMessage
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage, Page
 from django.urls import reverse
 from rest_framework.utils.urls import replace_query_param
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -130,7 +130,7 @@ class HelperFilter:
     PROFILE_COLLECTION_TYPE = 2
     PROFILE_COLLECTION_FILTER_FIELDS = ('collection__title', 'collection__profile__user__username')
     PROFILE_COLLECTION_SEARCH_FIELDS = ('collection__title', 'collection__profile__user__username')
-    PROFILE_COLLECTION_ORDERING_FIELDS = ('collection__rating', 'collection__title')
+    PROFILE_COLLECTION_ORDERING_FIELDS = ('collection__rating', 'collection__title', 'date_added')
 
     # COURSE
 
@@ -234,7 +234,7 @@ class HelperPaginatorValue:
 class HelperPaginator:
     """Пагинация моделей"""
 
-    def __init__(self, request, queryset, max_page):
+    def __init__(self, request, queryset, max_page=0):
         self.paginator = Paginator(queryset, max_page)
         self.request = request
         self.link = request.build_absolute_uri()
@@ -253,10 +253,15 @@ class HelperPaginator:
             return self.paginator.page(1)
         except EmptyPage:
             return self.paginator.page(self.paginator.num_pages)
+        except ZeroDivisionError:
+            return {}
 
     def get_num_pages(self):
         """Вернет количество страниц"""
-        return self.paginator.num_pages
+        try:
+            return self.paginator.num_pages
+        except ZeroDivisionError:
+            return 0
 
     def get_count(self):
         """Количество записей"""
@@ -264,6 +269,9 @@ class HelperPaginator:
 
     def get_link_next_page(self):
         """Следующая страница"""
+        if type(self.page_obj) == dict:
+            return None
+
         if not self.page_obj.has_next():
             return None
 
@@ -272,6 +280,9 @@ class HelperPaginator:
 
     def get_link_previous_page(self):
         """Предыдущая страница"""
+        if type(self.page_obj) == dict:
+            return None
+
         if not self.page_obj.has_previous():
             return None
 

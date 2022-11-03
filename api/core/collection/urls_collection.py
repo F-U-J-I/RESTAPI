@@ -15,6 +15,7 @@ urlpatterns = [
     path('collections/created/<slug:path>/', CollectionView.as_view({'get': 'get_created_collections'})),
     path('collections/get/<slug:path>/', CollectionView.as_view({'get': 'get_detail_collection'})),
 
+    path('collections/is-set/grade/<slug:path>/', GradeCollectionView.as_view({'get': 'is_set_grade'})),
     path('collections/create/grade/<slug:path>/', GradeCollectionView.as_view({'post': 'set_grade'})),
     path('collections/update/grade/<slug:path>/', GradeCollectionView.as_view({'put': 'update_grade'})),
     path('collections/delete/grade/<slug:path>/', GradeCollectionView.as_view({'delete': 'delete_grade'})),
