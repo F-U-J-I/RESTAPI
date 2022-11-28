@@ -1,6 +1,7 @@
+from django.db.models import Q
 from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import permissions, status, viewsets
+from rest_framework import permissions, status, viewsets, generics
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -13,10 +14,113 @@ from .serializers_course import GradeCourseSerializer, PageCourseSerializer, Pag
     MiniCourseSerializer, ActionThemeSerializer, ActionLessonSerializer, ActionStepSerializer, ProfileThemeSerializer, \
     CourseTitleSerializer, ThemeTitleSerializer, ProfileLessonSerializer, GetStepSerializer, StepSerializer, \
     MaxProgressUpdater, CourseFitSerializer, CourseSkillSerializer, EditPageInfoCourseSerializer, ProfileStepSerializer, \
-    AndroidStepSerializer
+    AndroidStepSerializer, PageThemesCourseSerializer, CourseShortInfoSerializer, StepContentSerializer
 from ..collection.models_collection import Collection
 from ..profile.models_profile import Profile
 from ..utils import Util, HelperFilter, HelperPaginator, HelperPaginatorValue
+
+
+class CourseViewSet(viewsets.ModelViewSet):
+    lookup_field = 'slug'
+    queryset = ProfileCourse.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    filter_fields = HelperFilter.PROFILE_COURSE_FILTER_FIELDS
+    search_fields = HelperFilter.PROFILE_COURSE_SEARCH_FIELDS
+    ordering_fields = HelperFilter.PROFILE_COURSE_ORDERING_FIELDS
+
+    pagination_max_page = HelperPaginatorValue.COURSE_MAX_PAGE
+
+    @staticmethod
+    def exists_profile_path(path):
+        """Существует ли такой путь к профилю"""
+        return len(Profile.objects.filter(path=path)) != 0
+
+    def get_frame_pagination(self, request, queryset, max_page=None):
+        """Возвращает каркас к пагинации"""
+        if max_page is None:
+            max_page = self.pagination_max_page
+        pagination = HelperPaginator(request=request, queryset=queryset, max_page=max_page)
+        return {
+            "count": pagination.get_count(),
+            "pages": pagination.get_num_pages(),
+            "next": pagination.get_link_next_page(),
+            "previous": pagination.get_link_previous_page(),
+            "current_page": pagination.current_page_num,
+            "results": pagination.page_obj
+        }
+
+    @staticmethod
+    def translate_pc_in_c(queryset):
+        return [_.course for _ in queryset]
+
+    @action(detail=False, methods=['get'])
+    def get_all_profile_courses(self, request, path, *args, **kwargs):
+        """GET. Добавленные и созданные курсы пользователем по path"""
+        if not self.exists_profile_path(path):
+            return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        auth = Profile.objects.get(user=self.request.user)
+        profile = auth
+        if auth.path != path:
+            profile = Profile.objects.get(path=path)
+        # Получаем созданные и добавленные курсы
+        queryset_profile_course = self.queryset.filter(profile=profile)
+        queryset = self.filter_queryset(queryset_profile_course)
+
+        queryset_course = self.translate_pc_in_c(queryset)
+        limit = Util.get_limit(request, else_v=len(queryset))
+
+        frame_pagination = self.get_frame_pagination(request, queryset_course, max_page=limit)
+        serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True,
+                                          context={'profile': auth, 'auth': auth})
+        frame_pagination['results'] = serializer.data
+
+        return Response(frame_pagination, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def get_added_courses(self, request, path, *args, **kwargs):
+        """GET. Добавленные курсы пользователем по path"""
+        if not self.exists_profile_path(path):
+            return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        auth = Profile.objects.get(user=self.request.user)
+        profile = auth
+        if auth.path != path:
+            profile = Profile.objects.get(path=path)
+        profile_queryset = ProfileCourse.objects.filter(profile=profile)
+        added_queryset = self.filter_queryset(profile_queryset.filter(~Q(course__profile=profile)))
+
+        queryset = self.translate_pc_in_c(added_queryset)
+        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_MAX_PAGE)
+        serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True,
+                                          context={'profile': auth, 'auth': auth})
+
+        frame_pagination['results'] = serializer.data
+        return Response(frame_pagination, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def get_created_courses(self, request, path, *args, **kwargs):
+        """GET. Созданные курсы пользователем по path"""
+        if not self.exists_profile_path(path):
+            return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+        auth = Profile.objects.get(user=self.request.user)
+        profile = auth
+        if auth.path != path:
+            profile = Profile.objects.get(path=path)
+        created_queryset = self.queryset.filter(course__profile=profile)
+
+        queryset = self.filter_queryset(created_queryset)
+
+        queryset_course = self.translate_pc_in_c(queryset)
+        limit = Util.get_limit(request, else_v=len(queryset_course))
+        frame_pagination = self.get_frame_pagination(request, queryset_course, max_page=limit)
+        serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True,
+                                          context={'profile': auth, 'auth': auth})
+        frame_pagination['results'] = serializer.data
+        return Response(frame_pagination, status=status.HTTP_200_OK)
 
 
 class CourseView(viewsets.ModelViewSet):
@@ -75,7 +179,9 @@ class CourseView(viewsets.ModelViewSet):
         auth = Profile.objects.get(user=self.request.user)
         status_release = CourseStatus.objects.get(name=Util.COURSE_STATUS_RELEASE_NAME)
         queryset = self.filter_queryset(self.queryset.filter(status=status_release))
-        frame_pagination = self.get_frame_pagination(request, queryset)
+
+        limit = Util.get_limit(request, else_v=len(queryset))
+        frame_pagination = self.get_frame_pagination(request, queryset, max_page=limit)
         serializer = CourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
 
         frame_pagination['results'] = serializer.data
@@ -93,66 +199,6 @@ class CourseView(viewsets.ModelViewSet):
         frame_pagination['results'] = serializer.data
         return Response(frame_pagination, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['get'])
-    def get_all_profile_courses(self, request, path, *args, **kwargs):
-        """GET. Добавленные и созданные курсы пользователем по path"""
-        if not self.exists_profile_path(path):
-            return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
-
-        auth = Profile.objects.get(user=self.request.user)
-
-        # Получаем созданные и добавленные курсы
-        profile = Profile.objects.get(path=path)
-        added_profile_course = ProfileCourse.objects.filter(profile=profile)
-        created_queryset = self.queryset.filter(profile=profile)
-        queryset_list = [item.course.pk for item in added_profile_course]
-        for item in created_queryset:
-            queryset_list.append(item.pk)
-        new_queryset = self.queryset.filter(pk__in=queryset_list)
-
-        queryset = self.filter_queryset(new_queryset)
-
-        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_MAX_PAGE)
-        serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
-        frame_pagination['results'] = serializer.data
-
-        return Response(frame_pagination, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['get'])
-    def get_added_courses(self, request, path, *args, **kwargs):
-        """GET. Добавленные курсы пользователем по path"""
-        if not self.exists_profile_path(path):
-            return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
-
-        auth = Profile.objects.get(user=self.request.user)
-
-        profile = Profile.objects.get(path=path)
-        self.swap_filters_field(HelperFilter.PROFILE_COURSE_TYPE)
-        profile_queryset = self.filter_queryset(ProfileCourse.objects.filter(profile=profile))
-        self.swap_filters_field(HelperFilter.COURSE_TYPE)
-
-        queryset = [item.course for item in profile_queryset]
-        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_MAX_PAGE)
-        serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
-
-        frame_pagination['results'] = serializer.data
-        return Response(frame_pagination, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['get'])
-    def get_created_courses(self, request, path, *args, **kwargs):
-        """GET. Созданные курсы пользователем по path"""
-        if not self.exists_profile_path(path):
-            return Response({'error': "Такого пользователя не существует"}, status=status.HTTP_404_NOT_FOUND)
-
-        auth = Profile.objects.get(user=self.request.user)
-
-        profile = Profile.objects.get(path=path)
-        queryset = self.filter_queryset(self.queryset.filter(profile=profile))
-        frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COURSE_MAX_PAGE)
-        serializer = MiniCourseSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
-        frame_pagination['results'] = serializer.data
-        return Response(frame_pagination, status=status.HTTP_200_OK)
-
     @action(methods=['get'], detail=True)
     def get_page_course(self, request, path, *args, **kwargs):
         """GET. Страница с информацией о курсе"""
@@ -167,9 +213,13 @@ class CourseView(viewsets.ModelViewSet):
         serializer_course = PageCourseSerializer(course, context={'profile': profile})
         course_info = CourseInfo.objects.get(course=course)
         serializer_course_info = PageInfoCourseSerializer(course_info, context={'profile': profile})
+
+        theme_queryset = Theme.objects.filter(course=course)
+        serializer_theme = PageThemesCourseSerializer(theme_queryset, many=True)
         return Response(data={
             'course': serializer_course.data,
-            'info': serializer_course_info.data
+            'info': serializer_course_info.data,
+            'themes': serializer_theme.data,
         }, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=True)
@@ -213,10 +263,35 @@ class ActionCourseView(viewsets.ModelViewSet):
         auth = Profile.objects.get(user=self.request.user)
         course = Course.objects.create(title=course_title, profile=auth)
         course.save()
+        ProfileCourse.objects.create(course=course, profile=auth).save()
         return Response({
             'title': course.title,
             'path': course.path,
             'message': "Курс успешно создан",
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['put'])
+    def update_course(self, request, path):
+        """PUT. Обновление курса"""
+        course_title = request.data.get('title', None)
+        if course_title is None:
+            return Response({
+                'error': "Вы не ввели название курса",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        auth = Profile.objects.get(user=self.request.user)
+        course = Course.objects.create(title=course_title, profile=auth)
+
+
+        serializer = CourseFitSerializer(data=request.data, instance=fit)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            'pk': request.data.get('pk'),
+            'title': fit.title,
+            'description': fit.description,
+            'message': "Представитель успешно обновлен"
         }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['delete'])
@@ -229,6 +304,9 @@ class ActionCourseView(viewsets.ModelViewSet):
         course = self.queryset.get(path=path)
         MaxProgressUpdater.update_max_progress(old=course.max_progress, new=0, course=course)
         course.delete()
+
+        auth = Profile.objects.get(user=self.request.user)
+        # ProfileCourse.objects.get(profile=auth, course=course).delete()
         return Response({
             'title': course.title,
             'path': course.path,
@@ -269,6 +347,21 @@ class ActionCourseView(viewsets.ModelViewSet):
             'message': "Курс успешно отправлен в разработку"
         }, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'])
+    def publish_status_course(self, request, path):
+        """GET. Опубликованный курс?"""
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        course = self.queryset.get(path=path)
+        return Response({
+            'path': course.path,
+            'title': course.title,
+            'status': course.status.name,
+            'is_publish': course.status.name != 'В разработке',
+        }, status=status.HTTP_200_OK)
+
 
 class CoursePageView(viewsets.ModelViewSet):
     """VIEW. Страница курса"""
@@ -288,16 +381,26 @@ class CoursePageView(viewsets.ModelViewSet):
         serializer = EditPageInfoCourseSerializer(course_info)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['put'])
+    def update_course(self, request, path):
+        """PUT. Обновит курс"""
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        course = Course.objects.get(path=path)
+        updatedCourse = self._update_course(course, data=request.data)
+        print(updatedCourse)
+        serializer = CourseShortInfoSerializer(updatedCourse)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @staticmethod
-    def update_course(request, course_info):
+    def _update_course(course, data):
         """Обновит курс"""
-        course = course_info.course
-        validated_data = request.data.get('course', None)
+        course.title = data.get('title', course.title)
+        course.description = data.get('description', course.description)
 
-        course.title = validated_data.get('title', course.title)
-        course.description = validated_data.get('description', course.description)
-
-        new_image = validated_data.get('image_url', -1)
+        new_image = data.get('image_url', -1)
         if new_image != -1:
             update_image = Util.get_image(old=course.image_url, new=new_image,
                                           default=Util.DEFAULT_IMAGES.get('course'))
@@ -353,7 +456,7 @@ class CoursePageView(viewsets.ModelViewSet):
 
         course = Course.objects.get(path=path)
         course_info = CourseInfo.objects.get(course=course)
-        self.update_course(request=request, course_info=course_info)
+        self._update_course(course=course_info.course, data=request.data.get('course', None))
         self.update_main_info(request=request, course_info=course_info)
         self.update_fits(request=request, course_info=course_info)
         self.update_skills(request=request, course_info=course_info)
@@ -576,6 +679,7 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
         auth = Profile.objects.get(user=self.request.user)
         theme = Theme.objects.get(path=path_theme)
         lesson_list = Lesson.objects.filter(theme=theme)
+        # theme.image_url
         serializer = ProfileLessonSerializer(lesson_list, many=True, context={'profile': auth, 'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -628,8 +732,9 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
             return exists.get('error')
 
         auth = Profile.objects.get(user=self.request.user)
+        lesson = Lesson.objects.get(path=path_lesson)
         step = Step.objects.get(path=path_step)
-        serializer = StepSerializer(step, context={'profile': auth, 'request': request})
+        serializer = StepSerializer(step, context={'lesson': lesson, 'profile': auth, 'request': request})
 
         self.add_profile_step(profile=auth, step=step)
 
@@ -646,10 +751,27 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
         auth = Profile.objects.get(user=self.request.user)
         step = Step.objects.get(path=path_step)
         serializer = AndroidStepSerializer(step, context={'profile': auth, 'request': request})
-
         self.add_profile_step(profile=auth, step=step)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def get_detail_step_json(self, request, path_course, path_theme, path_lesson, path_step):
+        """GET. Вернет детальную страницу шага"""
+        exists = PathValidator.exists(path_course=path_course, path_theme=path_theme, path_lesson=path_lesson,
+                                      path_step=path_step)
+        if exists.get('error', None) is not None:
+            return exists.get('error')
+
+        auth = Profile.objects.get(user=self.request.user)
+        lesson = Lesson.objects.get(path=path_lesson)
+        step = Step.objects.get(path=path_step)
+        serializer = StepSerializer(step, context={'lesson': lesson, 'profile': auth, 'request': request})
+        content_serializer = StepContentSerializer(step)
+
+        self.add_profile_step(profile=auth, step=step)
+
+        return Response({**serializer.data, **content_serializer.data}, status=status.HTTP_200_OK)
 
     @staticmethod
     def exists_profile_step(profile, step):
@@ -751,11 +873,7 @@ class ThemeView(viewsets.ModelViewSet):
         serializer = ActionThemeSerializer(data={'title': f"Тема #{number_new_theme}"}, context={'course': course})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({
-            'title': serializer.data['title'],
-            'path': serializer.data['path'],
-            'message': "Тема успешно создана"
-        }, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def get_update_info(self, request, path_course, path_theme):
@@ -829,8 +947,10 @@ class LessonView(viewsets.ModelViewSet):
             return Response({'error': str(ex)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({
-            'title': serializer.data['title'],
             'path': serializer.data['path'],
+            'title': serializer.data['title'],
+            'count_step': serializer.data['count_step'],
+            'image_url': serializer.data['image_url'],
             'message': "Урок успешно создан"
         }, status=status.HTTP_200_OK)
 
@@ -871,6 +991,8 @@ class LessonView(viewsets.ModelViewSet):
         is_valid = PathValidator.is_valid(user=self.request.user, path_course=path_course, path_theme=path_theme)
         if is_valid.get('error', None) is not None:
             return is_valid.get('error')
+
+        print(path_course, path_theme, path_lesson)
 
         lesson = self.queryset.get(path=path_lesson)
         MaxProgressUpdater.update_max_progress(old=lesson.max_progress, new=0, lesson=lesson)
@@ -1067,14 +1189,17 @@ class GradeCourseView(viewsets.ModelViewSet):
             return Response({'error': "Такого курса не существует"}, status=status.HTTP_404_NOT_FOUND)
 
         course = self.queryset.get(path=path)
+        print(course.rating)
         profile = Profile.objects.get(user=self.request.user)
         serializer = GradeCourseSerializer(data=request.data, context={'profile': profile, 'course': course})
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        print(course.rating)
         return Response({
             'course': course.title,
             'path': course.path,
-            'grade': serializer.data['grade']
+            'grade': serializer.data['grade'],
+            'rating': self.queryset.get(path=path).rating
         }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['put'])
@@ -1093,7 +1218,8 @@ class GradeCourseView(viewsets.ModelViewSet):
         return Response({
             'course': course.title,
             'path': course.path,
-            'grade': serializer.data['grade']
+            'grade': serializer.data['grade'],
+            'rating': self.queryset.get(path=path).rating
         }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['delete'])
@@ -1116,7 +1242,8 @@ class GradeCourseView(viewsets.ModelViewSet):
         return Response({
             'course': course.title,
             'path': course.path,
-            'grade': serializer.data['grade']
+            'grade': serializer.data['grade'],
+            'rating': self.queryset.get(path=path).rating
         }, status=status.HTTP_200_OK)
 
 

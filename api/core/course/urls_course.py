@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from .views_course import CourseView, GradeCourseView, ActionProfileCourseView, ActionCourseView, ThemeView, LessonView, \
-    StepView, CourseCompletionPageView, CourseFitView, CourseSkillView, CoursePageView
+    StepView, CourseCompletionPageView, CourseFitView, CourseSkillView, CoursePageView, CourseViewSet
 
 router = DefaultRouter()
 
@@ -12,9 +12,9 @@ urlpatterns = [
     # GET
     path('courses/', CourseView.as_view({'get': 'get_courses'})),
     path('mini-courses/', CourseView.as_view({'get': 'get_mini_courses'})),
-    path('courses/all/<slug:path>/', CourseView.as_view({'get': 'get_all_profile_courses'})),
-    path('courses/added/<slug:path>/', CourseView.as_view({'get': 'get_added_courses'})),
-    path('courses/created/<slug:path>/', CourseView.as_view({'get': 'get_created_courses'})),
+    path('courses/all/<slug:path>/', CourseViewSet.as_view({'get': 'get_all_profile_courses'})),
+    path('courses/added/<slug:path>/', CourseViewSet.as_view({'get': 'get_added_courses'})),
+    path('courses/created/<slug:path>/', CourseViewSet.as_view({'get': 'get_created_courses'})),
     path('courses/page/<slug:path>/', CourseView.as_view({'get': 'get_page_course'})),
     path('courses/added-collection/<slug:path>/', CourseView.as_view({'get': 'get_added_collection_course'})),
 
@@ -29,6 +29,7 @@ urlpatterns = [
 
     path('courses/publish/<slug:path>/', ActionCourseView.as_view({'post': 'publish_course'})),
     path('courses/development/<slug:path>/', ActionCourseView.as_view({'post': 'development_course'})),
+    path('courses/publish-status/<slug:path>/', ActionCourseView.as_view({'get': 'publish_status_course'})),
 
     path('courses/start-learn/<slug:path>/', CourseCompletionPageView.as_view({'post': 'start_learn_course'})),
     path('courses/complete-learn/<slug:path>/', CourseCompletionPageView.as_view({'post': 'complete_learn_course'})),
@@ -36,6 +37,7 @@ urlpatterns = [
     # COURSE PAGE
     path('courses/creating/<slug:path>/get/page/', CoursePageView.as_view({'get': 'get_page'})),
     path('courses/creating/<slug:path>/save/page/', CoursePageView.as_view({'put': 'save_page'})),
+    path('courses/creating/<slug:path>/update/page/course/', CoursePageView.as_view({'put': 'update_course'})),
 
     # COURSE FIT
     path('courses/creating/<slug:path>/create/fit/', CourseFitView.as_view({'post': 'create_fit'})),
@@ -63,6 +65,8 @@ urlpatterns = [
          CourseCompletionPageView.as_view({'get': 'get_detail_step'})),
     path('courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/<slug:path_lesson>/steps-android/<slug:path_step>/',
          CourseCompletionPageView.as_view({'get': 'get_detail_step_android'})),
+    path('courses/learn/<slug:path_course>/themes/<slug:path_theme>/lessons/<slug:path_lesson>/steps-json/<slug:path_step>/',
+         CourseCompletionPageView.as_view({'get': 'get_detail_step_json'})),
 
     # THEME
     path('courses/creating/<slug:path>/create/theme/',

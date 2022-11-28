@@ -214,6 +214,13 @@ class CourseProfileView(viewsets.ModelViewSet):
             "results": pagination.page_obj
         }
 
+    @staticmethod
+    def _get_limit(request, else_v):
+        limit = request.query_params.get('limit')
+        if (limit is None) or (limit == 'None'):
+            return else_v
+        return int(limit)
+
     @action(methods=['get'], detail=False)
     def get_studying_courses(self, request, path):
         """GET. Какие курсы ИЗУЧАЕТ студент"""
@@ -229,8 +236,8 @@ class CourseProfileView(viewsets.ModelViewSet):
         queryset = self.filter_queryset(profile_course_list)
         self.swap_filters_field(HelperFilter.COURSE_TYPE)
 
-        frame_pagination = self.get_frame_pagination(request, queryset,
-                                                     max_page=HelperPaginatorValue.MINI_COURSE_MAX_PAGE)
+        limit = self._get_limit(request, else_v=len(queryset))
+        frame_pagination = self.get_frame_pagination(request, queryset, max_page=limit)
         serializer_list = list()
         for profile_course in frame_pagination.get('results'):
             serializer_list.append(

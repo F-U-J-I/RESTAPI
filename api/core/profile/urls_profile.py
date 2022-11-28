@@ -11,7 +11,7 @@ urlpatterns = [
     # GET
     path('profile/', ProfileView.as_view({'get': 'get_profile_data'})),
     path('profiles/', ProfileView.as_view({'get': 'get_list_profile'})),
-    path('mini-profiles/', ProfileView.as_view({'get': 'get_list_mini_profile'})),
+    path('profiles/mini/', ProfileView.as_view({'get': 'get_list_mini_profile'})),
     path('profiles/<slug:path>/header/', ProfileView.as_view({'get': 'get_header_profile'})),
 
     # PROFILE to COURSE

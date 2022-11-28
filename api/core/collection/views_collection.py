@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action, parser_classes
@@ -10,7 +11,7 @@ from .models_collection import Profile, Collection, ProfileCollection
 from .serializers_collection import DetailCollectionSerializer, CollectionSerializer, WindowDetailCollectionSerializer, \
     GradeCollectionSerializer, MiniCollectionSerializer
 from ..course.models_course import ProfileCourseCollection
-from ..utils import HelperFilter, HelperPaginatorValue, HelperPaginator
+from ..utils import HelperFilter, HelperPaginatorValue, HelperPaginator, Util
 
 
 # #########################################
@@ -65,7 +66,8 @@ class CollectionView(viewsets.ModelViewSet):
     def get_collections(self, request, *args, **kwargs):
         """GET. Вернет все подборки"""
         queryset = self.filter_queryset(self.queryset)
-        frame_pagination = self.get_frame_pagination(request, queryset)
+        limit = Util.get_limit(request, else_v=len(queryset))
+        frame_pagination = self.get_frame_pagination(request, queryset, max_page=limit)
 
         auth = Profile.objects.get(user=self.request.user)
         serializer = CollectionSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
@@ -138,28 +140,21 @@ class CollectionView(viewsets.ModelViewSet):
         """GET. Подборки которые неизвестны пользователю по path"""
         auth = Profile.objects.get(user=self.request.user)
 
-        self.swap_filters_field(HelperFilter.PROFILE_COLLECTION_TYPE)
-        queryset = self.filter_queryset(self.get_not_profile_collections(profile=auth))
-        self.swap_filters_field(HelperFilter.COLLECTION_TYPE)
+        # self.swap_filters_field(HelperFilter.PROFILE_COLLECTION_TYPE)
+        queryset = self.filter_queryset(self.queryset.filter(~Q(rating=0)))
+        # queryset = self.filter_queryset(self.get_not_profile_collections(profile=auth))
+        # self.swap_filters_field(HelperFilter.COLLECTION_TYPE)
 
-        queryset = self._get_unique_catalog(queryset)
+        # queryset = self._get_unique_catalog(queryset)
         
-        limit = self._get_limit(request, else_v=len(queryset))
+        limit = Util.get_limit(request, else_v=len(queryset))
         frame_pagination = self.get_frame_pagination(request, queryset, max_page=limit)
         serializer_list = list()
         for profile_collection in frame_pagination.get('results'):
-            serializer_list.append(CollectionSerializer(profile_collection.collection, context={'profile': auth}).data)
+            serializer_list.append(CollectionSerializer(profile_collection, context={'profile': auth}).data)
 
         frame_pagination['results'] = serializer_list
         return Response(frame_pagination, status=status.HTTP_200_OK)
-
-    @staticmethod
-    def _get_limit(request, else_v):
-        limit = request.query_params.get('limit')
-        if (limit is None) or (limit == 'None'):
-            return else_v
-        return int(limit)
-
 
     @action(detail=False, methods=['get'])
     def get_all_profile_collections(self, request, path, *args, **kwargs):
@@ -174,7 +169,7 @@ class CollectionView(viewsets.ModelViewSet):
         self.swap_filters_field(HelperFilter.COLLECTION_TYPE)
 
         queryset = self._exclude_none_date_added(queryset)
-        limit = self._get_limit(request, else_v=len(queryset))
+        limit = Util.get_limit(request, else_v=len(queryset))
 
         frame_pagination = self.get_frame_pagination(request, queryset, max_page=limit)
         serializer_list = list()
@@ -194,7 +189,8 @@ class CollectionView(viewsets.ModelViewSet):
         auth = Profile.objects.get(user=self.request.user)
 
         self.swap_filters_field(HelperFilter.PROFILE_COLLECTION_TYPE)
-        added_queryset = self.filter_queryset(self._get_added_collections(profile=profile))
+        profile_queryset = ProfileCollection.objects.filter(profile=profile)
+        added_queryset = self.filter_queryset(profile_queryset.filter(~Q(collection__profile=profile)))
         self.swap_filters_field(HelperFilter.COLLECTION_TYPE)
 
         # Исключаем созданные подборки
@@ -218,7 +214,11 @@ class CollectionView(viewsets.ModelViewSet):
         profile = Profile.objects.get(path=path)
         auth = Profile.objects.get(user=self.request.user)
 
-        queryset = self.filter_queryset(self.queryset.filter(profile=profile))
+        self.swap_filters_field(HelperFilter.PROFILE_COLLECTION_TYPE)
+        created_queryset = self.filter_queryset(ProfileCollection.objects.filter(profile=profile, collection__profile=profile))
+        self.swap_filters_field(HelperFilter.COLLECTION_TYPE)
+
+        queryset = [_.collection for _ in created_queryset]
         frame_pagination = self.get_frame_pagination(request, queryset, HelperPaginatorValue.MINI_COLLECTION_MAX_PAGE)
         serializer = MiniCollectionSerializer(frame_pagination.get('results'), many=True, context={'profile': auth})
         frame_pagination['results'] = serializer.data
@@ -278,12 +278,6 @@ class ActionCollectionView(viewsets.ModelViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
         return Response(WindowDetailCollectionSerializer(collection).data, status=status.HTTP_200_OK)
 
-    @staticmethod
-    def get_link_image(link_image):
-        if 'http' == link_image[:4]:
-            return f"/{'/'.join(link_image.split('/')[3:])}"
-        return link_image
-
     @action(detail=False, methods=['put'])
     @parser_classes([MultiPartParser])
     def update_info(self, request, path=None, *args, **kwargs):
@@ -307,8 +301,8 @@ class ActionCollectionView(viewsets.ModelViewSet):
             'path': serializer.data.get('path'),
             'title': serializer.data.get('title'),
             'description': serializer.data.get('description'),
-            'wallpaper': self.get_link_image(serializer.data.get('wallpaper')),
-            'image_url': self.get_link_image(serializer.data.get('image_url')),
+            'wallpaper': Util.get_link_image(serializer.data.get('wallpaper')),
+            'image_url': Util.get_link_image(serializer.data.get('image_url')),
         }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['delete'])
@@ -357,7 +351,6 @@ class ActionProfileCollectionView(viewsets.ModelViewSet):
         profile = Profile.objects.get(user=self.request.user)
         collection = Collection.objects.get(path=path)
         profile_collection_list = ProfileCollection.objects.filter(profile=profile, collection=collection)
-        print(profile_collection_list)
         if len(profile_collection_list) != 0 and profile_collection_list[0].date_added is not None:
             return Response({'error': "Вы уже добавили эту подборку"}, status=status.HTTP_404_NOT_FOUND)
 

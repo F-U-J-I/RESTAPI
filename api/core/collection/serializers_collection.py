@@ -42,8 +42,8 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = (
-            'path', 'title', 'author', 'image_url', 'rating', 'courses', 'is_added', 'added_number', 'count_ratings')
+        fields = ('path', 'title', 'author', 'image_url', 'rating', 'courses', 'is_added', 'added_number',
+                  'count_ratings')
 
     @staticmethod
     def get_author(collection):
@@ -85,7 +85,7 @@ class MiniCollectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = ('path', 'title', 'author', 'image_url', 'is_added')
+        fields = ('path', 'title', 'author', 'image_url', 'is_added', 'rating')
 
     @staticmethod
     def get_author(collection):
@@ -155,25 +155,16 @@ class WindowDetailCollectionSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Обновление"""
-        print(instance)
         instance.title = validated_data.get('title', instance.title)
-        print(instance)
         instance.description = validated_data.get('description', instance.description)
 
-        print(instance)
-
         # Изменение картинок
-        print(validated_data.get('wallpaper'))
         instance.wallpaper = validated_data.get('wallpaper', instance.wallpaper)
-
-        print(instance)
         new_image = validated_data.get('image_url', -1)
         if new_image != -1:
             update_image = Util.get_image(old=instance.image_url, new=new_image,
                                           default=Util.DEFAULT_IMAGES.get('collection'))
             instance.image_url = Util.get_update_image(old=instance.image_url, new=update_image)
-
-        print(instance.wallpaper)
 
         instance.save()
         return instance

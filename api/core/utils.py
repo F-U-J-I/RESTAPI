@@ -63,19 +63,13 @@ class Util:
     @staticmethod
     def get_image(old, new, default):
         """Вернет новое изображение"""
-        print('get_image')
         try:
             if new is None or len(new) == 0:
-                print('true')
                 path_image = "\\".join(old.path.split('\\')[:-1]) + "\\" + str(default)
-                print(path_image)
                 new = ImageFile(open(path_image, "rb"))
         except FileNotFoundError:
-            print('false')
             path_image = "\\".join(old.path.split('\\')[:-1]) + "\\" + str(default)
-            print(path_image)
             new = ImageFile(open(path_image, "rb"))
-        print('/////////////////////')
         return new
 
     @staticmethod
@@ -117,6 +111,19 @@ class Util:
                 max_path = item.path
         return max_path
 
+    @staticmethod
+    def get_limit(request, else_v):
+        limit = request.query_params.get('limit')
+        if (limit is None) or (limit == 'None'):
+            return else_v
+        return int(limit)
+
+    @staticmethod
+    def get_link_image(link_image):
+        if link_image is not None and 'http' == link_image[:4]:
+            return f"/{'/'.join(link_image.split('/')[3:])}"
+        return link_image
+
 
 class HelperFilter:
     """Фильтрация моделей"""
@@ -142,7 +149,7 @@ class HelperFilter:
     PROFILE_COURSE_TYPE = 4
     PROFILE_COURSE_FILTER_FIELDS = ('course__title', 'course__profile__user__username')
     PROFILE_COURSE_SEARCH_FIELDS = ('course__title', 'course__profile__user__username')
-    PROFILE_COURSE_ORDERING_FIELDS = ('course__rating', 'course__title')
+    PROFILE_COURSE_ORDERING_FIELDS = ('date_added', 'course__rating', 'course__title')
 
     # PROFILE
 
@@ -164,6 +171,7 @@ class HelperFilter:
     SUBSCRIBER_FILTER_FIELDS = ('subscriber__path', 'subscriber__user__username')
     SUBSCRIBER_SEARCH_FIELDS = ('subscriber__path', 'subscriber__user__username')
     SUBSCRIBER_ORDERING_FIELDS = ('subscriber__path', 'subscriber__user__username')
+
 
     @staticmethod
     def get_filters_collection_field(type_filter):
