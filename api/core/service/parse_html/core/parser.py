@@ -68,7 +68,7 @@ class Parser:
                     text += self.s[i]
 
         content.append(text)
-        return content
+        return content[1:]
 
     def get_tag_list(self):
         text = ''

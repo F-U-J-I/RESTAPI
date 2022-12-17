@@ -47,6 +47,7 @@ class ParseHtml:
                                 data['content'].append(self.parse_obj(tag_list_element.find()))
                         else:
                             data['content'].append({
+                                # 'tag': 'p',
                                 'text': s
                             })
                     if parser.index_tag_list + 1 < len(parser.tag_list):
