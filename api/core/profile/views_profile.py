@@ -112,13 +112,9 @@ class ActionProfileView(viewsets.ModelViewSet):
         return {'profile': auth}
 
     @action(methods=['get'], detail=False)
-    def get_info(self, request, path):
+    def get_info(self, request):
         """GET. Вернет информацию по пользователю для обновления"""
-        profile_dict = self.get_profile_or_error(path=path)
-        if profile_dict.get('error', None) is not None:
-            return profile_dict.get('error', None)
-
-        profile = profile_dict.get('profile')
+        profile = Profile.objects.get(user=self.request.user)
         serializer = ActionProfileSerializer(profile)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -142,13 +138,9 @@ class ActionProfileView(viewsets.ModelViewSet):
         return serializer_user.data
 
     @action(methods=['put'], detail=False)
-    def update_info(self, request, path):
+    def update_info(self, request):
         """PUT. Обновление информации о пользователе"""
-        profile_dict = self.is_valid(request=request, path=path)
-        if profile_dict.get('error', None) is not None:
-            return profile_dict.get('error', None)
-        profile = profile_dict.get('profile')
-
+        profile = Profile.objects.get(user=self.request.user)
         result_profile = self.update_profile(data=request.data, profile=profile)
         if result_profile.get('error', None) is not None:
             return result_profile.get('error')
@@ -163,12 +155,9 @@ class ActionProfileView(viewsets.ModelViewSet):
         }, status=status.HTTP_200_OK)
 
     @action(methods=['put'], detail=False)
-    def update_password(self, request, path):
+    def update_password(self, request):
         """PUT. Обновление пароля"""
-        profile_dict = self.is_valid(request=request, path=path)
-        if profile_dict.get('error', None) is not None:
-            return profile_dict.get('error', None)
-        profile = profile_dict.get('profile')
+        profile = Profile.objects.get(user=self.request.user)
 
         context = {'new_password': request.data.get('new_password')}
         serializer_user = ActionUserPasswordSerializer(data=request.data, instance=profile.user, context=context)

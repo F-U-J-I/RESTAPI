@@ -90,10 +90,20 @@ class HeaderProfileSerializer(serializers.ModelSerializer):
 
 class ActionProfileSerializer(serializers.ModelSerializer):
     """Serializer. Действия над профилем"""
+    username = serializers.SerializerMethodField()
+    email = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
-        fields = ('avatar_url', 'path')
+        fields = ('avatar_url', 'username', 'email', 'path')
+
+    @staticmethod
+    def get_username(profile):
+        return profile.user.username
+
+    @staticmethod
+    def get_email(profile):
+        return profile.user.email
 
     def update(self, instance, validated_data):
         """Обновление данных"""
