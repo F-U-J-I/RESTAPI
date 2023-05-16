@@ -852,6 +852,27 @@ class CourseCompletionPageView(viewsets.ModelViewSet):
             'status': profile_course.status.name,
         }, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'])
+    def learn_status_course(self, request, path):
+        """GET. Опубликованный курс?"""
+        is_valid = PathValidator.is_valid(user=self.request.user, path_course=path)
+        if is_valid.get('error', None) is not None:
+            return is_valid.get('error')
+
+        auth = Profile.objects.get(user=self.request.user)
+        course = Course.objects.get(path=path)
+        profile_course_list = ProfileCourse.objects.filter(course=course, profile=auth)
+        if len(profile_course_list) == 0:
+            return Response({'error': "Вы не поступили на этот курс"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        profile_course = profile_course_list[0]
+
+        return Response({
+            'path': course.path,
+            'title': course.title,
+            'status': profile_course.status.name,
+            'is_complete': profile_course.status.name == 'Завершен',
+        }, status=status.HTTP_200_OK)
     # ###########
 
 

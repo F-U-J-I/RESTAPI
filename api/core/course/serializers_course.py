@@ -447,6 +447,7 @@ class ActionCourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = ()
 
+
 class CourseFitSerializer(serializers.ModelSerializer):
     """SERIALIZER. Представитля"""
 

@@ -33,6 +33,7 @@ urlpatterns = [
 
     path('courses/start-learn/<slug:path>/', CourseCompletionPageView.as_view({'post': 'start_learn_course'})),
     path('courses/complete-learn/<slug:path>/', CourseCompletionPageView.as_view({'post': 'complete_learn_course'})),
+    path('courses/learn-status/<slug:path>/', CourseCompletionPageView.as_view({'get': 'learn_status_course'})),
 
     # COURSE PAGE
     path('courses/creating/<slug:path>/get/page/', CoursePageView.as_view({'get': 'get_page'})),
