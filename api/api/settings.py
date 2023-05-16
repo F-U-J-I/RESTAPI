@@ -26,11 +26,11 @@ SECRET_KEY = 'django-insecure-xphk**i(rnfdg^4ma1_k_!#@#&&pl%f-rr41mq_1oi6tjn(7)b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['dmakger.beget.tech']
+ALLOWED_HOSTS = ['dmakger.beget.tech', 'fuji.augmeneco.ru', 'api.fuji.augmeneco.ru']
 # ALLOWED_HOSTS = ['*']
 
 if DEBUG:
-    ALLOWED_HOSTS += ['127.0.0.1', 'localhost', '192.168.0.105']
+    ALLOWED_HOSTS += ['127.0.0.1', 'localhost', '192.168.0.105', 'fuji.augmeneco.ru', 'api.fuji.augmeneco.ru']
 
 AUTH_USER_MODEL = "core.User"
 
@@ -85,12 +85,19 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=2),
 }
 
-CORS_ORIGIN_WHITELIST = ["http://localhost", "http://127.0.0.1"]
+CORS_ORIGIN_WHITELIST = [
+    "http://localhost",
+    "http://127.0.0.1",
+    "http://fuji.augmeneco.ru",
+    "http://api.fuji.augmeneco.ru",
+]
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://api.fuji.augmeneco.ru",
+    "http://fuji.augmeneco.ru",
 ]
 # конец настроек JWT токена
 
